@@ -73,6 +73,8 @@ export type Session = {
   finishedAt?: string;
   pausedMs: number;
   pausedAt?: string; // момент начала текущей паузы
+  restEndsAt?: string; // окончание текущего отдыха
+  restSec?: number; // длительность текущего отдыха
   warmupDone: string[];
   exercises: ExerciseLog[];
 };

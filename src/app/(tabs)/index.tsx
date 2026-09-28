@@ -1,8 +1,7 @@
-import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Segmented } from '../../components/ui';
-import { getTemplate, PROGRAM } from '../../data/program';
-import { formatDate, formatTime } from '../../logic/format';
+import { PROGRAM } from '../../data/program';
+import { formatDate } from '../../logic/format';
 import { highlightedTemplate } from '../../logic/schedule';
 import { buildSession, lastFinished, SHORT_EXERCISES, SHORT_MAX_WORK_SETS } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
@@ -17,36 +16,16 @@ const LENGTHS: { value: Length; label: string }[] = [
 export default function WorkoutsScreen() {
   const { data, update } = useStore();
   const highlight = highlightedTemplate();
-  const active = data.activeSession;
 
   const setLength = (id: TemplateId, length: Length) =>
     update((d) => ({ ...d, lengthChoice: { ...d.lengthChoice, [id]: length } }));
 
-  const start = (id: TemplateId) => {
-    const begin = () => {
-      update((d) => ({ ...d, activeSession: buildSession(d, id, d.lengthChoice[id] ?? 'long') }));
-      router.push('/workout');
-    };
-    if (!active) return begin();
-    Alert.alert('Есть незавершённая тренировка', 'Начать новую? Незавершённая будет удалена.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Начать новую', style: 'destructive', onPress: begin },
-    ]);
-  };
+  // Экран тренировки открывается сам, как только появляется activeSession (см. _layout).
+  const start = (id: TemplateId) =>
+    update((d) => (d.activeSession ? d : { ...d, activeSession: buildSession(d, id, d.lengthChoice[id] ?? 'long') }));
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      {active && (
-        <Card style={styles.banner}>
-          <Text style={styles.bannerTitle}>Незавершённая тренировка</Text>
-          <Text style={styles.bannerText}>
-            {getTemplate(active.templateId).title} · {active.length === 'short' ? 'короткая' : 'длинная'} · начата{' '}
-            {formatTime(active.startedAt)}
-          </Text>
-          <Button title="Продолжить тренировку" onPress={() => router.push('/workout')} />
-        </Card>
-      )}
-
       {PROGRAM.map((t) => {
         const length = data.lengthChoice[t.id] ?? 'long';
         const last = lastFinished(data, t.id);
@@ -78,9 +57,6 @@ export default function WorkoutsScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap },
-  banner: { backgroundColor: colors.warningSoft, gap: 8 },
-  bannerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  bannerText: { fontSize: 15, color: colors.text },
   card: { gap: 10, borderWidth: 2, borderColor: 'transparent' },
   cardHighlighted: { borderColor: colors.primary },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

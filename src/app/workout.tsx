@@ -1,77 +1,151 @@
-import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { Button, Card } from '../components/ui';
-import { getExercise, getTemplate, getVariant } from '../data/program';
-import { formatPlan } from '../logic/format';
+import { useKeepAwake } from 'expo-keep-awake';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ToastAndroid, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ExerciseCard } from '../components/workout/ExerciseCard';
+import { FinishModal } from '../components/workout/FinishModal';
+import { Header } from '../components/workout/Header';
+import { RestTimer } from '../components/workout/RestTimer';
+import { WarmupChecklist } from '../components/workout/WarmupChecklist';
+import { getExercise, getVariant } from '../data/program';
+import {
+  addSet,
+  buildExerciseLog,
+  copyPlanToFact,
+  currentExerciseIndex,
+  finishActive,
+  hasFacts,
+  removeSet,
+  shiftRest,
+  skippedItems,
+  startRest,
+  stopRest,
+  togglePause,
+  updateSet,
+} from '../logic/session';
 import { useStore } from '../store/AppStore';
-import { colors, gap } from '../theme';
+import { gap } from '../theme';
+import type { ExerciseLog, Kind, Session } from '../types';
 
-// Этап 1: просмотр состава тренировки. Полный экран — на этапе 2.
 export default function WorkoutScreen() {
+  useKeepAwake();
   const { data, update } = useStore();
+  const insets = useSafeAreaInsets();
+  const [finishing, setFinishing] = useState(false);
   const session = data.activeSession;
 
-  if (!session) {
-    return (
-      <ScrollView contentContainerStyle={styles.content}>
-        <Card>
-          <Text style={styles.muted}>Нет активной тренировки.</Text>
-        </Card>
-      </ScrollView>
-    );
-  }
+  // Системная кнопка «назад» на Android заблокирована.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (Platform.OS === 'android') ToastAndroid.show('Поставьте на паузу или завершите тренировку', ToastAndroid.SHORT);
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 
-  const cancel = () =>
-    Alert.alert('Удалить тренировку?', 'Данные этой тренировки будут потеряны.', [
+  const updateSession = useCallback(
+    (fn: (s: Session) => Session) => update((d) => (d.activeSession ? { ...d, activeSession: fn(d.activeSession) } : d)),
+    [update],
+  );
+  const stopRestTimer = useCallback(() => updateSession(stopRest), [updateSession]);
+
+  if (!session) return null;
+
+  const updateLog = (index: number, fn: (log: ExerciseLog) => ExerciseLog) =>
+    updateSession((s) => ({ ...s, exercises: s.exercises.map((l, i) => (i === index ? fn(l) : l)) }));
+
+  const modeOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant).mode;
+
+  const switchVariant = (index: number, kind: Kind) => {
+    const apply = () =>
+      update((d) => {
+        const s = d.activeSession;
+        if (!s) return d;
+        const ex = getExercise(s.exercises[index].exerciseId);
+        const prev = s.exercises[index];
+        const log = { ...buildExerciseLog(d, ex, kind, s.length), difficulty: prev.difficulty, comment: prev.comment };
+        return {
+          ...d,
+          variantChoice: { ...d.variantChoice, [ex.id]: kind },
+          activeSession: { ...s, exercises: s.exercises.map((l, i) => (i === index ? log : l)) },
+        };
+      });
+    if (!hasFacts(session.exercises[index])) return apply();
+    Alert.alert('Сменить вариант?', 'Введённые подходы этого упражнения будут сброшены.', [
       { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          update((d) => ({ ...d, activeSession: null }));
-          router.back();
-        },
-      },
+      { text: 'Сменить', style: 'destructive', onPress: apply },
     ]);
+  };
+
+  const toggleWarmup = (id: string) =>
+    updateSession((s) => ({
+      ...s,
+      warmupDone: s.warmupDone.includes(id) ? s.warmupDone.filter((x) => x !== id) : [...s.warmupDone, id],
+    }));
+
+  // Выход только через «Завершить»: после изменения activeSession навигация переключается сама (см. _layout).
+  const finish = () => {
+    setFinishing(false);
+    update((d) => finishActive(d));
+  };
+  const discard = () => {
+    setFinishing(false);
+    update((d) => ({ ...d, activeSession: null }));
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.title}>
-        {getTemplate(session.templateId).title} · {session.length === 'short' ? 'короткая' : 'длинная'}
-      </Text>
-      {session.exercises.map((log, i) => {
-        const ex = getExercise(log.exerciseId);
-        const variant = getVariant(ex, log.variant);
-        const work = log.sets.filter((s) => s.type === 'work');
-        const w = work[0];
-        return (
-          <Card key={log.exerciseId} style={styles.card}>
-            <Text style={styles.exTitle}>
-              {i + 1}. {variant.name}
-            </Text>
-            <Text style={styles.muted}>
-              {variant.equipment} ·{' '}
-              {formatPlan(variant, {
-                sets: work.length,
-                reps: w?.planReps,
-                repsMax: variant.plan.repsMax,
-                seconds: w?.planSeconds,
-                weight: w?.planWeight,
-              })}
-            </Text>
-            <Text style={styles.muted}>Мышцы: {ex.muscles}</Text>
-          </Card>
-        );
-      })}
-      <Button title="Удалить тренировку" variant="danger" onPress={cancel} />
-    </ScrollView>
+    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
+      <Header
+        session={session}
+        current={currentExerciseIndex(session) + 1}
+        total={session.exercises.length}
+        onPause={() => updateSession((s) => togglePause(s))}
+        onFinish={() => setFinishing(true)}
+      />
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + (session.restEndsAt ? 200 : 24) }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <WarmupChecklist length={session.length} done={session.warmupDone} onToggle={toggleWarmup} />
+          {session.exercises.map((log, i) => (
+            <ExerciseCard
+              key={log.exerciseId}
+              log={log}
+              number={i + 1}
+              onVariant={(k) => switchVariant(i, k)}
+              onSet={(si, patch) => updateLog(i, (l) => updateSet(l, modeOf(l), si, patch))}
+              onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
+              onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
+              onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
+              onRate={(patch) => updateLog(i, (l) => ({ ...l, ...patch }))}
+              onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
+            />
+          ))}
+        </ScrollView>
+      </KeyboardAvoidingView>
+      {session.restEndsAt && (
+        <RestTimer
+          endsAt={session.restEndsAt}
+          totalSec={session.restSec ?? 0}
+          bottom={insets.bottom}
+          onShift={(delta) => updateSession((s) => shiftRest(s, delta))}
+          onStop={stopRestTimer}
+        />
+      )}
+      <FinishModal
+        visible={finishing}
+        skipped={finishing ? skippedItems(session) : []}
+        onBack={() => setFinishing(false)}
+        onFinish={finish}
+        onDiscard={discard}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: 16, gap },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
-  card: { gap: 4 },
-  exTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  muted: { fontSize: 14, color: colors.muted },
 });

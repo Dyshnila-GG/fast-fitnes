@@ -28,7 +28,8 @@ src/app/            экраны (Expo Router): (tabs)/index — трениро�
 src/data/program.ts программа A/B/C (21 упражнение, по 1–2 варианта)
 src/logic/          расчёты: сессия, расписание, округление весов, форматирование
 src/store/          состояние приложения, сохранение в AsyncStorage
-src/components/     общие UI-компоненты
+src/components/     общие UI-компоненты; workout/ — блоки экрана тренировки
+src/hooks/          общие хуки (useNow — тик таймеров)
 ```
 
 Данные хранятся только на телефоне (AsyncStorage).
