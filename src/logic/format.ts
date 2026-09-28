@@ -1,4 +1,4 @@
-import type { Plan, Variant } from '../types';
+import type { Plan, Rating, SetLog, Variant } from '../types';
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
@@ -38,4 +38,31 @@ export function formatPlan(variant: Variant, plan: Plan): string {
   if (variant.mode === 'bodyweight') return `${base} · свой вес`;
   if (variant.mode === 'weight') return plan.weight != null ? `${base} · ${plan.weight} lb` : base;
   return base;
+}
+
+export const RATING_LABEL: Record<Rating, string> = {
+  easy: 'Легко',
+  normal: 'Нормально',
+  hard: 'Еле-еле',
+  fail: 'Не смог',
+};
+
+// Значение, которое меняет прогрессия: «80 lb», «9–11», «45 сек».
+export function formatPlanValue(variant: Variant, plan: Plan): string {
+  if (variant.mode === 'weight') return plan.weight != null ? `${plan.weight} lb` : '—';
+  return formatReps(variant, plan);
+}
+
+// Факт подхода: «80 × 8», «свой × 10», «свой +10 × 8», «45 сек».
+export function formatFact(set: SetLog, variant: Variant): string {
+  if (set.factSeconds != null) return `${set.factSeconds} сек`;
+  if (set.factReps == null) return '—';
+  if (variant.mode === 'bodyweight') return `${set.factWeight ? `свой +${set.factWeight}` : 'свой'} × ${set.factReps}`;
+  return `${set.factWeight ?? '—'} × ${set.factReps}`;
+}
+
+// План подхода без номера: «40 × 12», «свой × 5».
+export function formatSetPlan(set: SetLog): string {
+  if (set.planSeconds != null) return `${set.planSeconds} сек`;
+  return `${set.planWeight ?? 'свой'} × ${set.planReps ?? '—'}`;
 }

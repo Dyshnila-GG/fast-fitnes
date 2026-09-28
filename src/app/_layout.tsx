@@ -11,9 +11,11 @@ const loading = (
 );
 
 // Пока идёт тренировка, доступен только её экран (в т.ч. сразу при запуске приложения).
+// После завершения — экран итога, пока его не закроют кнопкой «Готово».
 function RootStack() {
   const { data } = useStore();
   const active = data.activeSession != null;
+  const summary = !active && data.summaryId != null;
   return (
     <Stack
       screenOptions={{
@@ -23,11 +25,14 @@ function RootStack() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Protected guard={!active}>
+      <Stack.Protected guard={!active && !summary}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={summary}>
+        <Stack.Screen name="summary" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
       </Stack.Protected>
     </Stack>
   );

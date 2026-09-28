@@ -78,10 +78,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
 
 function planText(s: SetLog, variant: Variant): string {
   if (s.planSeconds != null) return `${s.planSeconds} сек`;
-  const reps =
-    s.type === 'work' && variant.plan.repsMax && s.planReps === variant.plan.reps
-      ? `${s.planReps}–${variant.plan.repsMax}`
-      : `${s.planReps ?? '—'}`;
+  const reps = s.planRepsMax ? `${s.planReps}–${s.planRepsMax}` : `${s.planReps ?? '—'}`;
   const weight = variant.mode === 'bodyweight' ? 'свой' : s.planWeight != null ? `${s.planWeight}` : '—';
   return `${weight} × ${reps}`;
 }

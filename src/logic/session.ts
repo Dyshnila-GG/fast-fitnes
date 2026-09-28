@@ -1,6 +1,7 @@
 import { getExercise, getTemplate, getVariant } from '../data/program';
 import type { AppData, Exercise, ExerciseLog, Kind, Length, Plan, Session, SetLog, TemplateId, Variant } from '../types';
 import { newId } from './id';
+import { nextPlan } from './progression';
 import { roundWeight } from './weights';
 
 export const SHORT_EXERCISES = 4;
@@ -27,6 +28,7 @@ export function buildSets(variant: Variant, plan: Plan, length: Length): SetLog[
     type: 'work',
     planWeight: variant.mode === 'weight' ? plan.weight : undefined,
     planReps: variant.mode === 'time' ? undefined : plan.reps,
+    planRepsMax: variant.mode === 'time' ? undefined : plan.repsMax,
     planSeconds: variant.mode === 'time' ? plan.seconds : undefined,
     done: false,
   }));
@@ -153,6 +155,7 @@ export function addSet(log: ExerciseLog, type: SetLog['type']): ExerciseLog {
     type,
     planWeight: last?.planWeight,
     planReps: last?.planReps,
+    planRepsMax: last?.planRepsMax,
     planSeconds: last?.planSeconds,
     done: false,
   };
@@ -202,5 +205,24 @@ export function finishActive(d: AppData, now = new Date()): AppData {
     pausedAt: undefined,
     finishedAt: now.toISOString(),
   };
-  return { ...d, activeSession: null, sessions: [...d.sessions, done] };
+  return applyProgression({ ...d, activeSession: null, sessions: [...d.sessions, done], summaryId: done.id }, done);
+}
+
+// План на следующую тренировку (раздел 5) — для каждого оценённого упражнения, отдельно по варианту.
+export function applyProgression(d: AppData, s: Session): AppData {
+  const plans = { ...d.plans };
+  for (const log of s.exercises) {
+    if (!log.rating) continue;
+    const ex = getExercise(log.exerciseId);
+    const plan = nextPlan(ex, getVariant(ex, log.variant), currentPlan(d, ex, log.variant), log);
+    plans[ex.id] = { ...plans[ex.id], [log.variant]: plan };
+  }
+  return { ...d, plans };
+}
+
+// Ручная правка плана на экране итога.
+export function setPlan(d: AppData, exerciseId: string, kind: Kind, patch: Partial<Plan>): AppData {
+  const ex = getExercise(exerciseId);
+  const plan = { ...currentPlan(d, ex, kind), ...patch };
+  return { ...d, plans: { ...d.plans, [exerciseId]: { ...d.plans[exerciseId], [kind]: plan } } };
 }

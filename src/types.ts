@@ -49,6 +49,7 @@ export type SetLog = {
   type: 'warmup' | 'work';
   planWeight?: number;
   planReps?: number;
+  planRepsMax?: number; // верх диапазона «8–10»
   planSeconds?: number;
   factWeight?: number;
   factReps?: number;
@@ -98,6 +99,7 @@ export type AppData = {
   variantChoice: Record<string, Kind>;
   plans: Record<string, Partial<Record<Kind, Plan>>>;
   activeSession: Session | null;
+  summaryId: string | null; // завершённая тренировка, итог которой ещё не закрыт
   sessions: Session[];
   bodyWeight: BodyWeightEntry[];
   measurements: MeasurementEntry[];

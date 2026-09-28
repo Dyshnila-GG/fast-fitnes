@@ -48,7 +48,7 @@ export function ExerciseCard({ log, number, onVariant, onSet, onCopy, onRemove, 
         {formatPlan(variant, {
           sets: work.length,
           reps: first?.planReps,
-          repsMax: variant.plan.repsMax,
+          repsMax: first?.planRepsMax,
           seconds: first?.planSeconds,
           weight: first?.planWeight,
         })}

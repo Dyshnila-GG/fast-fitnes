@@ -8,6 +8,7 @@ export function defaultData(): AppData {
     variantChoice: {},
     plans: {},
     activeSession: null,
+    summaryId: null,
     sessions: [],
     bodyWeight: [],
     measurements: [],

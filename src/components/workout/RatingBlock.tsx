@@ -1,13 +1,9 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RATING_LABEL } from '../../logic/format';
 import { colors } from '../../theme';
 import type { ExerciseLog, Rating } from '../../types';
 
-const RATINGS: { value: Rating; label: string }[] = [
-  { value: 'easy', label: 'Легко' },
-  { value: 'normal', label: 'Нормально' },
-  { value: 'hard', label: 'Еле-еле' },
-  { value: 'fail', label: 'Не смог' },
-];
+const RATINGS = (Object.keys(RATING_LABEL) as Rating[]).map((value) => ({ value, label: RATING_LABEL[value] }));
 
 type Props = { log: ExerciseLog; onChange: (patch: Partial<ExerciseLog>) => void };
 
