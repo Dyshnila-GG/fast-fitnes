@@ -7,6 +7,24 @@ export function formatDate(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// Локальный день «YYYY-MM-DD» → «28 сен 2026».
+export function formatDay(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+// 21 год, 22 года, 25 лет
+export function formatAge(age: number): string {
+  const n = Math.abs(Math.trunc(age));
+  const word = n % 10 === 1 && n % 100 !== 11 ? 'год' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'года' : 'лет';
+  return `${age} ${word}`;
+}
+
+// Рост в дюймах → 6'0"
+export function formatHeight(inches: number): string {
+  return `${Math.floor(inches / 12)}'${Math.round((inches % 12) * 10) / 10}"`;
+}
+
 export function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -64,5 +82,6 @@ export function formatFact(set: SetLog, variant: Variant): string {
 // План подхода без номера: «40 × 12», «свой × 5».
 export function formatSetPlan(set: SetLog): string {
   if (set.planSeconds != null) return `${set.planSeconds} сек`;
-  return `${set.planWeight ?? 'свой'} × ${set.planReps ?? '—'}`;
+  const reps = set.planRepsMax ? `${set.planReps}–${set.planRepsMax}` : `${set.planReps ?? '—'}`;
+  return `${set.planWeight ?? 'свой'} × ${reps}`;
 }
