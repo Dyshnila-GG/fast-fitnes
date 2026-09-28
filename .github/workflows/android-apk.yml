@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, claude/gifted-mccarthy-biqewn]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
