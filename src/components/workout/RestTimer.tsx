@@ -12,13 +12,12 @@ const LATE_MS = 10_000; // если опоздали сильнее (прило�
 type Props = {
   endsAt: string;
   totalSec: number;
-  bottom: number;
   onShift: (deltaSec: number) => void;
   onStop: () => void;
 };
 
-// Таймер отдыха поверх экрана; по окончании — вибрация и звук.
-export function RestTimer({ endsAt, totalSec, bottom, onShift, onStop }: Props) {
+// Таймер отдыха поверх списка, над нижней панелью; по окончании — вибрация и звук.
+export function RestTimer({ endsAt, totalSec, onShift, onStop }: Props) {
   const now = useNow(250);
   const player = useAudioPlayer(BEEP);
   const fired = useRef<string | null>(null);
@@ -37,7 +36,7 @@ export function RestTimer({ endsAt, totalSec, bottom, onShift, onStop }: Props) 
   const progress = totalSec > 0 ? Math.min(1, Math.max(0, left / (totalSec * 1000))) : 0;
 
   return (
-    <View style={[styles.box, { bottom: bottom + 12 }]}>
+    <View style={styles.box}>
       <View style={styles.row}>
         <Text style={styles.label}>Отдых</Text>
         <Text style={styles.time}>{formatDuration(Math.max(0, left) + 999)}</Text>
@@ -57,22 +56,25 @@ export function RestTimer({ endsAt, totalSec, bottom, onShift, onStop }: Props) 
 const styles = StyleSheet.create({
   box: {
     position: 'absolute',
+    bottom: 12,
     left: 12,
     right: 12,
     gap: 10,
     padding: 14,
     borderRadius: radius,
     backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.highlight,
     shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   label: { fontSize: 17, fontWeight: '600', color: colors.muted },
-  time: { fontSize: 34, fontWeight: '700', color: colors.primary, fontVariant: ['tabular-nums'] },
-  track: { height: 6, borderRadius: 3, backgroundColor: colors.primarySoft, overflow: 'hidden' },
-  bar: { height: 6, backgroundColor: colors.primary },
+  time: { fontSize: 40, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  track: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
+  bar: { height: 6, backgroundColor: colors.text },
   flex: { flex: 1 },
 });

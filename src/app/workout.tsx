@@ -1,10 +1,12 @@
+import { Image } from 'expo-image';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ToastAndroid, View } from 'react-native';
+import { Alert, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ControlBar } from '../components/workout/ControlBar';
 import { ExerciseCard } from '../components/workout/ExerciseCard';
+import { demoUrls } from '../components/workout/ExerciseGif';
 import { FinishModal } from '../components/workout/FinishModal';
-import { Header } from '../components/workout/Header';
 import { RestTimer } from '../components/workout/RestTimer';
 import { WarmupChecklist } from '../components/workout/WarmupChecklist';
 import { getExercise, getVariant } from '../data/program';
@@ -33,6 +35,15 @@ export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
   const [finishing, setFinishing] = useState(false);
   const session = data.activeSession;
+  const keyboard = useKeyboardVisible();
+  const exerciseIds = session?.exercises.map((l) => l.exerciseId).join(',') ?? '';
+
+  // Кадры обоих вариантов каждого упражнения — заранее, чтобы переключение было мгновенным.
+  useEffect(() => {
+    if (!exerciseIds) return;
+    const urls = exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
+    Image.prefetch(urls, 'memory-disk').catch(() => {});
+  }, [exerciseIds]);
 
   // Системная кнопка «назад» на Android заблокирована.
   useEffect(() => {
@@ -94,46 +105,51 @@ export default function WorkoutScreen() {
   };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
-      <Header
-        session={session}
-        current={currentExerciseIndex(session) + 1}
-        total={session.exercises.length}
-        onPause={() => updateSession((s) => togglePause(s))}
-        onFinish={() => setFinishing(true)}
-      />
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + (session.restEndsAt ? 200 : 24) }]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          <WarmupChecklist length={session.length} done={session.warmupDone} onToggle={toggleWarmup} />
-          {session.exercises.map((log, i) => (
-            <ExerciseCard
-              key={log.exerciseId}
-              log={log}
-              number={i + 1}
-              onVariant={(k) => switchVariant(i, k)}
-              onSet={(si, patch) => updateLog(i, (l) => updateSet(l, modeOf(l), si, patch))}
-              onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
-              onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
-              onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
-              onRate={(patch) => updateLog(i, (l) => ({ ...l, ...patch }))}
-              onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
+        <View style={styles.screen}>
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: session.restEndsAt ? 190 : 24 }]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <WarmupChecklist length={session.length} done={session.warmupDone} onToggle={toggleWarmup} />
+            {session.exercises.map((log, i) => (
+              <ExerciseCard
+                key={log.exerciseId}
+                log={log}
+                number={i + 1}
+                onVariant={(k) => switchVariant(i, k)}
+                onSet={(si, patch) => updateLog(i, (l) => updateSet(l, modeOf(l), si, patch))}
+                onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
+                onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
+                onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
+                onRate={(patch) => updateLog(i, (l) => ({ ...l, ...patch }))}
+                onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
+              />
+            ))}
+          </ScrollView>
+          {session.restEndsAt && (
+            <RestTimer
+              endsAt={session.restEndsAt}
+              totalSec={session.restSec ?? 0}
+                onShift={(delta) => updateSession((s) => shiftRest(s, delta))}
+              onStop={stopRestTimer}
             />
-          ))}
-        </ScrollView>
+          )}
+        </View>
+        {/* При открытой клавиатуре панель скрыта, чтобы не перекрывать поля ввода. */}
+        {!keyboard && (
+          <ControlBar
+            session={session}
+            current={currentExerciseIndex(session) + 1}
+            total={session.exercises.length}
+            bottom={insets.bottom}
+            onPause={() => updateSession((s) => togglePause(s))}
+            onFinish={() => setFinishing(true)}
+          />
+        )}
       </KeyboardAvoidingView>
-      {session.restEndsAt && (
-        <RestTimer
-          endsAt={session.restEndsAt}
-          totalSec={session.restSec ?? 0}
-          bottom={insets.bottom}
-          onShift={(delta) => updateSession((s) => shiftRest(s, delta))}
-          onStop={stopRestTimer}
-        />
-      )}
       <FinishModal
         visible={finishing}
         skipped={finishing ? skippedItems(session) : []}
@@ -143,6 +159,20 @@ export default function WorkoutScreen() {
       />
     </View>
   );
+}
+
+function useKeyboardVisible() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', () => setVisible(true));
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return visible;
 }
 
 const styles = StyleSheet.create({

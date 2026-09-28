@@ -47,11 +47,11 @@ export function FinishModal({ visible, skipped, onBack, onFinish, onDiscard }: P
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 },
-  sheet: { backgroundColor: colors.card, borderRadius: radius, padding: 18, gap: 10, maxHeight: '85%' },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
-  warning: { fontSize: 15, fontWeight: '600', color: colors.warning },
-  ok: { fontSize: 15, color: colors.success },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 16 },
+  sheet: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.border, padding: 20, gap: 10, maxHeight: '85%' },
+  title: { fontSize: 22, fontWeight: '800', color: colors.text },
+  warning: { fontSize: 15, fontWeight: '600', color: colors.text },
+  ok: { fontSize: 15, color: colors.muted },
   list: { flexGrow: 0 },
   listContent: { gap: 6, paddingBottom: 4 },
   item: { fontSize: 14, color: colors.text, lineHeight: 20 },

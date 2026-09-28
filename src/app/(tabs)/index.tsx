@@ -57,13 +57,13 @@ export default function WorkoutsScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap },
-  card: { gap: 10, borderWidth: 2, borderColor: 'transparent' },
-  cardHighlighted: { borderColor: colors.primary },
+  card: { gap: 12 },
+  cardHighlighted: { borderColor: colors.highlight },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: colors.text },
   badge: {
-    backgroundColor: colors.primarySoft,
-    color: colors.primary,
+    backgroundColor: colors.button,
+    color: colors.text,
     fontWeight: '600',
     fontSize: 13,
     paddingHorizontal: 10,

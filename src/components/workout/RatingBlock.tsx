@@ -55,21 +55,23 @@ function Chip({ label, active, compact, half, onPress }: ChipProps) {
 }
 
 const styles = StyleSheet.create({
-  block: { gap: 8, padding: 10, borderRadius: 12, backgroundColor: colors.bg },
-  pending: { backgroundColor: colors.warningSoft },
+  block: { gap: 8, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
+  pending: { borderColor: colors.highlight },
   title: { fontSize: 12, fontWeight: '700', color: colors.muted, letterSpacing: 0.5 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { flexGrow: 1, minWidth: 26, paddingVertical: 9, paddingHorizontal: 6, borderRadius: 8, backgroundColor: colors.card, alignItems: 'center' },
+  chip: { flexGrow: 1, minWidth: 26, paddingVertical: 9, paddingHorizontal: 6, borderRadius: 10, backgroundColor: colors.button, alignItems: 'center' },
   scale: { flexDirection: 'row', gap: 4 },
   half: { flexBasis: '45%' },
   compact: { flex: 1, minWidth: 0, paddingHorizontal: 0 },
   chipActive: { backgroundColor: colors.primary },
   chipText: { fontSize: 14, color: colors.text, fontWeight: '500' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipTextActive: { color: colors.onPrimary, fontWeight: '700' },
   comment: {
     minHeight: 44,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 10,
     fontSize: 15,

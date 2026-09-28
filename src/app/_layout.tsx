@@ -19,6 +19,7 @@ function RootStack() {
       screenOptions={{
         contentStyle: { backgroundColor: colors.bg },
         headerStyle: { backgroundColor: colors.bg },
+        headerTintColor: colors.text,
         headerShadowVisible: false,
       }}
     >
@@ -35,7 +36,7 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <AppStoreProvider fallback={loading}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <RootStack />
     </AppStoreProvider>
   );

@@ -1,0 +1,46 @@
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { formatRest } from '../../logic/format';
+import { colors, radius } from '../../theme';
+import type { Exercise, Variant } from '../../types';
+import { ExerciseGif } from './ExerciseGif';
+
+type Props = { exercise: Exercise; variant: Variant; visible: boolean; onClose: () => void };
+
+// Большая анимация, название и техника (SPEC §3.3).
+export function GifModal({ exercise, variant, visible, onClose }: Props) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.backdrop}>
+        <View style={styles.sheet}>
+          <View style={styles.head}>
+            <Text style={styles.title}>{variant.name}</Text>
+            <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
+          </View>
+          <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={visible} />
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+            <Text style={styles.meta}>{variant.equipment}</Text>
+            <Text style={styles.cue}>{variant.cue}</Text>
+            <Text style={styles.meta}>
+              Темп {exercise.tempo} · отдых {formatRest(exercise.restSec)}
+            </Text>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 12 },
+  sheet: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 12, maxHeight: '90%' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, fontSize: 22, fontWeight: '800', color: colors.text },
+  close: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.button, alignItems: 'center', justifyContent: 'center' },
+  closeText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  body: { flexGrow: 0 },
+  bodyContent: { gap: 8 },
+  meta: { fontSize: 14, color: colors.muted },
+  cue: { fontSize: 16, color: colors.text, lineHeight: 23 },
+});

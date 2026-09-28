@@ -27,13 +27,13 @@ export function WarmupChecklist({ length, done, onToggle }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { gap: 12, borderWidth: 2, borderColor: 'transparent' },
-  pending: { borderColor: colors.warningSoft },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
+  card: { gap: 12 },
+  pending: { borderColor: colors.highlight },
+  title: { fontSize: 22, fontWeight: '800', color: colors.text },
   item: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  box: { width: 28, height: 28, borderRadius: 8, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  boxChecked: { backgroundColor: colors.success, borderColor: colors.success },
-  check: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  box: { width: 28, height: 28, borderRadius: 8, borderWidth: 2, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
+  boxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  check: { color: colors.onPrimary, fontWeight: '800', fontSize: 16 },
   text: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 21 },
   textDone: { color: colors.muted },
 });
