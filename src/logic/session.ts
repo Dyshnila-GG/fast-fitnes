@@ -122,21 +122,14 @@ export function isSetFilled(set: SetLog, mode: Variant['mode']): boolean {
   return set.factReps != null; // свой вес: вес необязателен
 }
 
-function isShort(set: SetLog): boolean {
-  if (set.type !== 'work') return false;
-  if (set.planReps != null && set.factReps != null && set.factReps < set.planReps) return true;
-  return set.planSeconds != null && set.factSeconds != null && set.factSeconds < set.planSeconds;
-}
-
 export function updateSet(log: ExerciseLog, mode: Variant['mode'], index: number, patch: Partial<SetLog>): ExerciseLog {
   const sets = log.sets.map((s, i) => {
     if (i !== index) return s;
     const next = { ...s, ...patch };
     return { ...next, done: isSetFilled(next, mode) };
   });
-  // Недобор повторов → по умолчанию «Не смог».
-  const rating = log.rating ?? (sets.some(isShort) ? 'fail' : undefined);
-  return { ...log, sets, rating };
+  // Оценку ставит только пользователь — здесь она не меняется.
+  return { ...log, sets };
 }
 
 export function copyPlanToFact(log: ExerciseLog, mode: Variant['mode'], index: number): ExerciseLog {

@@ -52,10 +52,11 @@ describe('сводка пропусков', () => {
     expect(items).toEqual(['Жим лёжа в Смите: не заполнены подходы (1)', 'Жим лёжа в Смите: нет оценки']);
   });
 
-  it('недобор повторов → по умолчанию «Не смог»', () => {
+  it('недобор повторов не выставляет оценку — только вручную', () => {
     const l = started().activeSession!.exercises[0];
     const workIndex = l.sets.findIndex((x) => x.type === 'work');
-    expect(updateSet(l, 'weight', workIndex, { factWeight: 75, factReps: 6 }).rating).toBe('fail');
+    expect(updateSet(l, 'weight', workIndex, { factWeight: 75, factReps: 6 }).rating).toBeUndefined();
+    expect(updateSet({ ...l, rating: 'easy' }, 'weight', workIndex, { factReps: 6 }).rating).toBe('easy');
   });
 });
 
