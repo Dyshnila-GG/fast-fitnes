@@ -42,10 +42,12 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
 
-      - name: Verify signature
+      - name: Verify package and signature
         run: |
           APK=android/app/build/outputs/apk/release/app-release.apk
-          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BUILD_TOOLS/aapt2" dump badging "$APK" | head -1
+          APKSIGNER=$BUILD_TOOLS/apksigner
           ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')
           echo "Certificate SHA-256: $ACTUAL"
           if [ "$ACTUAL" != "$EXPECTED_CERT_SHA256" ]; then
