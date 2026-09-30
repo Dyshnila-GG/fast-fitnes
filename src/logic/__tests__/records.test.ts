@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { getExercise, getVariant, PROGRAM } from '../../data/program';
 import { defaultData } from '../../store/defaults';
 import { migrateData, recordsFromLegacyPlans } from '../../store/migrate';
-import type { Best, ExerciseLog, Kind, SetLog } from '../../types';
+import type { Best, ExerciseLog, Kind, Rating, SetLog } from '../../types';
 import { exerciseMeta, formatPreview, formatWarmup } from '../format';
 import { applyFeel, bodyweightTarget, getBest, grow, setBest, setTodayWeight, todayWeight, warmupSets } from '../records';
 import { buildExerciseLog, copyPlanToFact } from '../session';
@@ -16,8 +16,9 @@ const work = (factWeight: number | undefined, factReps: number | undefined, fact
   done: true,
 });
 const log = (exerciseId: string, kind: Kind, sets: SetLog[]): ExerciseLog => ({ exerciseId, variant: kind, sets });
-const growOf = (exerciseId: string, kind: Kind, best: Best, sets: SetLog[]) =>
-  grow(best, log(exerciseId, kind, sets), variant(exerciseId, kind));
+// rating: null — без оценки.
+const growOf = (exerciseId: string, kind: Kind, best: Best, sets: SetLog[], rating: Rating | null = 'normal') =>
+  grow(best, { ...log(exerciseId, kind, sets), rating: rating ?? undefined }, variant(exerciseId, kind));
 
 describe('программа v2', () => {
   it('3 тренировки: 6 + 7 + 7 упражнений, у каждого есть вариант по умолчанию', () => {
@@ -149,6 +150,16 @@ describe('рост рекорда', () => {
     expect(growOf('thu7', 'free', { seconds: 40 }, plank([40, 35, 40]))).toEqual({ seconds: 40 });
   });
 
+  it('только при оценке «Легко» / «Нормально»; «Еле-еле», «Не смог» и без оценки — без изменений', () => {
+    const plank = [40, 40, 40].map((x) => work(undefined, undefined, x));
+    expect(growOf('tue1', 'machine', { weight: 75 }, full(75, 10), 'easy')).toEqual({ weight: 80 });
+    for (const rating of ['hard', 'fail', null] as const) {
+      expect(growOf('tue1', 'machine', { weight: 75 }, full(75, 10), rating)).toEqual({ weight: 75 });
+      expect(growOf('thu1', 'free', { reps: 6, repsMax: 10 }, full(0, 10), rating)).toEqual({ reps: 6, repsMax: 10 });
+      expect(growOf('thu7', 'free', { seconds: 40 }, plank, rating)).toEqual({ seconds: 40 });
+    }
+  });
+
   it('ручная правка: свой вес сдвигает диапазон целиком', () => {
     const d = setBest(defaultData(), variant('thu1', 'free'), { reps: 8 });
     expect(d.records['Подтягивания']).toEqual({ reps: 8, repsMax: 12 });
@@ -201,8 +212,11 @@ describe('форматирование', () => {
 
   it('строка упражнения: v2 — ответ после разминки, v1 — оценка', () => {
     const v = variant('tue1', 'machine');
-    expect(exerciseMeta({ ...log('tue1', 'machine', []), record: { weight: 75 }, feel: 'easy', todayWeight: 80 }, v)).toBe(
-      'Разминка: Легко · сегодня 80 lb',
+    const v2 = { ...log('tue1', 'machine', []), record: { weight: 75 }, feel: 'easy' as const, todayWeight: 80 };
+    expect(exerciseMeta({ ...v2, rating: 'normal' }, v)).toBe('Разминка: Легко · сегодня 80 lb · Оценка: Нормально');
+    expect(exerciseMeta(v2, v)).toBe('Разминка: Легко · сегодня 80 lb · без оценки');
+    expect(exerciseMeta({ ...log('thu7', 'free', []), record: { seconds: 40 }, rating: 'fail' }, variant('thu7', 'free'))).toBe(
+      'Оценка: Не смог',
     );
     expect(exerciseMeta({ ...log('A1', 'machine', []), rating: 'hard', difficulty: 7 }, v)).toBe('Еле-еле · сложность 7/10');
   });

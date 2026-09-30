@@ -88,7 +88,6 @@ export const FEEL_LABEL: Record<Feel, string> = {
   hard: 'Тяжело',
 };
 
-// v1 — только история.
 export const RATING_LABEL: Record<Rating, string> = {
   easy: 'Легко',
   normal: 'Нормально',
@@ -117,14 +116,18 @@ export function formatSetPlan(set: SetLog): string {
   return `${set.planWeight ?? 'свой'} × ${reps}`;
 }
 
-// Строка под упражнением: v2 — «Разминка: Легко · сегодня 80 lb», v1 — «Легко · сложность 7/10».
+// Строка под упражнением: v2 — «Разминка: Легко · сегодня 80 lb · Оценка: Нормально», v1 — «Легко · сложность 7/10».
 export function exerciseMeta(log: ExerciseLog, variant: Variant): string {
   if (!log.record) {
     return [log.rating ? RATING_LABEL[log.rating] : 'без оценки', log.difficulty != null ? `сложность ${log.difficulty}/10` : null]
       .filter(Boolean)
       .join(' · ');
   }
-  if (variant.mode === 'time') return '';
-  const today = variant.mode === 'weight' && log.todayWeight != null ? ` · сегодня ${log.todayWeight} lb` : '';
-  return log.feel ? `Разминка: ${FEEL_LABEL[log.feel]}${today}` : 'нет ответа после разминки';
+  const parts: string[] = [];
+  if (variant.mode !== 'time') {
+    const today = variant.mode === 'weight' && log.todayWeight != null ? ` · сегодня ${log.todayWeight} lb` : '';
+    parts.push(log.feel ? `Разминка: ${FEEL_LABEL[log.feel]}${today}` : 'нет ответа после разминки');
+  }
+  parts.push(log.rating ? `Оценка: ${RATING_LABEL[log.rating]}` : 'без оценки');
+  return parts.join(' · ');
 }

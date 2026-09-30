@@ -3,7 +3,7 @@ export type Mode = 'weight' | 'bodyweight' | 'time';
 export type Length = 'long' | 'short';
 export type LegacyTemplateId = 'A' | 'B' | 'C'; // программа v1 — только история
 export type TemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
-export type Rating = 'easy' | 'normal' | 'hard' | 'fail'; // v1 — только история
+export type Rating = 'easy' | 'normal' | 'hard' | 'fail'; // оценка после рабочих подходов
 export type Feel = 'easy' | 'normal' | 'hard'; // «Как пошла разминка?»
 
 export type Plan = {
@@ -70,12 +70,12 @@ export type ExerciseLog = {
   feel?: Feel;
   todayWeight?: number; // вес «сегодня» для всех рабочих подходов
   comment?: string; // «Заметка»
-  rating?: Rating; // v1
+  rating?: Rating; // оценка упражнения, только вручную
   difficulty?: number; // v1
 };
 
-// Секундомер по меткам времени: накоплено + идёт с момента since.
-export type Stopwatch = { ms: number; since?: string };
+// Секундомер по меткам времени: накоплено + идёт с момента since; done — нажато «Завершить».
+export type Stopwatch = { ms: number; since?: string; done?: boolean };
 
 export type SessionWarmup = {
   run: Stopwatch & { distanceMi?: number };

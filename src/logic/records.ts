@@ -103,10 +103,11 @@ export function setTodayWeight(log: ExerciseLog, variant: Variant, weight: numbe
   return replanWork({ ...log, todayWeight: weight }, variant);
 }
 
-// Рост рекорда после тренировки (§2.4). Автоматически рекорд никогда не снижается.
+// Рост рекорда после тренировки (SPEC §5.4) — только при оценке «Легко» или «Нормально».
+// Автоматически рекорд никогда не снижается.
 export function grow(best: Best, log: ExerciseLog, variant: Variant): Best {
   const work = log.sets.filter((s) => s.type === 'work');
-  if (work.length === 0) return best;
+  if (work.length === 0 || (log.rating !== 'easy' && log.rating !== 'normal')) return best;
   if (variant.mode === 'time') {
     if (best.seconds == null || !work.every((s) => (s.factSeconds ?? 0) >= best.seconds!)) return best;
     return { ...best, seconds: best.seconds + PLANK_STEP };

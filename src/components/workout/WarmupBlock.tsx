@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { parseNum } from '../../logic/metrics';
-import { isWarmupItemDone, stopwatchMs, WARMUP_ITEMS, type WarmupId } from '../../logic/session';
+import { isWarmupItemDone, stopwatchMs, stopwatchState, WARMUP_ITEMS, type WarmupId } from '../../logic/session';
 import { colors } from '../../theme';
 import type { Length, SessionWarmup } from '../../types';
 import { Button, Card } from '../ui';
@@ -13,39 +13,53 @@ type Props = {
   warmup: SessionWarmup;
   paused: boolean;
   onStart: (id: WarmupId) => void;
-  onStop: (id: WarmupId) => void;
+  onPause: (id: WarmupId) => void;
+  onFinish: (id: WarmupId) => void;
+  onReset: (id: WarmupId) => void;
   onDistance: (mi: number | undefined) => void;
 };
 
-// Разминка (SPEC_v2 §1a): пробежка и суставная разминка, у каждой свой секундомер.
-export function WarmupBlock({ length, warmup, paused, onStart, onStop, onDistance }: Props) {
+// Разминка (SPEC §3.2): пробежка и суставная разминка, у каждой свой секундомер.
+export function WarmupBlock({ length, warmup, paused, onStart, onPause, onFinish, onReset, onDistance }: Props) {
   const running = WARMUP_ITEMS.some((i) => warmup[i.id].since);
   const now = useNow(running ? 250 : 60_000);
-  const complete = WARMUP_ITEMS.every((i) => isWarmupItemDone(warmup[i.id], now));
+  const complete = WARMUP_ITEMS.every((i) => isWarmupItemDone(warmup[i.id]));
 
   return (
     <Card style={[styles.card, !complete && styles.pending]}>
       <Text style={styles.title}>Разминка</Text>
       {WARMUP_ITEMS.map((item) => {
         const sw = warmup[item.id];
-        const ms = stopwatchMs(sw, now);
+        const state = stopwatchState(sw);
+        const reset = () =>
+          Alert.alert('Сбросить?', item.id === 'run' ? 'Время и дистанция будут обнулены.' : 'Время будет обнулено.', [
+            { text: 'Отмена', style: 'cancel' },
+            { text: 'Сбросить', style: 'destructive', onPress: () => onReset(item.id) },
+          ]);
         return (
-          <View key={item.id} style={[styles.item, !isWarmupItemDone(sw, now) && styles.pending]}>
-            <Text style={styles.name}>{item.title}</Text>
-            <Text style={styles.hint}>{item.hint(length)}</Text>
+          <View key={item.id} style={[styles.item, state !== 'done' && styles.pending]}>
             <View style={styles.row}>
-              <Text style={styles.clock}>{formatDuration(ms)}</Text>
-              {sw.since ? (
-                <Button title="Стоп" variant="secondary" style={styles.button} onPress={() => onStop(item.id)} />
-              ) : (
-                <Button title="Старт" style={styles.button} disabled={paused} onPress={() => onStart(item.id)} />
-              )}
+              <Text style={[styles.name, styles.flex]}>{item.title}</Text>
+              {state === 'done' && <Text style={styles.badge}>Выполнено</Text>}
             </View>
+            <Text style={styles.hint}>{item.hint(length)}</Text>
+            <Text style={[styles.clock, state === 'done' && styles.clockDone]}>{formatDuration(stopwatchMs(sw, now))}</Text>
+            {state === 'idle' && <Button title="Старт" disabled={paused} onPress={() => onStart(item.id)} />}
+            {state === 'running' && <Button title="Пауза" variant="secondary" onPress={() => onPause(item.id)} />}
+            {state === 'paused' && <Button title="Продолжить" disabled={paused} onPress={() => onStart(item.id)} />}
+            {state !== 'idle' && (
+              <View style={styles.row}>
+                {state !== 'done' && (
+                  <Button title="Завершить" variant="secondary" style={styles.flex} onPress={() => onFinish(item.id)} />
+                )}
+                <Button title="Сброс" variant="danger" style={styles.flex} onPress={reset} />
+              </View>
+            )}
             {item.id === 'run' && <DistanceField value={warmup.run.distanceMi} onChange={onDistance} />}
           </View>
         );
       })}
-      {paused && <Text style={styles.hint}>Тренировка на паузе — секундомеры остановлены.</Text>}
+      {paused && <Text style={styles.hint}>Тренировка на паузе — секундомеры тоже.</Text>}
     </Card>
   );
 }
@@ -83,9 +97,20 @@ const styles = StyleSheet.create({
   item: { gap: 8, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   name: { fontSize: 17, fontWeight: '700', color: colors.text },
   hint: { fontSize: 14, color: colors.muted, lineHeight: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  clock: { flex: 1, fontSize: 34, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
-  button: { minWidth: 110 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  flex: { flex: 1 },
+  clock: { fontSize: 34, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  clockDone: { color: colors.muted },
+  badge: {
+    backgroundColor: colors.button,
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
   label: { flex: 1, fontSize: 15, color: colors.text },
   input: {
     width: 90,

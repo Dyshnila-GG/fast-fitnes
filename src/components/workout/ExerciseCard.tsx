@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getExercise, getVariant } from '../../data/program';
-import { formatPlan, formatRest } from '../../logic/format';
+import { formatPlan, formatRest, RATING_LABEL } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';
 import { colors } from '../../theme';
 import { needsFeel } from '../../logic/records';
-import type { ExerciseLog, Feel, Kind, SetLog } from '../../types';
+import type { ExerciseLog, Feel, Kind, Rating, SetLog } from '../../types';
 import { Button, Card, Segmented } from '../ui';
 import { ExerciseGif } from './ExerciseGif';
 import { GifModal } from './GifModal';
 import { FeelBlock } from './FeelBlock';
 import { NoteField } from './NoteField';
+import { RatingBlock } from './RatingBlock';
 import { SetsTable } from './SetsTable';
 
 const KINDS: { value: Kind; label: string }[] = [
@@ -29,12 +30,14 @@ type Props = {
   onFeel: (feel: Feel) => void;
   onToday: (weight: number) => void;
   onNote: (text: string | undefined) => void;
+  onRate: (rating: Rating) => void;
   onRest: () => void;
   prevNote?: string;
+  prevRating?: Rating;
 };
 
 export function ExerciseCard(props: Props) {
-  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRest, prevNote } = props;
+  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating } = props;
   const ex = getExercise(log.exerciseId);
   const variant = getVariant(ex, log.variant);
   const work = log.sets.filter((s) => s.type === 'work');
@@ -49,6 +52,7 @@ export function ExerciseCard(props: Props) {
         {complete ? ' · готово' : ''}
       </Text>
       <Text style={styles.name}>{variant.name}</Text>
+      {prevRating ? <Text style={styles.prevNote}>В прошлый раз: {RATING_LABEL[prevRating]}</Text> : null}
       {prevNote ? <Text style={styles.prevNote}>Прошлая заметка: {prevNote}</Text> : null}
       <Text style={styles.meta}>
         {variant.equipment} ·{' '}
@@ -79,6 +83,7 @@ export function ExerciseCard(props: Props) {
       <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} />
       <Text style={styles.meta}>Оставляйте 1–2 повтора в запасе, не до отказа.</Text>
       <Button title={`Отдых ${formatRest(ex.restSec)}`} onPress={onRest} />
+      <RatingBlock rating={log.rating} onChange={onRate} />
       <NoteField value={log.comment} onChange={onNote} />
       <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} />
     </Card>

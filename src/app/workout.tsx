@@ -18,14 +18,17 @@ import {
   finishActive,
   hasFacts,
   lastNote,
+  lastRating,
   removeSet,
   setRunDistance,
   shiftRest,
   skippedItems,
   startRest,
+  finishStopwatch,
+  pauseStopwatch,
+  resetStopwatch,
   startStopwatch,
   stopRest,
-  stopStopwatch,
   togglePause,
   updateSet,
   warmupOf,
@@ -120,7 +123,9 @@ export default function WorkoutScreen() {
               warmup={warmupOf(session)}
               paused={!!session.pausedAt}
               onStart={(id) => updateSession((s) => startStopwatch(s, id))}
-              onStop={(id) => updateSession((s) => stopStopwatch(s, id))}
+              onPause={(id) => updateSession((s) => pauseStopwatch(s, id))}
+              onFinish={(id) => updateSession((s) => finishStopwatch(s, id))}
+              onReset={(id) => updateSession((s) => resetStopwatch(s, id))}
               onDistance={(mi) => updateSession((s) => setRunDistance(s, mi))}
             />
             {session.exercises.map((log, i) => (
@@ -136,6 +141,8 @@ export default function WorkoutScreen() {
                 onFeel={(feel) => updateLog(i, (l) => applyFeel(l, variantOf(l), feel))}
                 onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w))}
                 onNote={(comment) => updateLog(i, (l) => ({ ...l, comment }))}
+                onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
+                prevRating={lastRating(data.sessions, variantOf(log).name)}
                 prevNote={lastNote(data.sessions, variantOf(log).name)}
                 onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
               />

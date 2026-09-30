@@ -1,5 +1,5 @@
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
-import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, Variant } from '../types';
+import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, Variant } from '../types';
 import { newId } from './id';
 import { getBest, grow, needsFeel, warmupSets, workSet } from './records';
 
@@ -97,25 +97,43 @@ export function stopwatchMs(sw: Stopwatch, now = Date.now()): number {
   return sw.ms + (sw.since ? Math.max(0, now - ms(sw.since)) : 0);
 }
 
-// Пункт разминки выполнен, если секундомер набрал хотя бы секунду.
-export function isWarmupItemDone(sw: Stopwatch, now = Date.now()): boolean {
-  return stopwatchMs(sw, now) >= 1000;
+export type StopwatchState = 'idle' | 'running' | 'paused' | 'done';
+
+export function stopwatchState(sw: Stopwatch): StopwatchState {
+  if (sw.done) return 'done';
+  if (sw.since) return 'running';
+  return sw.ms > 0 ? 'paused' : 'idle';
 }
 
-const stopSw = <T extends Stopwatch>(sw: T, now: number): T => ({ ...sw, ms: stopwatchMs(sw, now), since: undefined });
+// Пункт разминки выполнен только после «Завершить».
+export function isWarmupItemDone(sw: Stopwatch): boolean {
+  return !!sw.done;
+}
+
+const pauseSw = <T extends Stopwatch>(sw: T, now: number): T => ({ ...sw, ms: stopwatchMs(sw, now), since: undefined });
 
 function patchWarmup(s: Session, id: WarmupId, fn: (sw: SessionWarmup[WarmupId]) => SessionWarmup[WarmupId]): Session {
   const w = warmupOf(s);
   return { ...s, warmup: { ...w, [id]: fn(w[id]) } };
 }
 
-// «Старт» продолжает отсчёт — время суммируется.
+// «Старт» / «Продолжить» — с того же времени.
 export function startStopwatch(s: Session, id: WarmupId, now = Date.now()): Session {
-  return patchWarmup(s, id, (sw) => (sw.since ? sw : { ...sw, since: new Date(now).toISOString() }));
+  return patchWarmup(s, id, (sw) => (sw.since || sw.done ? sw : { ...sw, since: new Date(now).toISOString() }));
 }
 
-export function stopStopwatch(s: Session, id: WarmupId, now = Date.now()): Session {
-  return patchWarmup(s, id, (sw) => stopSw(sw, now));
+export function pauseStopwatch(s: Session, id: WarmupId, now = Date.now()): Session {
+  return patchWarmup(s, id, (sw) => pauseSw(sw, now));
+}
+
+// «Завершить» — время зафиксировано, пункт выполнен.
+export function finishStopwatch(s: Session, id: WarmupId, now = Date.now()): Session {
+  return patchWarmup(s, id, (sw) => ({ ...pauseSw(sw, now), done: true }));
+}
+
+// «Сброс» — время (и дистанция у пробежки) обнуляются, пункт снова не выполнен.
+export function resetStopwatch(s: Session, id: WarmupId): Session {
+  return patchWarmup(s, id, () => ({ ms: 0 }));
 }
 
 export function setRunDistance(s: Session, distanceMi: number | undefined): Session {
@@ -123,14 +141,14 @@ export function setRunDistance(s: Session, distanceMi: number | undefined): Sess
   return { ...s, warmup: { ...w, run: { ...w.run, distanceMi } } };
 }
 
-function stopAllStopwatches(s: Session, now: number): Session {
+function pauseAllStopwatches(s: Session, now: number): Session {
   if (!s.warmup) return s;
-  return { ...s, warmup: { run: stopSw(s.warmup.run, now), joints: stopSw(s.warmup.joints, now) } };
+  return { ...s, warmup: { run: pauseSw(s.warmup.run, now), joints: pauseSw(s.warmup.joints, now) } };
 }
 
-// Пауза тренировки останавливает и идущий секундомер разминки.
+// Пауза тренировки ставит на паузу и идущий секундомер разминки.
 export function togglePause(s: Session, now = new Date()): Session {
-  if (!s.pausedAt) return { ...stopAllStopwatches(s, now.getTime()), pausedAt: now.toISOString() };
+  if (!s.pausedAt) return { ...pauseAllStopwatches(s, now.getTime()), pausedAt: now.toISOString() };
   return { ...s, pausedMs: pausedTotalMs(s, now.getTime()), pausedAt: undefined };
 }
 
@@ -200,10 +218,10 @@ export function hasFacts(log: ExerciseLog): boolean {
 
 const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
 
-// Заполнено: есть ответ после разминки (кроме планки) и факты всех рабочих подходов.
+// Заполнено: есть ответ после разминки (кроме планки), факты всех рабочих подходов и оценка.
 export function isExerciseComplete(log: ExerciseLog): boolean {
   const variant = variantOf(log);
-  return (!needsFeel(variant) || log.feel != null) && log.sets.every((s) => s.type !== 'work' || s.done);
+  return (!needsFeel(variant) || log.feel != null) && log.rating != null && log.sets.every((s) => s.type !== 'work' || s.done);
 }
 
 // Номер текущего упражнения: первое незавершённое (иначе последнее).
@@ -212,17 +230,18 @@ export function currentExerciseIndex(s: Session): number {
   return i === -1 ? s.exercises.length - 1 : i;
 }
 
-export function skippedItems(s: Session, now = Date.now()): string[] {
+export function skippedItems(s: Session): string[] {
   const out: string[] = [];
   const warmup = warmupOf(s);
   for (const item of WARMUP_ITEMS) {
-    if (!isWarmupItemDone(warmup[item.id], now)) out.push(`Разминка: ${item.label}`);
+    if (!isWarmupItemDone(warmup[item.id])) out.push(`Разминка: ${item.label}`);
   }
   for (const log of s.exercises) {
     const variant = variantOf(log);
     if (needsFeel(variant) && !log.feel) out.push(`${variant.name}: нет ответа после разминки`);
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
     if (empty > 0) out.push(`${variant.name}: не заполнены рабочие подходы (${empty})`);
+    if (!log.rating) out.push(`${variant.name}: нет оценки`);
   }
   return out;
 }
@@ -231,7 +250,7 @@ export function finishActive(d: AppData, now = new Date()): AppData {
   const s = d.activeSession;
   if (!s) return d;
   const done: Session = {
-    ...stopRest(stopAllStopwatches(s, now.getTime())),
+    ...stopRest(pauseAllStopwatches(s, now.getTime())),
     pausedMs: pausedTotalMs(s, now.getTime()),
     pausedAt: undefined,
     finishedAt: now.toISOString(),
@@ -257,6 +276,17 @@ export function lastNote(sessions: Session[], variantName: string, exceptId?: st
   for (const s of done) {
     for (const log of s.exercises) {
       if (log.comment && variantOf(log).name === variantName) return log.comment;
+    }
+  }
+  return undefined;
+}
+
+// «В прошлый раз: …» — последняя оценка этого варианта (в т.ч. из тренировок v1).
+export function lastRating(sessions: Session[], variantName: string, exceptId?: string): Rating | undefined {
+  const done = sessions.filter((s) => s.finishedAt && s.id !== exceptId).sort((a, b) => (a.finishedAt! < b.finishedAt! ? 1 : -1));
+  for (const s of done) {
+    for (const log of s.exercises) {
+      if (log.rating && variantOf(log).name === variantName) return log.rating;
     }
   }
   return undefined;

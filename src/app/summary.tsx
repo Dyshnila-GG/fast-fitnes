@@ -69,7 +69,7 @@ export default function SummaryScreen() {
           <Card style={styles.card}>
             <Text style={styles.section}>РЕКОРДЫ</Text>
             <Text style={styles.hint}>
-              Растут, если во всех рабочих подходах — верх диапазона с весом не ниже рекорда. Можно поправить вручную.
+              Растут, если во всех рабочих подходах — верх диапазона с весом не ниже рекорда и оценка «Легко» или «Нормально». Можно поправить вручную.
             </Text>
             {session.exercises.map((log) => (
               <RecordRow

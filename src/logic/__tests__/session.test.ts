@@ -1,16 +1,21 @@
 import { describe, expect, it } from '@jest/globals';
 import { getExercise, getVariant } from '../../data/program';
 import { defaultData } from '../../store/defaults';
-import type { AppData, Feel, Session, TemplateId } from '../../types';
+import type { AppData, Feel, Rating, Session, TemplateId } from '../../types';
 import { applyFeel } from '../records';
 import {
   buildSession,
   finishActive,
+  finishStopwatch,
   lastNote,
+  lastRating,
+  pauseStopwatch,
+  resetStopwatch,
+  setRunDistance,
   skippedItems,
   startStopwatch,
-  stopStopwatch,
   stopwatchMs,
+  stopwatchState,
   togglePause,
 } from '../session';
 
@@ -21,15 +26,16 @@ function started(templateId: TemplateId = 'tue', length: 'long' | 'short' = 'lon
   return { ...d, activeSession: buildSession(d, templateId, length, T0) };
 }
 
-// Разминка сделана, ответ после разминки дан, все подходы заполнены по плану (повторы — верх диапазона).
-function completeAll(s: Session, feel: Feel = 'normal'): Session {
+// Разминка завершена, ответ после разминки и оценка даны, все подходы заполнены по плану (повторы — верх диапазона).
+function completeAll(s: Session, feel: Feel = 'normal', rating: Rating = 'normal'): Session {
   return {
     ...s,
-    warmup: { run: { ms: 360_000, distanceMi: 0.5 }, joints: { ms: 180_000 } },
+    warmup: { run: { ms: 360_000, distanceMi: 0.5, done: true }, joints: { ms: 180_000, done: true } },
     exercises: s.exercises.map((l) => {
       const withFeel = applyFeel(l, getVariant(getExercise(l.exerciseId), l.variant), feel);
       return {
         ...withFeel,
+        rating,
         sets: withFeel.sets.map((x) => ({
           ...x,
           factWeight: x.planWeight ?? 0,
@@ -62,22 +68,45 @@ describe('новая тренировка', () => {
 });
 
 describe('секундомеры разминки', () => {
-  it('Старт / Стоп, время суммируется, считается по меткам времени', () => {
+  const t = T0.getTime();
+
+  it('Старт → Пауза → Продолжить с того же времени → Завершить', () => {
     let s = started().activeSession!;
-    const t = T0.getTime();
+    expect(stopwatchState(s.warmup!.run)).toBe('idle');
     s = startStopwatch(s, 'run', t);
-    expect(stopwatchMs(s.warmup!.run, t + 90_000)).toBe(90_000); // идёт, в т.ч. после перезапуска
-    s = stopStopwatch(s, 'run', t + 100_000);
+    expect(stopwatchState(s.warmup!.run)).toBe('running');
+    expect(stopwatchMs(s.warmup!.run, t + 90_000)).toBe(90_000); // по меткам времени — переживает перезапуск
+    s = pauseStopwatch(s, 'run', t + 100_000);
+    expect(stopwatchState(s.warmup!.run)).toBe('paused');
     expect(stopwatchMs(s.warmup!.run, t + 500_000)).toBe(100_000);
     s = startStopwatch(s, 'run', t + 200_000);
-    s = stopStopwatch(s, 'run', t + 230_000);
-    expect(s.warmup!.run.ms).toBe(130_000);
+    s = finishStopwatch(s, 'run', t + 230_000);
+    expect(s.warmup!.run).toEqual({ ms: 130_000, since: undefined, done: true });
+    expect(stopwatchState(s.warmup!.run)).toBe('done');
+    expect(startStopwatch(s, 'run', t + 300_000).warmup!.run.since).toBeUndefined(); // завершённый не запускается
   });
 
-  it('пауза тренировки останавливает идущий секундомер', () => {
+  it('выполнен только после «Завершить» (в т.ч. с паузы)', () => {
+    let s = pauseStopwatch(startStopwatch(started().activeSession!, 'joints', t), 'joints', t + 60_000);
+    expect(skippedItems(s)).toContain('Разминка: суставная разминка');
+    s = finishStopwatch(s, 'joints', t + 90_000);
+    expect(s.warmup!.joints.ms).toBe(60_000);
+    expect(skippedItems(s)).not.toContain('Разминка: суставная разминка');
+  });
+
+  it('«Сброс» обнуляет время и дистанцию, пункт снова не выполнен', () => {
+    let s = finishStopwatch(startStopwatch(started().activeSession!, 'run', t), 'run', t + 60_000);
+    s = setRunDistance(s, 0.52);
+    s = resetStopwatch(s, 'run');
+    expect(s.warmup!.run).toEqual({ ms: 0 });
+    expect(stopwatchState(s.warmup!.run)).toBe('idle');
+    expect(skippedItems(s)).toContain('Разминка: пробежка');
+  });
+
+  it('пауза тренировки ставит идущий секундомер на паузу', () => {
     let s = startStopwatch(started().activeSession!, 'joints', at(1).getTime());
     s = togglePause(s, at(3));
-    expect(s.warmup!.joints).toEqual({ ms: 120_000, since: undefined });
+    expect(stopwatchState(s.warmup!.joints)).toBe('paused');
     expect(stopwatchMs(s.warmup!.joints, at(10).getTime())).toBe(120_000);
   });
 });
@@ -89,7 +118,8 @@ describe('сводка пропусков', () => {
     expect(items).toContain('Разминка: суставная разминка');
     expect(items).toContain('Жим лёжа в Смите: нет ответа после разминки');
     expect(items).toContain('Жим лёжа в Смите: не заполнены рабочие подходы (3)');
-    expect(items).toHaveLength(2 + 4 * 2);
+    expect(items).toContain('Жим лёжа в Смите: нет оценки');
+    expect(items).toHaveLength(2 + 4 * 3);
   });
 
   it('всё заполнено — пропусков нет; разминочные подходы не обязательны', () => {
@@ -99,6 +129,18 @@ describe('сводка пропусков', () => {
       exercises: s.exercises.map((l) => ({ ...l, sets: l.sets.map((x) => (x.type === 'warmup' ? { ...x, done: false } : x)) })),
     };
     expect(skippedItems(noWarmupFacts)).toEqual([]);
+  });
+
+  it('упражнение без оценки (в т.ч. планка) — пропуск', () => {
+    const s = completeAll(started('thu').activeSession!);
+    const plank = { ...s.exercises[6], rating: undefined };
+    expect(skippedItems({ ...s, exercises: [...s.exercises.slice(0, 6), plank] })).toEqual(['Планка: нет оценки']);
+  });
+
+  it('незавершённый секундомер разминки — пропуск, даже если время идёт', () => {
+    const s = completeAll(started('thu').activeSession!);
+    const w = { ...s, warmup: { ...s.warmup!, run: { ms: 300_000 } } };
+    expect(skippedItems(w)).toEqual(['Разминка: пробежка']);
   });
 
   it('планке ответ после разминки не нужен', () => {
@@ -146,6 +188,28 @@ describe('завершение тренировки', () => {
     const raise = sat.exercises[5];
     expect(raise.record).toEqual({ weight: 12.5 });
     expect(raise.sets.filter((x) => x.type === 'work')).toHaveLength(2);
+  });
+
+  it('«Еле-еле» и «Не смог» — рекорд не растёт, даже если всё на верху диапазона', () => {
+    for (const rating of ['hard', 'fail'] as const) {
+      const d = started('tue', 'short');
+      const out = finishActive({ ...d, activeSession: completeAll(d.activeSession!, 'normal', rating) }, at(50));
+      expect(out.records['Жим лёжа в Смите']).toEqual({ weight: 75 });
+    }
+    const d = started('tue', 'short');
+    const easy = finishActive({ ...d, activeSession: completeAll(d.activeSession!, 'normal', 'easy') }, at(50));
+    expect(easy.records['Жим лёжа в Смите']).toEqual({ weight: 80 });
+  });
+
+  it('оценка сохраняется в тренировке; «В прошлый раз» — последняя оценка варианта', () => {
+    const d = started('tue');
+    const out = finishActive({ ...d, activeSession: completeAll(d.activeSession!, 'normal', 'hard') }, at(60));
+    expect(out.sessions[0].exercises[0].rating).toBe('hard');
+    const later = { ...completeAll(buildSession(out, 'tue', 'long', at(100)), 'normal', 'easy'), finishedAt: at(160).toISOString() };
+    later.exercises[0] = { ...later.exercises[0], rating: undefined };
+    expect(lastRating([...out.sessions, later], 'Жим лёжа в Смите')).toBe('hard'); // без оценки — пропускается
+    expect(lastRating([...out.sessions, later], 'Жим гантелей на наклонной')).toBe('easy');
+    expect(lastRating(out.sessions, 'Жим гантелей лёжа')).toBeUndefined();
   });
 
   it('тренировка v1 рекорды не меняет', () => {
