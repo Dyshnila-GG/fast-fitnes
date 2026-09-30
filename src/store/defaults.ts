@@ -1,4 +1,8 @@
-import type { AppData } from '../types';
+import type { AppData, FoodData } from '../types';
+
+export function defaultFood(): FoodData {
+  return { eaten: {}, swaps: {}, prep: {}, photos: {}, times: { gym: {}, rest: {} } };
+}
 
 export function defaultData(): AppData {
   return {
@@ -13,5 +17,6 @@ export function defaultData(): AppData {
     sessions: [],
     bodyWeight: [],
     measurements: [],
+    food: defaultFood(),
   };
 }

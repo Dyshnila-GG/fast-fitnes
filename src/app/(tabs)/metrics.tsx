@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { NavCard } from '../../components/form';
 import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/format';
-import { finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
+import { foodStats, formatNum } from '../../logic/food';
+import { dayKey, finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
 
@@ -15,6 +16,7 @@ export default function MetricsScreen() {
   const lastMeasure = latestFirst(data.measurements)[0];
   const sessions = finishedSessions(data.sessions);
   const progress = progressItems(data.sessions);
+  const food = foodStats(data.food, dayKey());
 
   const weightSub = lastWeight
     ? `${lastWeight.value} lb · ${formatDay(lastWeight.date)} · ${signed(round(lastWeight.value - profile.startWeight))} lb от стартового`
@@ -37,6 +39,11 @@ export default function MetricsScreen() {
         title="Прогресс по упражнению"
         subtitle={progress.length > 0 ? `Упражнений с результатами: ${progress.length}` : 'Появится после первой тренировки'}
         onPress={() => router.push('/progress')}
+      />
+      <NavCard
+        title="Еда"
+        subtitle={`7 дней: отмечено ${food.eaten} из ${food.total} приёмов · в среднем ${formatNum(food.avgKcal)} ккал и ${food.avgProtein} г белка в день`}
+        onPress={() => router.push('/food')}
       />
       <NavCard
         title="Профиль"

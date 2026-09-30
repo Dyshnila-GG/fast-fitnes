@@ -1,3 +1,5 @@
+import type { DishId } from './data/food';
+
 export type Kind = 'machine' | 'free';
 export type Mode = 'weight' | 'bodyweight' | 'time';
 export type Length = 'long' | 'short';
@@ -109,6 +111,15 @@ export type MeasurementEntry = {
   calf?: number;
 };
 
+// Еда (SPEC_v3): ключи — локальный день «YYYY-MM-DD» и id приёма из SCHEDULE.
+export type FoodData = {
+  eaten: Record<string, string[]>; // отмеченные приёмы
+  swaps: Record<string, Record<string, DishId>>; // замена блюда приёма на эту дату
+  prep: Record<string, string[]>; // отмеченные пункты заготовки
+  photos: Partial<Record<DishId, string>>; // своё фото блюда — путь к файлу
+  times: { gym: Record<string, string>; rest: Record<string, string> }; // своё время приёмов «HH:MM»
+};
+
 export type AppData = {
   version: 2;
   profile: Profile;
@@ -121,4 +132,5 @@ export type AppData = {
   sessions: Session[];
   bodyWeight: BodyWeightEntry[];
   measurements: MeasurementEntry[];
+  food: FoodData;
 };

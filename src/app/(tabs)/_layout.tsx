@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { Text } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, Text } from 'react-native';
 import { colors } from '../../theme';
 
 const icon = (glyph: string) => ({ focused }: { focused: boolean }) => (
@@ -21,6 +22,18 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Тренировки', tabBarIcon: icon('🏋') }} />
+      <Tabs.Screen
+        name="food"
+        options={{
+          title: 'Еда',
+          tabBarIcon: icon('🍽'),
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/food-settings')} hitSlop={10} style={{ paddingHorizontal: 16 }}>
+              <Text style={{ fontSize: 15, color: colors.text }}>Время</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <Tabs.Screen name="metrics" options={{ title: 'Метрики', tabBarIcon: icon('📈') }} />
     </Tabs>
   );

@@ -7,7 +7,8 @@ import { colors, gap } from '../theme';
 import type { AppData } from '../types';
 
 const describe = (d: AppData) =>
-  `тренировок: ${finishedSessions(d.sessions).length}, записей веса: ${d.bodyWeight.length}, замеров: ${d.measurements.length}`;
+  `тренировок: ${finishedSessions(d.sessions).length}, записей веса: ${d.bodyWeight.length}, замеров: ${d.measurements.length}, ` +
+  `дней с отметками еды: ${Object.keys(d.food.eaten).length}`;
 
 export default function DataScreen() {
   const { data, update } = useStore();

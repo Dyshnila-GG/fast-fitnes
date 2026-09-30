@@ -1,5 +1,7 @@
 import type { Best, ExerciseLog, Feel, Plan, Rating, Session, SetLog, Variant } from '../types';
 
+export const WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
 export function formatDate(iso: string): string {

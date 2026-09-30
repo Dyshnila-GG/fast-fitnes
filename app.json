@@ -32,7 +32,15 @@
         }
       ],
       "expo-asset",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GymLog использует фото, чтобы заменить картинку блюда на ваше.",
+          "cameraPermission": "GymLog использует камеру, чтобы сфотографировать блюдо.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "scheme": "gymlog",
     "backgroundColor": "#000000"

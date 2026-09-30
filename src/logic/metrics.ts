@@ -7,22 +7,9 @@ import { newId } from './id';
 // Точка графика: x — время (мс), y — значение.
 export type Point = { x: number; y: number; date: string };
 
-// ---- Даты записей: локальный день «YYYY-MM-DD» ----
+import { dayDate } from './dates';
 
-export function dayKey(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-export function dayDate(day: string): Date {
-  const [y, m, d] = day.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-export function shiftDay(day: string, delta: number): string {
-  const d = dayDate(day);
-  d.setDate(d.getDate() + delta);
-  return dayKey(d);
-}
+export { dayDate, dayKey, shiftDay } from './dates';
 
 // «161,3» → 161.3; пусто или не число → undefined.
 export function parseNum(text: string): number | undefined {
@@ -183,6 +170,7 @@ export function parseImport(text: string): ImportResult {
       sessions: sessions as Session[],
       bodyWeight: bodyWeight as BodyWeightEntry[],
       measurements: measurements as MeasurementEntry[],
+      food: raw.food as AppData['food'], // проверяется в migrateData
       // Незавершённая тренировка и открытый итог не переносятся.
       activeSession: null,
       summaryId: null,

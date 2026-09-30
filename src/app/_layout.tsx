@@ -35,6 +35,9 @@ function RootStack() {
         <Stack.Screen name="progress" options={{ title: 'Прогресс по упражнению' }} />
         <Stack.Screen name="profile" options={{ title: 'Профиль' }} />
         <Stack.Screen name="data" options={{ title: 'Экспорт / импорт' }} />
+        <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
+        <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
+        <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
