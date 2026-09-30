@@ -4,6 +4,7 @@ import { dayDate, dayKey, shiftDay } from './dates';
 import { formatBest } from './format';
 import { finishedSessions } from './metrics';
 import { getBest, startBest } from './records';
+import { tonnage } from './tonnage';
 
 // Тип дня на «Главной»: Вт/Чт/Сб — зал, Ср/Пт — пробежка, Пн/Вс — отдых.
 export type HomeDayType = 'gym' | 'run' | 'rest';
@@ -77,7 +78,8 @@ export function weekCounts(data: AppData, today: string): WeekCounts {
   const from = weekStart(today);
   const to = shiftDay(from, 6);
   const inWeek = (day: string) => day >= from && day <= to;
-  const workouts = finishedSessions(data.sessions).filter((s) => !isLegacyTemplate(s.templateId) && inWeek(sessionDay(s))).length;
+  // Все завершённые тренировки недели, включая старые A/B/C.
+  const workouts = finishedSessions(data.sessions).filter((s) => inWeek(sessionDay(s))).length;
   const runs = Object.keys(data.runs).filter(inWeek).length;
   return { workouts, runs };
 }
@@ -91,4 +93,66 @@ export function weightTrend(entries: BodyWeightEntry[], today: string): { value:
   const base = [...sorted].reverse().find((e) => e.date <= border);
   const change = base ? Math.round((last.value - base.value) * 10) / 10 : undefined;
   return { value: last.value, date: last.date, change };
+}
+
+// ---- Плитки «Главной» ----
+
+const WEEKDAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+// «Сегодня» / «Завтра» / «Сб»
+export function dayLabel(day: string, today: string): string {
+  if (day === today) return 'Сегодня';
+  if (day === shiftDay(today, 1)) return 'Завтра';
+  return WEEKDAY_SHORT[dayDate(day).getDay()];
+}
+
+const plural = (n: number, one: string, few: string, many: string) =>
+  n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many;
+
+// «сегодня» / «вчера» / «3 дня назад»
+export function daysAgo(day: string, today: string): string {
+  const n = Math.round((dayDate(today).getTime() - dayDate(day).getTime()) / 86_400_000);
+  if (n <= 0) return 'сегодня';
+  if (n === 1) return 'вчера';
+  return `${n} ${plural(n, 'день', 'дня', 'дней')} назад`;
+}
+
+// Суммарный тоннаж тренировок за последние 7 дней (включая сегодня), lb.
+export function volume7(data: AppData, today: string): number {
+  const from = shiftDay(today, -6);
+  const total = finishedSessions(data.sessions)
+    .filter((s) => {
+      const day = sessionDay(s);
+      return day >= from && day <= today;
+    })
+    .reduce((n, s) => n + tonnage(s), 0);
+  return Math.round(total);
+}
+
+// Точечный календарь активности: столбцы — недели (пн–вс), последние `weeks` недель до текущей.
+export type ActivityDay = { day: string; workout: boolean; run: boolean; future: boolean };
+export type ActivityGrid = { columns: ActivityDay[][]; months: (string | null)[] };
+
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+export function activityGrid(data: AppData, today: string, weeks = 13): ActivityGrid {
+  const workoutDays = new Set(finishedSessions(data.sessions).map(sessionDay));
+  const start = shiftDay(weekStart(today), -7 * (weeks - 1));
+  const columns: ActivityDay[][] = [];
+  const months: (string | null)[] = [];
+  let lastMonth = -1;
+  for (let w = 0; w < weeks; w++) {
+    const col: ActivityDay[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = shiftDay(start, w * 7 + i);
+      col.push({ day, workout: workoutDays.has(day), run: data.runs[day] != null, future: day > today });
+    }
+    // Подпись месяца — над неделей, где он начинается (и над первой неделей).
+    const first = col.find((c) => c.day.endsWith('-01'));
+    const label = first ? dayDate(first.day).getMonth() : w === 0 ? dayDate(col[0].day).getMonth() : -1;
+    months.push(label >= 0 && label !== lastMonth ? MONTHS_SHORT[label] : null);
+    if (label >= 0) lastMonth = label;
+    columns.push(col);
+  }
+  return { columns, months };
 }

@@ -120,8 +120,9 @@ export type FoodData = {
   times: { gym: Record<string, string>; rest: Record<string, string> }; // своё время приёмов «HH:MM»
 };
 
-// Сон (SPEC_v3 §9): ключ — день пробуждения «YYYY-MM-DD»; «лёг» может быть накануне до полуночи.
-export type SleepEntry = { bed: string; wake: string; quality: number }; // «HH:MM», качество 1–5
+// Сон (SPEC_v3_1 §7, под Garmin): ключ — день пробуждения «YYYY-MM-DD».
+// Главное — длительность и оценка Garmin 0–100; «лёг/встал» — необязательно; quality 1–5 — только у старых записей.
+export type SleepEntry = { minutes: number; garmin?: number; bed?: string; wake?: string; quality?: number };
 // Пробежка (Ср/Пт): ключ — день «YYYY-MM-DD».
 export type RunEntry = { minutes: number; distanceMi?: number };
 

@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Segmented } from '../../components/ui';
-import { getVariant, PROGRAM } from '../../data/program';
-import { formatDate, formatPreview } from '../../logic/format';
-import { getBest } from '../../logic/records';
+import { LENGTHS, WorkoutPreview } from '../../components/workout/WorkoutPreview';
+import { PROGRAM } from '../../data/program';
+import { formatDate } from '../../logic/format';
 import { highlightedTemplate } from '../../logic/schedule';
-import { chosenKind, lastFinished, sessionExercises, SHORT_EXERCISES, setLengthChoice, SHORT_MAX_WORK_SETS, startWorkout, workSetCount } from '../../logic/session';
+import { lastFinished, SHORT_EXERCISES, setLengthChoice, SHORT_MAX_WORK_SETS, startWorkout } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
-import type { AppData, Length, TemplateId } from '../../types';
-
-const LENGTHS: { value: Length; label: string }[] = [
-  { value: 'long', label: 'Длинная' },
-  { value: 'short', label: 'Короткая' },
-];
+import type { Length, TemplateId } from '../../types';
 
 export default function WorkoutsScreen() {
   const { data, update } = useStore();
@@ -52,31 +47,12 @@ export default function WorkoutsScreen() {
               small
               onPress={() => setOpen(open === t.id ? null : t.id)}
             />
-            {open === t.id && <Preview data={data} id={t.id} length={length} />}
+            {open === t.id && <WorkoutPreview data={data} id={t.id} length={length} />}
             <Button title="Начать" onPress={() => start(t.id)} />
           </Card>
         );
       })}
     </ScrollView>
-  );
-}
-
-// Предпросмотр: упражнения выбранной версии — вариант, подходы × диапазон × рекорд.
-function Preview({ data, id, length }: { data: AppData; id: TemplateId; length: Length }) {
-  return (
-    <View style={styles.preview}>
-      {sessionExercises(id, length).map((e, i) => {
-        const variant = getVariant(e, chosenKind(data, e));
-        return (
-          <View key={e.id} style={styles.previewRow}>
-            <Text style={styles.previewName}>
-              {i + 1}. {variant.name}
-            </Text>
-            <Text style={styles.previewPlan}>{formatPreview(variant, getBest(data, variant), workSetCount(variant, length))}</Text>
-          </View>
-        );
-      })}
-    </View>
   );
 }
 
@@ -97,8 +73,4 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   meta: { fontSize: 14, color: colors.muted },
-  preview: { gap: 0 },
-  previewRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.border, gap: 2 },
-  previewName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  previewPlan: { fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
 });

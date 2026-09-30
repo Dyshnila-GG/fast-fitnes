@@ -5,6 +5,7 @@ import { formatMealTime, formatNum, type Meal } from '../../logic/food';
 import { colors, gap, radius } from '../../theme';
 import { Button } from '../ui';
 import { DishImage } from './DishImage';
+import { Icon } from '../Icon';
 
 export const saladLine = () => `Салат: ${DISHES.salad.ingredients.join(', ')}`;
 
@@ -43,11 +44,16 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
           {meal.title} · {formatMealTime(meal.time)}
         </Text>
         {next && <Text style={styles.badge}>Следующий</Text>}
-        {eaten && <Text style={styles.badge}>✓ Съедено</Text>}
+        {eaten && (
+          <View style={styles.badgeRow}>
+            <Icon name="check" size={14} />
+            <Text style={styles.badgeText}>Съедено</Text>
+          </View>
+        )}
       </View>
       <View style={styles.images}>
         {meal.dishes.map((id) => (
-          <DishImage key={id} dish={id} style={styles.image} emojiSize={multi ? 56 : 72} />
+          <DishImage key={id} dish={id} style={styles.image} iconSize={multi ? 32 : 40} />
         ))}
       </View>
       <Text style={styles.name}>{meal.dishes.map((id) => DISHES[id].name).join(' + ')}</Text>
@@ -59,7 +65,7 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
       </View>
       <View style={styles.actions}>
         <Button
-          title={eaten ? '✓ Съел' : 'Съел'}
+          title={eaten ? 'Съедено' : 'Съел'}
           variant={eaten ? 'secondary' : 'primary'}
           onPress={onToggle}
           style={styles.flex}
@@ -85,6 +91,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.muted },
   badge: { fontSize: 12, fontWeight: '600', color: colors.text, backgroundColor: colors.button, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.button, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  badgeText: { fontSize: 12, fontWeight: '600', color: colors.text },
   images: { flexDirection: 'row', gap: 8 },
   image: { flex: 1 },
   name: { fontSize: 20, fontWeight: '700', color: colors.text },

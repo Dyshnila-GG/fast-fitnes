@@ -25,7 +25,8 @@ export default function SessionDetailsScreen() {
 
   // v1 — чек-лист разминки, v2 — секундомеры.
   const warmup =
-    formatWarmup(s) ?? WARMUP_ITEMS.map((w) => `${s.warmupDone?.includes(w.id) ? '✓' : '✗'} ${w.label}`).join(' · ');
+    formatWarmup(s) ??
+    WARMUP_ITEMS.map((w) => `${w.label} — ${s.warmupDone?.includes(w.id) ? 'выполнено' : 'пропущено'}`).join(' · ');
 
   return (
     <ScrollView contentContainerStyle={styles.content}>

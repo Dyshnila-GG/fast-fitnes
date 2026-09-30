@@ -47,9 +47,10 @@ export function buildSession(data: AppData, templateId: TemplateId, length: Leng
 }
 
 // Старт тренировки выбранной длины (вкладка «Тренировки» и «Главная»). Экран тренировки откроется сам (см. _layout).
-export function startWorkout(d: AppData, templateId: TemplateId, now = new Date()): AppData {
+// length не задана — берётся выбор «Длинная / Короткая» для этой тренировки.
+export function startWorkout(d: AppData, templateId: TemplateId, length?: Length, now = new Date()): AppData {
   if (d.activeSession) return d;
-  return { ...d, activeSession: buildSession(d, templateId, d.lengthChoice[templateId] ?? 'long', now) };
+  return { ...d, activeSession: buildSession(d, templateId, length ?? d.lengthChoice[templateId] ?? 'long', now) };
 }
 
 export function setLengthChoice(d: AppData, templateId: TemplateId, length: Length): AppData {

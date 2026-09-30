@@ -25,15 +25,18 @@ npx expo-doctor    # зависимости и конфиг
 ## Структура
 
 ```
-src/app/            экраны (Expo Router): вкладки (tabs)/index — главная, workouts — тренировки, food — еда, profile — профиль;
+src/app/            экраны (Expo Router): вкладки (tabs)/index — главная (плитки), workouts — тренировки, food — еда, profile — профиль;
                     workout — активная тренировка, summary — итог; meal — блюдо, food-swap — замена блюда, food-settings — время приёмов;
-                    sleep, sleep-edit — сон; runs — пробежки; personal, weight, measurements, history/, progress, data — разделы «Профиля»
+                    модалки с «Главной»: weight-add, sleep-edit, run-edit, workout-preview; sleep, runs — списки;
+                    personal, weight, measurements, history/, progress, data — разделы «Профиля»
 src/data/program.ts программа Вт/Чт/Сб (20 упражнений, по 1–2 варианта); legacy.ts — старая A/B/C (только для истории)
-src/data/food.ts    блюда (граммы, ккал, белок, шаги), расписание «День зала» / «Обычный день», чек-лист заготовки
+src/data/food.ts    блюда (граммы, ккал, белок, шаги), расписание «День зала» / «Обычный день» / Вс, нормы заготовки;
+                    foodImages.ts — ссылки на фото блюд
 src/logic/          расчёты: сессия и секундомеры разминки, рекорды и вес «сегодня» (SPEC §5), тоннаж, метрики и экспорт/импорт, еда (food.ts),
                     «Главная» (home.ts), сон и пробежки (sleep.ts), даты и время, расписание, округление весов, форматирование; тесты — src/logic/__tests__
 src/store/          состояние приложения, сохранение в AsyncStorage, перенос данных v1 → v2 (migrate.ts)
-src/components/     общие UI-компоненты (TimeField — выбор времени); workout/ — блоки экрана тренировки, summary/ — блоки итога, food/ — карточка приёма и картинка блюда,
+src/components/     общие UI-компоненты (Icon — иконки MaterialCommunityIcons, TimeField — выбор времени); home/ — плитка, кольцо, точечный календарь;
+                    workout/ — блоки экрана тренировки и предпросмотр, summary/ — блоки итога, food/ — карточка приёма и картинка блюда,
                     charts/ — линейный график (react-native-svg), form — поля и списки метрик
 src/hooks/          общие хуки (useNow — тик таймеров)
 ```
@@ -42,16 +45,8 @@ src/hooks/          общие хуки (useNow — тик таймеров)
 
 ## Фото блюд
 
-Картинки блюд — `assets/food/<id>.jpg` (работают без интернета). Сейчас файлов нет — вместо них заглушка (эмодзи блюда на тёмном фоне):
-из окружения разработки Unsplash и Pexels недоступны. Не хватает 11 фото: `granola`, `shake`, `yogurt`, `eggs`, `bacon_sandwich`,
-`chicken_sandwich`, `pasta`, `chicken_rice`, `rotisserie_rice`, `salmon_rice`, `salad`.
+Фото загружаются по ссылке и кэшируются на телефоне (как GIF упражнений). Ссылки — в `src/data/foodImages.ts`
+(id: `granola`, `shake`, `yogurt`, `eggs`, `bacon_sandwich`, `meat_sandwich`, `pasta`, `chicken_rice`, `salmon_rice`).
+Пока ссылки пустые — показывается тёмная заглушка с серой иконкой. Если ссылка не загрузилась (2 повтора) — тоже заглушка.
 
-Как добавить: взять бесплатное фото (Unsplash / Pexels — лицензии разрешают использование), сохранить как `assets/food/<id>.jpg`,
-добавить строку в `DISH_IMAGES` в `src/data/food.ts` (например `granola: require('../../assets/food/granola.jpg'),`)
-и записать ссылку на источник в таблицу ниже.
-
-| id | Источник |
-|---|---|
-| — | фото пока не добавлены |
-
-В приложении любое блюдо можно заменить своим фото: экран блюда → тап по картинке → «Сфотографировать» / «Из галереи».
+Своё фото важнее ссылки: экран блюда → тап по картинке → «Сфотографировать» / «Из галереи».

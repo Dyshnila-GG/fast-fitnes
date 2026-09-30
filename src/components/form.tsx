@@ -2,6 +2,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View, type TextInputProp
 import { formatDay } from '../logic/format';
 import { dayKey, shiftDay } from '../logic/metrics';
 import { colors } from '../theme';
+import { Icon } from './Icon';
 
 // Числовое поле с подписью.
 export function NumInput({ label, style, ...props }: TextInputProps & { label: string }) {
@@ -66,7 +67,7 @@ export function EntryRow({ title, detail, onDelete }: { title: string; detail: s
         <Text style={styles.rowDetail}>{detail}</Text>
       </View>
       <Pressable onPress={confirm} hitSlop={10} style={styles.remove}>
-        <Text style={styles.removeText}>✕</Text>
+        <Icon name="close" size={16} color={colors.muted} />
       </Pressable>
     </View>
   );
@@ -110,5 +111,4 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   rowDetail: { fontSize: 14, color: colors.muted, marginTop: 2 },
   remove: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.button, alignItems: 'center', justifyContent: 'center' },
-  removeText: { fontSize: 14, color: colors.muted },
 });

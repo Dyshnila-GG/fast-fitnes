@@ -1,10 +1,15 @@
 import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
-import { useMemo } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { DISH_IMAGES, DISHES, type DishId } from '../../data/food';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { DishId } from '../../data/food';
+import { FOOD_IMAGES } from '../../data/foodImages';
 import { useStore } from '../../store/AppStore';
-import { colors } from '../../theme';
+import { colors, radius } from '../../theme';
+import { Icon } from '../Icon';
+
+const RETRIES = 2; // повторы при сбое сети, потом заглушка (как у GIF упражнений)
+const RETRY_MS = 1500;
 
 // Своё фото, если файл на месте (после импорта с другого телефона его может не быть).
 function photoExists(uri: string): boolean {
@@ -15,21 +20,43 @@ function photoExists(uri: string): boolean {
   }
 }
 
-// Картинка блюда: своё фото → фото из assets/food → заглушка (эмодзи на тёмном фоне).
-export function DishImage({ dish, style, emojiSize = 72 }: { dish: DishId; style?: StyleProp<ViewStyle>; emojiSize?: number }) {
+// Картинка блюда: своё фото → фото по ссылке (кэш на телефоне) → тёмная заглушка с иконкой.
+// При смене блюда вызывающий передаёт key={dish}, чтобы счётчик повторов сбрасывался.
+export function DishImage({ dish, style, iconSize = 40 }: { dish: DishId; style?: StyleProp<ViewStyle>; iconSize?: number }) {
   const { data } = useStore();
   const custom = data.food.photos[dish];
-  const source = useMemo(() => {
-    if (custom && photoExists(custom)) return { uri: custom };
-    return DISH_IMAGES[dish];
+  const uri = useMemo(() => {
+    if (custom && photoExists(custom)) return custom;
+    return (FOOD_IMAGES as Partial<Record<DishId, string>>)[dish] || null;
   }, [custom, dish]);
+
+  const [attempt, setAttempt] = useState(0);
+  const [errored, setErrored] = useState(false);
+  const failed = uri == null || (errored && attempt >= RETRIES);
+
+  useEffect(() => {
+    if (!errored || attempt >= RETRIES) return;
+    const t = setTimeout(() => {
+      setAttempt((a) => a + 1);
+      setErrored(false);
+    }, RETRY_MS);
+    return () => clearTimeout(t);
+  }, [errored, attempt]);
 
   return (
     <View style={[styles.box, style]}>
-      {source != null ? (
-        <Image source={source} contentFit="cover" transition={null} style={StyleSheet.absoluteFill} />
+      {failed ? (
+        <Icon name="silverware-fork-knife" size={iconSize} color={colors.muted} />
       ) : (
-        <Text style={{ fontSize: emojiSize }}>{DISHES[dish].emoji}</Text>
+        <Image
+          key={`${uri}#${attempt}`}
+          source={{ uri }}
+          cachePolicy="disk"
+          contentFit="cover"
+          transition={null}
+          onError={() => setErrored(true)}
+          style={StyleSheet.absoluteFill}
+        />
       )}
     </View>
   );
@@ -38,8 +65,8 @@ export function DishImage({ dish, style, emojiSize = 72 }: { dish: DishId; style
 const styles = StyleSheet.create({
   box: {
     height: 180,
-    borderRadius: 16,
-    backgroundColor: colors.bg,
+    borderRadius: radius,
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

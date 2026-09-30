@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card } from '../components/ui';
 import { formatDay } from '../logic/format';
 import { dayKey } from '../logic/metrics';
-import { formatSleep, sleepAverage, sleepMinutes } from '../logic/sleep';
+import { formatSleep, garminAverage, sleepAverage, sleepScore } from '../logic/sleep';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 
@@ -14,12 +14,14 @@ export default function SleepScreen() {
   const days = Object.keys(data.sleep).sort().reverse();
   const avg7 = sleepAverage(data.sleep, today, 7);
   const avg30 = sleepAverage(data.sleep, today, 30);
+  const g7 = garminAverage(data.sleep, today, 7);
+  const g30 = garminAverage(data.sleep, today, 30);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Card style={styles.stats}>
-        <Stat label="Среднее за 7 дней" value={avg7 != null ? formatSleep(avg7) : '—'} />
-        <Stat label="За 30 дней" value={avg30 != null ? formatSleep(avg30) : '—'} />
+        <Stat label="Среднее за 7 дней" value={avg7 != null ? formatSleep(avg7) : '—'} sub={g7 != null ? `Garmin ${g7}` : undefined} />
+        <Stat label="За 30 дней" value={avg30 != null ? formatSleep(avg30) : '—'} sub={g30 != null ? `Garmin ${g30}` : undefined} />
       </Card>
       <Button
         title={data.sleep[today] ? 'Исправить сегодняшнюю ночь' : 'Записать сон'}
@@ -38,10 +40,10 @@ export default function SleepScreen() {
               <View style={styles.flex}>
                 <Text style={styles.title}>{formatDay(day)}</Text>
                 <Text style={styles.muted}>
-                  Лёг {e.bed} · Встал {e.wake} · качество {e.quality}/5
+                  {[e.bed && e.wake ? `Лёг ${e.bed} · Встал ${e.wake}` : '', sleepScore(e)].filter(Boolean).join(' · ') || '—'}
                 </Text>
               </View>
-              <Text style={styles.value}>{formatSleep(sleepMinutes(e))}</Text>
+              <Text style={styles.value}>{formatSleep(e.minutes)}</Text>
             </Pressable>
           );
         })}
@@ -50,11 +52,12 @@ export default function SleepScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <View style={styles.flex}>
       <Text style={styles.muted}>{label}</Text>
       <Text style={styles.big}>{value}</Text>
+      {sub && <Text style={styles.muted}>{sub}</Text>}
     </View>
   );
 }

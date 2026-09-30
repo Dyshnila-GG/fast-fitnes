@@ -1,21 +1,38 @@
 import { describe, expect, it } from '@jest/globals';
 import { defaultData } from '../../store/defaults';
-import type { AppData } from '../../types';
+import type { AppData, TemplateId } from '../../types';
 import { setSwap, toggleEaten } from '../food';
 import {
+  activityGrid,
+  dayLabel,
+  daysAgo,
   finishedOn,
   homeDayType,
   lastSession,
   nextWorkout,
   recordGains,
   templateForDay,
+  volume7,
   weekCounts,
   weekStart,
   weightTrend,
 } from '../home';
 import { addBodyWeight, exportData, parseImport } from '../metrics';
 import { buildSession, finishActive, startWorkout } from '../session';
-import { formatSleep, removeRun, removeSleep, sanitizeRuns, sanitizeSleep, setRun, setSleep, sleepAverage, sleepMinutes } from '../sleep';
+import {
+  formatSleep,
+  formatSleepClock,
+  garminAverage,
+  minutesBetween,
+  removeRun,
+  removeSleep,
+  sanitizeRuns,
+  sanitizeSleep,
+  setRun,
+  setSleep,
+  sleepAverage,
+  sleepScore,
+} from '../sleep';
 
 const MON = '2026-09-28';
 const TUE = '2026-09-29';
@@ -26,7 +43,7 @@ const SAT = '2026-10-03';
 const SUN = '2026-10-04';
 
 // Тренировка по шаблону, завершённая в локальное время дня `day`.
-function withWorkout(d: AppData, id: 'tue' | 'thu' | 'sat', day: string, hour = 10): AppData {
+function withWorkout(d: AppData, id: TemplateId, day: string, hour = 10): AppData {
   const [y, m, dd] = day.split('-').map(Number);
   const start = new Date(y, m - 1, dd, hour);
   const next = { ...d, activeSession: buildSession(d, id, 'long', start) };
@@ -63,29 +80,46 @@ describe('тип дня на «Главной»', () => {
 });
 
 describe('сон', () => {
-  it('длительность через полночь', () => {
-    expect(sleepMinutes({ bed: '23:30', wake: '07:10' })).toBe(460);
-    expect(sleepMinutes({ bed: '00:30', wake: '08:00' })).toBe(450);
-    expect(sleepMinutes({ bed: '22:00', wake: '22:00' })).toBe(0);
+  it('длительность «лёг → встал» через полночь, формат', () => {
+    expect(minutesBetween('23:30', '07:10')).toBe(460);
+    expect(minutesBetween('00:30', '08:00')).toBe(450);
     expect(formatSleep(460)).toBe('7 ч 40 мин');
     expect(formatSleep(480)).toBe('8 ч');
     expect(formatSleep(45)).toBe('45 мин');
+    expect(formatSleepClock(390)).toBe('6:30');
+    expect(formatSleepClock(425)).toBe('7:05');
   });
 
-  it('среднее за 7 дней — только по ночам с записью, старше 7 дней не входят', () => {
-    let d = setSleep(defaultData(), SUN, { bed: '23:00', wake: '07:00', quality: 4 }); // 480
-    d = setSleep(d, FRI, { bed: '00:00', wake: '07:00', quality: 3 }); // 420
-    d = setSleep(d, '2026-09-27', { bed: '20:00', wake: '10:00', quality: 5 }); // 8 дней назад
-    expect(sleepAverage(d.sleep, SUN, 7)).toBe(450);
-    expect(sleepAverage(d.sleep, SUN, 30)).toBe(Math.round((480 + 420 + 840) / 3));
+  it('среднее за 7/30 дней по длительности и средняя оценка Garmin', () => {
+    let d = setSleep(defaultData(), SUN, { minutes: 480, garmin: 80 });
+    d = setSleep(d, FRI, { minutes: 420 });
+    d = setSleep(d, THU, { minutes: 390, garmin: 70 });
+    d = setSleep(d, '2026-09-27', { minutes: 840, garmin: 20 }); // 8 дней назад
+    expect(sleepAverage(d.sleep, SUN, 7)).toBe(430);
+    expect(sleepAverage(d.sleep, SUN, 30)).toBe(Math.round((480 + 420 + 390 + 840) / 4));
+    expect(garminAverage(d.sleep, SUN, 7)).toBe(75);
+    expect(garminAverage(d.sleep, SUN, 30)).toBe(Math.round((80 + 70 + 20) / 3));
     expect(sleepAverage(defaultData().sleep, SUN, 7)).toBeUndefined();
+    expect(garminAverage(setSleep(defaultData(), SUN, { minutes: 400 }).sleep, SUN, 7)).toBeUndefined();
+  });
+
+  it('оценка: Garmin, у старых записей — качество 1–5', () => {
+    expect(sleepScore({ minutes: 400, garmin: 82 })).toBe('Garmin 82');
+    expect(sleepScore({ minutes: 400, quality: 4 })).toBe('качество 4/5');
+    expect(sleepScore({ minutes: 400 })).toBe('');
   });
 
   it('запись можно исправить и удалить', () => {
-    let d = setSleep(defaultData(), SUN, { bed: '23:00', wake: '07:00', quality: 4 });
-    d = setSleep(d, SUN, { bed: '23:30', wake: '07:10', quality: 5 });
-    expect(d.sleep[SUN]).toEqual({ bed: '23:30', wake: '07:10', quality: 5 });
+    let d = setSleep(defaultData(), SUN, { minutes: 480 });
+    d = setSleep(d, SUN, { minutes: 460, garmin: 75, bed: '23:30', wake: '07:10' });
+    expect(d.sleep[SUN]).toEqual({ minutes: 460, garmin: 75, bed: '23:30', wake: '07:10' });
     expect(removeSleep(d, SUN).sleep).toEqual({});
+  });
+
+  it('перенос старых записей v3: длительность из «лёг/встал», качество сохраняется', () => {
+    expect(sanitizeSleep({ [SUN]: { bed: '23:30', wake: '07:10', quality: 4 } })).toEqual({
+      [SUN]: { minutes: 460, bed: '23:30', wake: '07:10', quality: 4 },
+    });
   });
 });
 
@@ -103,6 +137,13 @@ describe('неделя', () => {
     d = setRun(d, '2026-09-25', { minutes: 20 }); // прошлая неделя
     expect(weekCounts(d, FRI)).toEqual({ workouts: 2, runs: 1 });
     expect(weekCounts(d, '2026-10-05')).toEqual({ workouts: 0, runs: 0 });
+  });
+
+  it('баг v3: тренировка A в понедельник текущей недели → 1 из 3', () => {
+    const d = withWorkout(defaultData(), 'A', MON);
+    expect(weekCounts(d, WED).workouts).toBe(1);
+    expect(weekCounts(d, SUN).workouts).toBe(1);
+    expect(weekCounts(d, '2026-10-05').workouts).toBe(0);
   });
 
   it('отметку пробежки можно снять', () => {
@@ -135,7 +176,8 @@ describe('экспорт / импорт: еда, сон, пробежки', () =
   it('экспорт → импорт сохраняет еду, сон и пробежки', () => {
     let d = toggleEaten(defaultData(), TUE, 'pre');
     d = setSwap(d, MON, 'lunch', 'chicken_rice');
-    d = setSleep(d, SUN, { bed: '23:30', wake: '07:10', quality: 4 });
+    d = setSleep(d, SUN, { minutes: 460, garmin: 82, bed: '23:30', wake: '07:10' });
+    d = setSleep(d, SAT, { minutes: 400, quality: 3 });
     d = setRun(d, WED, { minutes: 30, distanceMi: 2.5 });
     d = setRun(d, FRI, { minutes: 20 });
     const res = parseImport(exportData(d));
@@ -156,14 +198,58 @@ describe('экспорт / импорт: еда, сон, пробежки', () =
   it('битые записи сна и пробежек отбрасываются', () => {
     expect(
       sanitizeSleep({
-        [SUN]: { bed: '23:30', wake: '07:10', quality: 4 },
-        [SAT]: { bed: '25:00', wake: '07:00', quality: 3 },
-        [FRI]: { bed: '23:00', wake: '07:00', quality: 6 },
-        bad: { bed: '23:00', wake: '07:00', quality: 3 },
+        [SUN]: { minutes: 460, garmin: 82 },
+        [SAT]: { bed: '25:00', wake: '07:00' },
+        [FRI]: { minutes: 420, garmin: 140, quality: 9 },
+        [THU]: { minutes: 0 },
+        bad: { minutes: 400 },
       }),
-    ).toEqual({ [SUN]: { bed: '23:30', wake: '07:10', quality: 4 } });
+    ).toEqual({ [SUN]: { minutes: 460, garmin: 82 }, [FRI]: { minutes: 420 } });
     expect(sanitizeRuns({ [WED]: { minutes: 30, distanceMi: 0 }, [FRI]: { minutes: -5 }, x: { minutes: 3 } })).toEqual({
       [WED]: { minutes: 30 },
     });
+  });
+});
+
+describe('плитки «Главной»', () => {
+  it('«Сегодня» / «Завтра» / день недели; «N дней назад»', () => {
+    expect([dayLabel(WED, WED), dayLabel(THU, WED), dayLabel(SAT, WED)]).toEqual(['Сегодня', 'Завтра', 'Сб']);
+    expect([daysAgo(WED, WED), daysAgo(TUE, WED), daysAgo(MON, THU), daysAgo('2026-09-25', WED)]).toEqual([
+      'сегодня',
+      'вчера',
+      '3 дня назад',
+      '5 дней назад',
+    ]);
+    expect(daysAgo('2026-09-09', WED)).toBe('21 день назад');
+  });
+
+  it('объём за 7 дней — сумма тоннажа тренировок, старше 7 дней не входят', () => {
+    let d = withWorkout(defaultData(), 'tue', TUE);
+    d = withWorkout(d, 'thu', '2026-09-17'); // 13 дней назад
+    const s = d.sessions.find((x) => x.templateId === 'tue')!;
+    const withFacts = {
+      ...d,
+      sessions: d.sessions.map((x) =>
+        x.id === s.id
+          ? { ...x, exercises: x.exercises.map((l, i) => (i === 0 ? { ...l, sets: [{ type: 'work' as const, factWeight: 100, factReps: 10, done: true }] } : { ...l, sets: [] })) }
+          : { ...x, exercises: x.exercises.map((l) => ({ ...l, sets: [{ type: 'work' as const, factWeight: 50, factReps: 10, done: true }] })) },
+      ),
+    };
+    expect(volume7(withFacts, WED)).toBe(1000);
+    expect(volume7(withFacts, '2026-10-07')).toBe(0);
+  });
+
+  it('точечный календарь: 13 недель пн–вс, тренировки и пробежки отмечены, будущие дни скрыты', () => {
+    let d = withWorkout(defaultData(), 'tue', TUE);
+    d = setRun(d, WED, { minutes: 30 });
+    const grid = activityGrid(d, WED);
+    expect(grid.columns).toHaveLength(13);
+    expect(grid.columns.every((c) => c.length === 7)).toBe(true);
+    const last = grid.columns[12];
+    expect(last[0].day).toBe(MON);
+    expect(last[1]).toMatchObject({ day: TUE, workout: true });
+    expect(last[2]).toMatchObject({ day: WED, run: true, future: false });
+    expect(last[3].future).toBe(true);
+    expect(grid.months.filter(Boolean)).toEqual(['июл', 'авг', 'сен', 'окт']);
   });
 });

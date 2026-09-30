@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { colors } from '../../theme';
 import type { SetLog, Variant } from '../../types';
 import { Button } from '../ui';
+import { Icon } from '../Icon';
 
 const HELP: Record<SetLog['type'], [string, string]> = {
   warmup: [
@@ -11,7 +12,7 @@ const HELP: Record<SetLog['type'], [string, string]> = {
   ],
   work: [
     'Рабочие подходы',
-    'Вес «сегодня» × диапазон повторов. Оставляйте 1–2 повтора в запасе. Запишите фактический вес и повторы. ✓ — копирует вес «сегодня» и верх диапазона.',
+    'Вес «сегодня» × диапазон повторов. Оставляйте 1–2 повтора в запасе. Запишите фактический вес и повторы. Галочка копирует вес «сегодня» и верх диапазона.',
   ],
 };
 
@@ -64,10 +65,10 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
             )}
           </View>
           <Pressable onPress={() => onCopy(i)} hitSlop={6} style={[styles.icon, styles.copy]}>
-            <Text style={styles.copyText}>✓</Text>
+            <Icon name="check" size={18} />
           </Pressable>
           <Pressable onPress={() => onRemove(i)} hitSlop={6} style={styles.icon}>
-            <Text style={styles.removeText}>✕</Text>
+            <Icon name="close" size={16} color={colors.muted} />
           </Pressable>
         </View>
       ))}
@@ -157,6 +158,4 @@ const styles = StyleSheet.create({
   },
   icon: { width: 28, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   copy: { backgroundColor: colors.button },
-  copyText: { fontSize: 16, fontWeight: '800', color: colors.text },
-  removeText: { fontSize: 14, color: colors.muted },
 });

@@ -39,8 +39,11 @@ function RootStack() {
         <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
         <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />
         <Stack.Screen name="sleep" options={{ title: 'Сон' }} />
-        <Stack.Screen name="sleep-edit" options={{ title: 'Записать сон' }} />
+        <Stack.Screen name="sleep-edit" options={{ title: 'Сон', presentation: 'modal' }} />
         <Stack.Screen name="runs" options={{ title: 'Пробежки' }} />
+        <Stack.Screen name="weight-add" options={{ title: 'Вес тела', presentation: 'modal' }} />
+        <Stack.Screen name="run-edit" options={{ title: 'Пробежка', presentation: 'modal' }} />
+        <Stack.Screen name="workout-preview" options={{ title: 'Тренировка', presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />

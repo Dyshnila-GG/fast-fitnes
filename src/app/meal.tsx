@@ -9,6 +9,7 @@ import { DISHES, type DishId } from '../data/food';
 import { formatMealTime, formatNum, isEaten, mealsFor, setPhoto, toggleEaten } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { Icon } from '../components/Icon';
 
 // Копия выбранного фото в постоянную папку приложения (кэш пикера система может очистить).
 async function savePhoto(dish: DishId, pickedUri: string): Promise<string> {
@@ -74,7 +75,7 @@ export default function MealScreen() {
         return (
           <Card key={id} style={styles.card}>
             <Pressable onPress={() => choosePhoto(id)}>
-              <DishImage dish={id} style={styles.image} emojiSize={110} />
+              <DishImage dish={id} style={styles.image} iconSize={64} />
               <Text style={styles.photoHint}>Нажмите на картинку — «Своё фото»</Text>
             </Pressable>
             {data.food.photos[id] && (
@@ -84,7 +85,12 @@ export default function MealScreen() {
             <Text style={styles.muted}>
               ~{formatNum(dish.kcal)} ккал · {dish.protein} г белка
             </Text>
-            {dish.note && <Text style={styles.note}>⚠ {dish.note}</Text>}
+            {dish.note && (
+              <View style={styles.noteRow}>
+                <Icon name="alert-outline" size={18} />
+                <Text style={styles.note}>{dish.note}</Text>
+              </View>
+            )}
             <Text style={styles.section}>Ингредиенты</Text>
             <Ingredients dish={id} />
             <Text style={styles.section}>Как готовить</Text>
@@ -102,7 +108,7 @@ export default function MealScreen() {
         <Text style={styles.protein}>{meal.protein} г белка</Text>
       </View>
       <Button
-        title={eaten ? '✓ Съел' : 'Съел'}
+        title={eaten ? 'Съедено · снять отметку' : 'Съел'}
         variant={eaten ? 'secondary' : 'primary'}
         onPress={() => update((d) => toggleEaten(d, day, meal.slot))}
       />
@@ -117,7 +123,8 @@ const styles = StyleSheet.create({
   photoHint: { fontSize: 12, color: colors.muted, textAlign: 'center', marginTop: 6 },
   name: { fontSize: 22, fontWeight: '700', color: colors.text },
   muted: { fontSize: 15, color: colors.muted },
-  note: { fontSize: 15, fontWeight: '600', color: colors.text },
+  noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  note: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   section: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 6 },
   step: { fontSize: 15, color: colors.text },
   footer: { flexDirection: 'row', alignItems: 'baseline', gap, paddingHorizontal: 4 },

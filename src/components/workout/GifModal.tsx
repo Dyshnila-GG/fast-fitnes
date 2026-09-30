@@ -3,6 +3,7 @@ import { formatRest } from '../../logic/format';
 import { colors, radius } from '../../theme';
 import type { Exercise, Variant } from '../../types';
 import { ExerciseGif } from './ExerciseGif';
+import { Icon } from '../Icon';
 
 type Props = { exercise: Exercise; variant: Variant; visible: boolean; onClose: () => void };
 
@@ -15,7 +16,7 @@ export function GifModal({ exercise, variant, visible, onClose }: Props) {
           <View style={styles.head}>
             <Text style={styles.title}>{variant.name}</Text>
             <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
-              <Text style={styles.closeText}>✕</Text>
+              <Icon name="close" size={20} />
             </Pressable>
           </View>
           <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={visible} />
@@ -38,7 +39,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { flex: 1, fontSize: 22, fontWeight: '800', color: colors.text },
   close: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.button, alignItems: 'center', justifyContent: 'center' },
-  closeText: { fontSize: 16, fontWeight: '700', color: colors.text },
   body: { flexGrow: 0 },
   bodyContent: { gap: 8 },
   meta: { fontSize: 14, color: colors.muted },

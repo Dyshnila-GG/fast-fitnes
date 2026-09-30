@@ -4,9 +4,11 @@ import { isTime, toMinutes } from './time';
 
 // ---- Сон ----
 
-// Длительность через полночь: лёг 23:30, встал 7:10 → 460 мин.
-export function sleepMinutes(e: Pick<SleepEntry, 'bed' | 'wake'>): number {
-  return (toMinutes(e.wake) - toMinutes(e.bed) + 1440) % 1440;
+export const MAX_SLEEP_MIN = 24 * 60;
+
+// Длительность между «лёг» и «встал» через полночь: 23:30 → 7:10 = 460 мин.
+export function minutesBetween(bed: string, wake: string): number {
+  return (toMinutes(wake) - toMinutes(bed) + 1440) % 1440;
 }
 
 // 460 → «7 ч 40 мин»
@@ -17,15 +19,36 @@ export function formatSleep(min: number): string {
   return m === 0 ? `${h} ч` : `${h} ч ${m} мин`;
 }
 
-// Средняя длительность за последние `days` ночей (включая сегодняшнюю); нет записей — undefined.
-export function sleepAverage(sleep: Record<string, SleepEntry>, today: string, days: number): number | undefined {
-  const values: number[] = [];
+// 390 → «6:30»
+export const formatSleepClock = (min: number) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, '0')}`;
+
+// Записи за последние `days` ночей (включая сегодняшнюю).
+function recent(sleep: Record<string, SleepEntry>, today: string, days: number): SleepEntry[] {
+  const out: SleepEntry[] = [];
   for (let i = 0; i < days; i++) {
     const e = sleep[shiftDay(today, -i)];
-    if (e) values.push(sleepMinutes(e));
+    if (e) out.push(e);
   }
-  if (values.length === 0) return undefined;
-  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  return out;
+}
+
+const avg = (values: number[]) => (values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : undefined);
+
+// Средняя длительность за `days` ночей — только по ночам с записью; нет записей — undefined.
+export function sleepAverage(sleep: Record<string, SleepEntry>, today: string, days: number): number | undefined {
+  return avg(recent(sleep, today, days).map((e) => e.minutes));
+}
+
+// Средняя оценка Garmin — по ночам, где она есть.
+export function garminAverage(sleep: Record<string, SleepEntry>, today: string, days: number): number | undefined {
+  return avg(recent(sleep, today, days).flatMap((e) => (e.garmin != null ? [e.garmin] : [])));
+}
+
+// «Garmin 82» / «качество 4/5» (старые записи) / «».
+export function sleepScore(e: SleepEntry): string {
+  if (e.garmin != null) return `Garmin ${e.garmin}`;
+  if (e.quality != null) return `качество ${e.quality}/5`;
+  return '';
 }
 
 export function setSleep(d: AppData, day: string, entry: SleepEntry): AppData {
@@ -56,14 +79,26 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const isDay = (k: string) => /^\d{4}-\d{2}-\d{2}$/.test(k);
 const isPos = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
+const isInt = (v: unknown, min: number, max: number): v is number =>
+  typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+
+// Старые записи v3 (лёг/встал + качество) переносятся: длительность считается через полночь.
 export function sanitizeSleep(raw: unknown): Record<string, SleepEntry> {
   const out: Record<string, SleepEntry> = {};
   if (!isObj(raw)) return out;
   for (const [k, e] of Object.entries(raw)) {
-    if (!isDay(k) || !isObj(e) || !isTime(e.bed) || !isTime(e.wake)) continue;
-    const q = e.quality;
-    if (typeof q !== 'number' || !Number.isInteger(q) || q < 1 || q > 5) continue;
-    out[k] = { bed: e.bed, wake: e.wake, quality: q };
+    if (!isDay(k) || !isObj(e)) continue;
+    const times = isTime(e.bed) && isTime(e.wake);
+    const minutes = isInt(e.minutes, 1, MAX_SLEEP_MIN) ? e.minutes : times ? minutesBetween(e.bed as string, e.wake as string) : 0;
+    if (minutes <= 0) continue;
+    const entry: SleepEntry = { minutes };
+    if (isInt(e.garmin, 0, 100)) entry.garmin = e.garmin;
+    if (times) {
+      entry.bed = e.bed as string;
+      entry.wake = e.wake as string;
+    }
+    if (isInt(e.quality, 1, 5)) entry.quality = e.quality;
+    out[k] = entry;
   }
   return out;
 }

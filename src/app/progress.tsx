@@ -52,7 +52,6 @@ export default function ProgressScreen() {
         {items.map((i) => (
           <Pressable key={i.key} onPress={() => setKey(i.key)} style={styles.row}>
             <Text style={[styles.cell, i.key === selected.key && styles.active]}>
-              {i.key === selected.key ? '● ' : ''}
               {i.key}
             </Text>
             <Text style={styles.muted}>{i.count}</Text>

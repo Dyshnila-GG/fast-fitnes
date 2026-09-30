@@ -7,6 +7,7 @@ import { formatDay } from '../logic/format';
 import { formatNum, mealsFor, setSwap } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { Icon } from '../components/Icon';
 
 // «Заменить»: другое блюдо для приёма только на эту дату.
 export default function FoodSwapScreen() {
@@ -35,14 +36,14 @@ export default function FoodSwapScreen() {
             onPress={() => choose(id)}
             style={({ pressed }) => [styles.row, current && styles.current, pressed && styles.pressed]}
           >
-            <DishImage dish={id} style={styles.thumb} emojiSize={30} />
+            <DishImage dish={id} style={styles.thumb} iconSize={24} />
             <View style={styles.flex}>
               <Text style={styles.name}>{dish.name}</Text>
               <Text style={styles.muted}>
                 ~{formatNum(dish.kcal)} ккал · {dish.protein} г белка
               </Text>
             </View>
-            {current && <Text style={styles.name}>✓</Text>}
+            {current && <Icon name="check" size={22} />}
           </Pressable>
         );
       })}

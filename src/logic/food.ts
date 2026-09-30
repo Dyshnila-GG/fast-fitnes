@@ -1,7 +1,8 @@
 import {
   DISHES,
   GYM_WEEKDAYS,
-  PREP_WEEKDAYS,
+  PREP,
+  PREP_DAYS,
   SCHEDULE,
   type DayType,
   type DishId,
@@ -27,7 +28,7 @@ export function dayType(day: string): DayType {
 }
 
 export function hasPrep(day: string): boolean {
-  return PREP_WEEKDAYS.includes(dayDate(day).getDay());
+  return PREP_DAYS[dayDate(day).getDay()] != null;
 }
 
 export const sumKcal = (dishes: DishId[]) => dishes.reduce((n, id) => n + DISHES[id].kcal, 0);
@@ -117,6 +118,70 @@ export function setPhoto(d: AppData, dish: DishId, uri: string | null): AppData 
   return withFood(d, { photos });
 }
 
+// ---- Заготовка из меню ----
+
+// Порции на период заготовки (с учётом замен). Лосось не заготавливается.
+export type PrepCounts = { rice: number; chicken: number; pasta: number; meat: number };
+
+export function prepCounts(food: FoodData, day: string): PrepCounts {
+  const c: PrepCounts = { rice: 0, chicken: 0, pasta: 0, meat: 0 };
+  const days = PREP_DAYS[dayDate(day).getDay()] ?? 0;
+  for (let i = 0; i < days; i++) {
+    for (const m of mealsFor(food, shiftDay(day, i))) {
+      for (const id of m.dishes) {
+        if (id === 'chicken_rice' || id === 'salmon_rice') c.rice += 1;
+        if (id === 'chicken_rice') c.chicken += 1;
+        if (id === 'pasta') c.pasta += 1;
+        if (id === 'meat_sandwich') c.meat += 1;
+      }
+    }
+  }
+  return c;
+}
+
+export type PrepItem = { id: keyof PrepCounts; title: string; text: string };
+
+// Пункты чек-листа с количествами; блюд нет в периоде — пункта нет.
+export function prepPlan(food: FoodData, day: string): PrepItem[] {
+  const c = prepCounts(food, day);
+  const items: PrepItem[] = [];
+  if (c.rice > 0) {
+    const rice = c.rice * PREP.riceDry;
+    items.push({
+      id: 'rice',
+      title: `Рис: ${c.rice} × ${PREP.riceDry} г = ${rice} г`,
+      text: `Промыть ${rice} г, ${Math.round(rice * PREP.waterRatio)} г воды, закипит → минимальный огонь под крышкой 15 мин → 10 мин не открывать → по ${PREP.riceCookedPortion} г готового в контейнер.`,
+    });
+  }
+  if (c.chicken > 0) {
+    items.push({
+      id: 'chicken',
+      title: `Куриное филе: ${c.chicken} × ${PREP.chickenRaw} г = ${c.chicken * PREP.chickenRaw} г`,
+      text: `Соль, перец, чеснок, паприка, ${PREP.chickenOil} г масла → духовка 425°F 18–22 мин (внутри 165°F) → остудить → ${c.chicken} порц. по ${PREP.chickenCooked} г.`,
+    });
+  }
+  if (c.pasta > 0) {
+    items.push({
+      id: 'pasta',
+      title: `Паста с фаршем: ${c.pasta} порц.`,
+      text: `${c.pasta * PREP.pasta} г пасты + ${c.pasta * PREP.mince} г фарша. Фарш обжарить 8–10 мин, маринара ${c.pasta * PREP.marinara} г, 5 мин, смешать с пастой, по контейнерам.`,
+    });
+  }
+  if (c.meat > 0) {
+    items.push({
+      id: 'meat',
+      title: `Мясо для сэндвичей: ${c.meat} × ${PREP.meat} г = ${c.meat * PREP.meat} г`,
+      text: 'Варёное куриное филе (варить 20 мин после закипания) или готовая нарезка.',
+    });
+  }
+  return items;
+}
+
+// Напоминание про лосось — накануне дня, где в меню лосось.
+export function salmonTomorrow(food: FoodData, day: string): boolean {
+  return mealsFor(food, shiftDay(day, 1)).some((m) => m.dishes.includes('salmon_rice'));
+}
+
 // ---- Время приёмов ----
 
 // «07:00» → «~7:00»
@@ -174,6 +239,11 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const isDay = (k: string) => /^\d{4}-\d{2}-\d{2}$/.test(k);
 const isDish = (v: unknown): v is DishId => typeof v === 'string' && v in DISHES;
 
+// Переименованные и удалённые блюда (SPEC_v3_1): старые записи переносятся.
+const RENAMED: Record<string, DishId> = { chicken_sandwich: 'meat_sandwich', rotisserie_rice: 'chicken_rice' };
+const dishOf = (v: unknown): DishId | undefined =>
+  typeof v !== 'string' ? undefined : isDish(v) ? v : RENAMED[v];
+
 function strLists(v: unknown): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   if (!isObj(v)) return out;
@@ -198,12 +268,20 @@ export function sanitizeFood(raw: unknown): FoodData {
   if (isObj(raw.swaps)) {
     for (const [k, map] of Object.entries(raw.swaps)) {
       if (!isDay(k) || !isObj(map)) continue;
-      const clean = Object.fromEntries(Object.entries(map).filter(([, dish]) => isDish(dish))) as Record<string, DishId>;
+      const clean: Record<string, DishId> = {};
+      for (const [slot, dish] of Object.entries(map)) {
+        const id = dishOf(dish);
+        if (id) clean[slot] = id;
+      }
       if (Object.keys(clean).length > 0) food.swaps[k] = clean;
     }
   }
   if (isObj(raw.photos)) {
-    for (const [k, uri] of Object.entries(raw.photos)) if (isDish(k) && typeof uri === 'string') food.photos[k] = uri;
+    // Своё фото курицы-гриль не переносится: блюда больше нет.
+    for (const [k, uri] of Object.entries(raw.photos)) {
+      const id = k === 'rotisserie_rice' ? undefined : dishOf(k);
+      if (id && typeof uri === 'string' && (k === id || food.photos[id] == null)) food.photos[id] = uri;
+    }
   }
   if (isObj(raw.times)) food.times = { gym: times(raw.times.gym), rest: times(raw.times.rest) };
   return food;
