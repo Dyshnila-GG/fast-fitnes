@@ -1,8 +1,10 @@
 export type Kind = 'machine' | 'free';
 export type Mode = 'weight' | 'bodyweight' | 'time';
 export type Length = 'long' | 'short';
-export type TemplateId = 'A' | 'B' | 'C';
-export type Rating = 'easy' | 'normal' | 'hard' | 'fail';
+export type LegacyTemplateId = 'A' | 'B' | 'C'; // программа v1 — только история
+export type TemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
+export type Rating = 'easy' | 'normal' | 'hard' | 'fail'; // v1 — только история
+export type Feel = 'easy' | 'normal' | 'hard'; // «Как пошла разминка?»
 
 export type Plan = {
   weight?: number;
@@ -12,7 +14,10 @@ export type Plan = {
   sets: number;
 };
 
-export type Warmup = { pct: number; reps: number }; // pct = 0 — без веса (свой вес)
+export type Warmup = { pct: number; reps?: number; seconds?: number }; // pct = 0 — без веса
+
+// Рекорд варианта: вес (с весом), диапазон повторов (свой вес) или секунды (планка).
+export type Best = Omit<Plan, 'sets'>;
 
 export type Variant = {
   kind: Kind;
@@ -61,9 +66,20 @@ export type ExerciseLog = {
   exerciseId: string;
   variant: Kind;
   sets: SetLog[];
-  rating?: Rating;
-  difficulty?: number;
-  comment?: string;
+  record?: Best; // рекорд на начало тренировки («было»)
+  feel?: Feel;
+  todayWeight?: number; // вес «сегодня» для всех рабочих подходов
+  comment?: string; // «Заметка»
+  rating?: Rating; // v1
+  difficulty?: number; // v1
+};
+
+// Секундомер по меткам времени: накоплено + идёт с момента since.
+export type Stopwatch = { ms: number; since?: string };
+
+export type SessionWarmup = {
+  run: Stopwatch & { distanceMi?: number };
+  joints: Stopwatch;
 };
 
 export type Session = {
@@ -76,7 +92,8 @@ export type Session = {
   pausedAt?: string; // момент начала текущей паузы
   restEndsAt?: string; // окончание текущего отдыха
   restSec?: number; // длительность текущего отдыха
-  warmupDone: string[];
+  warmup?: SessionWarmup;
+  warmupDone?: string[]; // v1: чек-лист разминки
   exercises: ExerciseLog[];
 };
 
@@ -93,11 +110,12 @@ export type MeasurementEntry = {
 };
 
 export type AppData = {
-  version: 1;
+  version: 2;
   profile: Profile;
   lengthChoice: Partial<Record<TemplateId, Length>>;
   variantChoice: Record<string, Kind>;
-  plans: Record<string, Partial<Record<Kind, Plan>>>;
+  records: Record<string, Best>; // ключ — название варианта
+  plans: Record<string, Partial<Record<Kind, Plan>>>; // v1 — источник переноса рекордов
   activeSession: Session | null;
   summaryId: string | null; // завершённая тренировка, итог которой ещё не закрыт
   sessions: Session[];

@@ -8,7 +8,7 @@ import { ExerciseCard } from '../components/workout/ExerciseCard';
 import { demoUrls } from '../components/workout/ExerciseGif';
 import { FinishModal } from '../components/workout/FinishModal';
 import { RestTimer } from '../components/workout/RestTimer';
-import { WarmupChecklist } from '../components/workout/WarmupChecklist';
+import { WarmupBlock } from '../components/workout/WarmupBlock';
 import { getExercise, getVariant } from '../data/program';
 import {
   addSet,
@@ -17,14 +17,20 @@ import {
   currentExerciseIndex,
   finishActive,
   hasFacts,
+  lastNote,
   removeSet,
+  setRunDistance,
   shiftRest,
   skippedItems,
   startRest,
+  startStopwatch,
   stopRest,
+  stopStopwatch,
   togglePause,
   updateSet,
+  warmupOf,
 } from '../logic/session';
+import { applyFeel, setTodayWeight } from '../logic/records';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 import type { ExerciseLog, Kind, Session } from '../types';
@@ -65,7 +71,8 @@ export default function WorkoutScreen() {
   const updateLog = (index: number, fn: (log: ExerciseLog) => ExerciseLog) =>
     updateSession((s) => ({ ...s, exercises: s.exercises.map((l, i) => (i === index ? fn(l) : l)) }));
 
-  const modeOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant).mode;
+  const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
+  const modeOf = (log: ExerciseLog) => variantOf(log).mode;
 
   const switchVariant = (index: number, kind: Kind) => {
     const apply = () =>
@@ -74,7 +81,7 @@ export default function WorkoutScreen() {
         if (!s) return d;
         const ex = getExercise(s.exercises[index].exerciseId);
         const prev = s.exercises[index];
-        const log = { ...buildExerciseLog(d, ex, kind, s.length), difficulty: prev.difficulty, comment: prev.comment };
+        const log = { ...buildExerciseLog(d, ex, kind, s.length), comment: prev.comment };
         return {
           ...d,
           variantChoice: { ...d.variantChoice, [ex.id]: kind },
@@ -88,11 +95,6 @@ export default function WorkoutScreen() {
     ]);
   };
 
-  const toggleWarmup = (id: string) =>
-    updateSession((s) => ({
-      ...s,
-      warmupDone: s.warmupDone.includes(id) ? s.warmupDone.filter((x) => x !== id) : [...s.warmupDone, id],
-    }));
 
   // Выход только через «Завершить»: после изменения activeSession навигация переключается сама (см. _layout).
   const finish = () => {
@@ -113,7 +115,14 @@ export default function WorkoutScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            <WarmupChecklist length={session.length} done={session.warmupDone} onToggle={toggleWarmup} />
+            <WarmupBlock
+              length={session.length}
+              warmup={warmupOf(session)}
+              paused={!!session.pausedAt}
+              onStart={(id) => updateSession((s) => startStopwatch(s, id))}
+              onStop={(id) => updateSession((s) => stopStopwatch(s, id))}
+              onDistance={(mi) => updateSession((s) => setRunDistance(s, mi))}
+            />
             {session.exercises.map((log, i) => (
               <ExerciseCard
                 key={log.exerciseId}
@@ -124,7 +133,10 @@ export default function WorkoutScreen() {
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
-                onRate={(patch) => updateLog(i, (l) => ({ ...l, ...patch }))}
+                onFeel={(feel) => updateLog(i, (l) => applyFeel(l, variantOf(l), feel))}
+                onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w))}
+                onNote={(comment) => updateLog(i, (l) => ({ ...l, comment }))}
+                prevNote={lastNote(data.sessions, variantOf(log).name)}
                 onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
               />
             ))}

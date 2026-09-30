@@ -1,5 +1,6 @@
-import { getExercise, getVariant } from '../data/program';
+import { getExercise, getTemplate, getVariant } from '../data/program';
 import { defaultData } from '../store/defaults';
+import { migrateData } from '../store/migrate';
 import type { AppData, BodyWeightEntry, MeasurementEntry, Mode, Session } from '../types';
 import { newId } from './id';
 
@@ -131,7 +132,12 @@ const isNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 
 function validSession(s: unknown): boolean {
   if (!isObj(s) || typeof s.id !== 'string' || typeof s.startedAt !== 'string') return false;
-  if (!['A', 'B', 'C'].includes(s.templateId as string) || !Array.isArray(s.exercises)) return false;
+  try {
+    getTemplate(String(s.templateId));
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(s.exercises)) return false;
   return s.exercises.every((l) => {
     if (!isObj(l) || !Array.isArray(l.sets) || (l.variant !== 'machine' && l.variant !== 'free')) return false;
     try {
@@ -150,7 +156,7 @@ export function parseImport(text: string): ImportResult {
   } catch {
     return { ok: false, error: 'Это не JSON. Скопируйте текст экспорта целиком.' };
   }
-  if (!isObj(raw) || raw.version !== 1) return { ok: false, error: 'Неизвестный формат: это не экспорт GymLog.' };
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: 'Неизвестный формат: это не экспорт GymLog.' };
   const p = raw.profile;
   if (!isObj(p) || !isNum(p.age) || !isNum(p.heightIn) || !isNum(p.startWeight)) {
     return { ok: false, error: 'Повреждён профиль.' };
@@ -166,18 +172,20 @@ export function parseImport(text: string): ImportResult {
   const base = defaultData();
   return {
     ok: true,
-    data: {
+    data: migrateData({
       ...base,
+      version: raw.version,
       profile: { age: p.age as number, heightIn: p.heightIn as number, startWeight: p.startWeight as number },
       lengthChoice: isObj(raw.lengthChoice) ? (raw.lengthChoice as AppData['lengthChoice']) : base.lengthChoice,
       variantChoice: isObj(raw.variantChoice) ? (raw.variantChoice as AppData['variantChoice']) : base.variantChoice,
       plans: isObj(raw.plans) ? (raw.plans as AppData['plans']) : base.plans,
+      records: isObj(raw.records) ? (raw.records as AppData['records']) : base.records,
       sessions: sessions as Session[],
       bodyWeight: bodyWeight as BodyWeightEntry[],
       measurements: measurements as MeasurementEntry[],
       // Незавершённая тренировка и открытый итог не переносятся.
       activeSession: null,
       summaryId: null,
-    },
+    }),
   };
 }

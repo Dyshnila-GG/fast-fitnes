@@ -1,12 +1,13 @@
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseResult } from '../components/summary/ExerciseResult';
-import { NextPlanRow } from '../components/summary/NextPlanRow';
+import { RecordRow } from '../components/summary/RecordRow';
 import { Button, Card } from '../components/ui';
-import { getExercise, getTemplate } from '../data/program';
-import { formatDate, formatDuration } from '../logic/format';
-import { tonnage } from '../logic/progression';
-import { currentPlan, elapsedMs, setPlan } from '../logic/session';
+import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
+import { formatDate, formatDuration, formatWarmup } from '../logic/format';
+import { getBest, setBest } from '../logic/records';
+import { tonnage } from '../logic/tonnage';
+import { elapsedMs } from '../logic/session';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 
@@ -26,6 +27,8 @@ export default function SummaryScreen() {
   }
 
   const end = new Date(session.finishedAt ?? session.startedAt).getTime();
+  const warmup = formatWarmup(session);
+  const variantOf = (exerciseId: string, kind: 'machine' | 'free') => getVariant(getExercise(exerciseId), kind);
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -48,6 +51,13 @@ export default function SummaryScreen() {
           <Stat label="Тоннаж, lb" value={String(Math.round(tonnage(session)))} />
         </Card>
 
+        {warmup && (
+          <Card style={styles.card}>
+            <Text style={styles.section}>РАЗМИНКА</Text>
+            <Text style={styles.warmup}>{warmup}</Text>
+          </Card>
+        )}
+
         <Card style={styles.card}>
           <Text style={styles.section}>УПРАЖНЕНИЯ</Text>
           {session.exercises.map((log) => (
@@ -55,18 +65,22 @@ export default function SummaryScreen() {
           ))}
         </Card>
 
-        <Card style={styles.card}>
-          <Text style={styles.section}>ПЛАН НА СЛЕДУЮЩУЮ ТРЕНИРОВКУ</Text>
-          <Text style={styles.hint}>По оценке последнего рабочего подхода. Можно поправить вручную.</Text>
-          {session.exercises.map((log) => (
-            <NextPlanRow
-              key={log.exerciseId}
-              log={log}
-              plan={currentPlan(data, getExercise(log.exerciseId), log.variant)}
-              onChange={(patch) => update((d) => setPlan(d, log.exerciseId, log.variant, patch))}
-            />
-          ))}
-        </Card>
+        {!isLegacyTemplate(session.templateId) && (
+          <Card style={styles.card}>
+            <Text style={styles.section}>РЕКОРДЫ</Text>
+            <Text style={styles.hint}>
+              Растут, если во всех рабочих подходах — верх диапазона с весом не ниже рекорда. Можно поправить вручную.
+            </Text>
+            {session.exercises.map((log) => (
+              <RecordRow
+                key={log.exerciseId}
+                log={log}
+                best={getBest(data, variantOf(log.exerciseId, log.variant))}
+                onChange={(patch) => update((d) => setBest(d, variantOf(log.exerciseId, log.variant), patch))}
+              />
+            ))}
+          </Card>
+        )}
 
         <Button title="Готово" onPress={close} />
       </ScrollView>
@@ -95,4 +109,5 @@ const styles = StyleSheet.create({
   card: { gap: 4 },
   section: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 0.5 },
   hint: { fontSize: 14, color: colors.muted, marginBottom: 4 },
+  warmup: { fontSize: 15, color: colors.text, fontVariant: ['tabular-nums'] },
 });

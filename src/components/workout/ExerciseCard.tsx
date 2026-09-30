@@ -4,11 +4,13 @@ import { getExercise, getVariant } from '../../data/program';
 import { formatPlan, formatRest } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';
 import { colors } from '../../theme';
-import type { ExerciseLog, Kind, SetLog } from '../../types';
+import { needsFeel } from '../../logic/records';
+import type { ExerciseLog, Feel, Kind, SetLog } from '../../types';
 import { Button, Card, Segmented } from '../ui';
 import { ExerciseGif } from './ExerciseGif';
 import { GifModal } from './GifModal';
-import { RatingBlock } from './RatingBlock';
+import { FeelBlock } from './FeelBlock';
+import { NoteField } from './NoteField';
 import { SetsTable } from './SetsTable';
 
 const KINDS: { value: Kind; label: string }[] = [
@@ -24,11 +26,15 @@ type Props = {
   onCopy: (index: number) => void;
   onRemove: (index: number) => void;
   onAdd: (type: SetLog['type']) => void;
-  onRate: (patch: Partial<ExerciseLog>) => void;
+  onFeel: (feel: Feel) => void;
+  onToday: (weight: number) => void;
+  onNote: (text: string | undefined) => void;
   onRest: () => void;
+  prevNote?: string;
 };
 
-export function ExerciseCard({ log, number, onVariant, onSet, onCopy, onRemove, onAdd, onRate, onRest }: Props) {
+export function ExerciseCard(props: Props) {
+  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRest, prevNote } = props;
   const ex = getExercise(log.exerciseId);
   const variant = getVariant(ex, log.variant);
   const work = log.sets.filter((s) => s.type === 'work');
@@ -43,6 +49,7 @@ export function ExerciseCard({ log, number, onVariant, onSet, onCopy, onRemove, 
         {complete ? ' · готово' : ''}
       </Text>
       <Text style={styles.name}>{variant.name}</Text>
+      {prevNote ? <Text style={styles.prevNote}>Прошлая заметка: {prevNote}</Text> : null}
       <Text style={styles.meta}>
         {variant.equipment} ·{' '}
         {formatPlan(variant, {
@@ -68,9 +75,11 @@ export function ExerciseCard({ log, number, onVariant, onSet, onCopy, onRemove, 
       </View>
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
+      {needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
       <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} />
+      <Text style={styles.meta}>Оставляйте 1–2 повтора в запасе, не до отказа.</Text>
       <Button title={`Отдых ${formatRest(ex.restSec)}`} onPress={onRest} />
-      <RatingBlock log={log} onChange={onRate} />
+      <NoteField value={log.comment} onChange={onNote} />
       <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} />
     </Card>
   );
@@ -81,6 +90,7 @@ const styles = StyleSheet.create({
   index: { fontSize: 14, color: colors.muted, fontWeight: '600' },
   name: { fontSize: 24, fontWeight: '800', color: colors.text },
   meta: { fontSize: 14, color: colors.muted },
+  prevNote: { fontSize: 14, color: colors.muted, fontStyle: 'italic' },
   cue: { gap: 4, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   cueText: { fontSize: 15, color: colors.text, lineHeight: 21 },
 });

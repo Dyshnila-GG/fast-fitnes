@@ -4,7 +4,7 @@ import { Card } from '../../components/ui';
 import { getTemplate } from '../../data/program';
 import { formatDate, formatDuration, formatTime } from '../../logic/format';
 import { finishedSessions } from '../../logic/metrics';
-import { tonnage } from '../../logic/progression';
+import { tonnage } from '../../logic/tonnage';
 import { elapsedMs } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';

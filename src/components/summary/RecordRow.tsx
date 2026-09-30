@@ -1,34 +1,25 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { getExercise, getVariant } from '../../data/program';
-import { formatPlanValue, formatSetPlan, RATING_LABEL } from '../../logic/format';
-import { sessionPlan } from '../../logic/progression';
-import { buildSets } from '../../logic/session';
+import { formatBest, formatSetPlan } from '../../logic/format';
+import { startBest, warmupSets } from '../../logic/records';
 import { colors } from '../../theme';
-import type { ExerciseLog, Plan } from '../../types';
+import type { Best, ExerciseLog } from '../../types';
 
 type Props = {
   log: ExerciseLog;
-  plan: Plan; // план на следующую тренировку
-  onChange: (patch: Partial<Plan>) => void;
+  best: Best; // рекорд сейчас
+  onChange: (patch: Best) => void;
 };
 
-// Строка блока «План на следующую тренировку»: было → стало, ручная правка, разминка от нового веса.
-export function NextPlanRow({ log, plan, onChange }: Props) {
+// Строка блока «Рекорды»: было → стало (или «без изменений»), ручная правка, разминка в следующий раз.
+export function RecordRow({ log, best, onChange }: Props) {
   const variant = getVariant(getExercise(log.exerciseId), log.variant);
-  const before = sessionPlan(log);
-  const warmup = buildSets(variant, plan, 'long').filter((s) => s.type === 'warmup');
+  const before = log.record ?? startBest(variant);
   const field = variant.mode === 'weight' ? 'weight' : variant.mode === 'time' ? 'seconds' : 'reps';
   const unit = variant.mode === 'weight' ? 'lb' : variant.mode === 'time' ? 'сек' : 'повт';
-
-  const set = (v: number) => {
-    // Для диапазона «8–10» сдвигаем обе границы.
-    if (field === 'reps' && plan.repsMax != null && plan.reps != null) {
-      onChange({ reps: v, repsMax: v + (plan.repsMax - plan.reps) });
-    } else {
-      onChange({ [field]: v });
-    }
-  };
+  const same = before[field] === best[field];
+  const warmup = warmupSets(variant, best);
 
   return (
     <View style={styles.box}>
@@ -36,14 +27,14 @@ export function NextPlanRow({ log, plan, onChange }: Props) {
       <View style={styles.row}>
         <View style={styles.flex}>
           <Text style={styles.change}>
-            {formatPlanValue(variant, before)} → {formatPlanValue(variant, plan)}
+            {same ? formatBest(variant, best) : `${formatBest(variant, before)} → ${formatBest(variant, best)}`}
           </Text>
-          <Text style={styles.meta}>{log.rating ? RATING_LABEL[log.rating] : 'нет оценки — без изменений'}</Text>
+          <Text style={styles.meta}>{same ? 'без изменений' : 'новый рекорд'}</Text>
         </View>
-        <PlanField value={plan[field]} decimal={field === 'weight'} onChange={set} />
+        <PlanField value={best[field]} decimal={field === 'weight'} onChange={(v) => onChange({ [field]: v })} />
         <Text style={styles.unit}>{unit}</Text>
       </View>
-      {warmup.length > 0 && (
+      {warmup.length > 0 && variant.mode === 'weight' && (
         <Text style={styles.meta}>Разминка: {warmup.map(formatSetPlan).join(' · ')}</Text>
       )}
     </View>

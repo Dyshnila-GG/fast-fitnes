@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { LEGACY_PROGRAM } from '../../data/legacy';
 import { PROGRAM } from '../../data/program';
 import { defaultData } from '../../store/defaults';
 import type { AppData, Session } from '../../types';
@@ -95,6 +96,7 @@ describe('вес тела и замеры', () => {
   });
 });
 
+// Тренировки v1 (A/B/C) — история показывается как есть.
 describe('история и прогресс', () => {
   const sessions = [
     done('A', '2026-09-01T18:00:00.000Z', 75),
@@ -139,7 +141,7 @@ describe('история и прогресс', () => {
 
   it('одинаковое имя варианта — всегда одинаковый режим (ключ графика корректен)', () => {
     const modes = new Map<string, string>();
-    for (const t of PROGRAM)
+    for (const t of [...PROGRAM, ...LEGACY_PROGRAM])
       for (const e of t.exercises)
         for (const v of e.variants) {
           expect(modes.get(v.name) ?? v.mode).toBe(v.mode);
@@ -177,6 +179,24 @@ describe('экспорт / импорт', () => {
     const res = parseImport(JSON.stringify(rest));
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.data.plans).toEqual({});
+  });
+
+  it('импорт копии v1: рекорды переносятся из планов, история не меняется', () => {
+    const v1 = { ...sample(), version: 1, records: undefined, plans: { A1: { machine: { sets: 4, reps: 8, weight: 85 } } } };
+    const res = parseImport(JSON.stringify(v1));
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.version).toBe(2);
+    expect(res.data.records['Жим лёжа в Смите']).toEqual({ weight: 85 });
+    expect(res.data.sessions).toEqual(JSON.parse(JSON.stringify(v1.sessions)));
+  });
+
+  it('импорт тренировки v2', () => {
+    let d = defaultData();
+    d = { ...d, activeSession: buildSession(d, 'thu', 'long', new Date('2026-10-01T10:00:00.000Z')) };
+    d = { ...finishActive(d, new Date('2026-10-01T11:00:00.000Z')), summaryId: null };
+    const res = parseImport(exportData(d));
+    expect(res.ok && res.data.sessions[0].templateId).toBe('thu');
   });
 
   it('отказ на битом JSON и чужой структуре', () => {

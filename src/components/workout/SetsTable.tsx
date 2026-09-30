@@ -7,11 +7,11 @@ import { Button } from '../ui';
 const HELP: Record<SetLog['type'], [string, string]> = {
   warmup: [
     'Разминочные подходы',
-    'Лёгкий вес, чтобы подготовить мышцы и суставы: 50% × 12, затем 75% × 6. Не до отказа, отдых короткий.',
+    'От рекорда: 50% × 10, для базовых затем 75% × 5. Свой вес и планка — один лёгкий подход. Не до отказа, отдых короткий. По ощущениям ответьте «Как пошла разминка?».',
   ],
   work: [
     'Рабочие подходы',
-    'Основной вес по плану. Запишите фактический вес и повторы. ✓ — всё сделано по плану (копирует план в факт).',
+    'Вес «сегодня» × диапазон повторов. Оставляйте 1–2 повтора в запасе. Запишите фактический вес и повторы. ✓ — копирует вес «сегодня» и верх диапазона.',
   ],
 };
 
@@ -29,7 +29,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
   const rows = sets.map((s, i) => ({ s, i })).filter((r) => r.s.type === type);
   if (type === 'warmup' && rows.length === 0) return null;
   const [title, help] = HELP[type];
-  const time = variant.mode === 'time' && type === 'work';
+  const time = variant.mode === 'time';
 
   return (
     <View style={styles.block}>

@@ -1,4 +1,4 @@
-import type { Plan, Rating, SetLog, Variant } from '../types';
+import type { Best, ExerciseLog, Feel, Plan, Rating, Session, SetLog, Variant } from '../types';
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
@@ -44,7 +44,7 @@ export function formatRest(sec: number): string {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
-export function formatReps(variant: Variant, plan: Plan): string {
+export function formatReps(variant: Variant, plan: Best): string {
   if (variant.mode === 'time') return `${plan.seconds ?? 0} сек`;
   const reps = plan.repsMax ? `${plan.reps}–${plan.repsMax}` : `${plan.reps ?? 0}`;
   return variant.perLeg ? `${reps} на ногу` : reps;
@@ -58,6 +58,37 @@ export function formatPlan(variant: Variant, plan: Plan): string {
   return base;
 }
 
+// Предпросмотр: «4 × 6–10 × 75 lb», «4 × 6–10 · свой вес», «3 × 40 сек».
+export function formatPreview(variant: Variant, best: Best, sets: number): string {
+  if (variant.mode === 'time') return `${sets} × ${best.seconds ?? 0} сек`;
+  if (variant.mode === 'bodyweight') return `${sets} × ${formatReps(variant, best)} · свой вес`;
+  const reps = formatReps(variant, variant.plan);
+  return best.weight != null ? `${sets} × ${reps} × ${best.weight} lb` : `${sets} × ${reps}`;
+}
+
+// 372 000 мс → «6:12»
+export function formatClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+// «Пробежка 6:12 · 0.52 mi · Суставная 3:05»; у тренировок v1 — null.
+export function formatWarmup(s: Session): string | null {
+  if (!s.warmup) return null;
+  const { run, joints } = s.warmup;
+  const parts = [`Пробежка ${formatClock(run.ms)}`];
+  if (run.distanceMi != null) parts.push(`${run.distanceMi} mi`);
+  parts.push(`Суставная ${formatClock(joints.ms)}`);
+  return parts.join(' · ');
+}
+
+export const FEEL_LABEL: Record<Feel, string> = {
+  easy: 'Легко',
+  normal: 'Нормально',
+  hard: 'Тяжело',
+};
+
+// v1 — только история.
 export const RATING_LABEL: Record<Rating, string> = {
   easy: 'Легко',
   normal: 'Нормально',
@@ -65,8 +96,8 @@ export const RATING_LABEL: Record<Rating, string> = {
   fail: 'Не смог',
 };
 
-// Значение, которое меняет прогрессия: «80 lb», «9–11», «45 сек».
-export function formatPlanValue(variant: Variant, plan: Plan): string {
+// Рекорд: «80 lb», «7–11», «45 сек».
+export function formatBest(variant: Variant, plan: Best): string {
   if (variant.mode === 'weight') return plan.weight != null ? `${plan.weight} lb` : '—';
   return formatReps(variant, plan);
 }
@@ -84,4 +115,16 @@ export function formatSetPlan(set: SetLog): string {
   if (set.planSeconds != null) return `${set.planSeconds} сек`;
   const reps = set.planRepsMax ? `${set.planReps}–${set.planRepsMax}` : `${set.planReps ?? '—'}`;
   return `${set.planWeight ?? 'свой'} × ${reps}`;
+}
+
+// Строка под упражнением: v2 — «Разминка: Легко · сегодня 80 lb», v1 — «Легко · сложность 7/10».
+export function exerciseMeta(log: ExerciseLog, variant: Variant): string {
+  if (!log.record) {
+    return [log.rating ? RATING_LABEL[log.rating] : 'без оценки', log.difficulty != null ? `сложность ${log.difficulty}/10` : null]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  if (variant.mode === 'time') return '';
+  const today = variant.mode === 'weight' && log.todayWeight != null ? ` · сегодня ${log.todayWeight} lb` : '';
+  return log.feel ? `Разминка: ${FEEL_LABEL[log.feel]}${today}` : 'нет ответа после разминки';
 }

@@ -1,20 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { getExercise, getVariant } from '../../data/program';
-import { formatFact, RATING_LABEL } from '../../logic/format';
+import { exerciseMeta, formatFact } from '../../logic/format';
 import { colors } from '../../theme';
 import type { ExerciseLog } from '../../types';
 
-// Упражнение в итоге: факт по подходам, оценка, сложность, комментарий.
+// Упражнение в итоге: факт по подходам, ответ после разминки, заметка.
 export function ExerciseResult({ log }: { log: ExerciseLog }) {
   const variant = getVariant(getExercise(log.exerciseId), log.variant);
   const warmup = log.sets.filter((s) => s.type === 'warmup');
   const work = log.sets.filter((s) => s.type === 'work');
-  const meta = [
-    log.rating ? RATING_LABEL[log.rating] : 'без оценки',
-    log.difficulty != null ? `сложность ${log.difficulty}/10` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = exerciseMeta(log, variant);
 
   return (
     <View style={styles.box}>
@@ -23,7 +18,7 @@ export function ExerciseResult({ log }: { log: ExerciseLog }) {
         <Text style={styles.sets}>Разминка: {warmup.map((s) => formatFact(s, variant)).join(' · ')}</Text>
       )}
       <Text style={styles.sets}>Рабочие: {work.length > 0 ? work.map((s) => formatFact(s, variant)).join(' · ') : '—'}</Text>
-      <Text style={styles.meta}>{meta}</Text>
+      {meta ? <Text style={styles.meta}>{meta}</Text> : null}
       {log.comment ? <Text style={styles.comment}>«{log.comment}»</Text> : null}
     </View>
   );

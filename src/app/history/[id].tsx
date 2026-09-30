@@ -2,14 +2,14 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/ui';
 import { getExercise, getTemplate, getVariant } from '../../data/program';
-import { formatDate, formatDuration, formatFact, formatSetPlan, formatTime, RATING_LABEL } from '../../logic/format';
-import { tonnage } from '../../logic/progression';
+import { exerciseMeta, formatDate, formatDuration, formatFact, formatSetPlan, formatTime, formatWarmup } from '../../logic/format';
+import { tonnage } from '../../logic/tonnage';
 import { elapsedMs, WARMUP_ITEMS } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import type { ExerciseLog } from '../../types';
 
-// Детали тренировки: все подходы план/факт, оценки, комментарии.
+// Детали тренировки: все подходы план/факт, ответ после разминки (v1 — оценки), заметки.
 export default function SessionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useStore();
@@ -23,7 +23,9 @@ export default function SessionDetailsScreen() {
     );
   }
 
-  const warmup = WARMUP_ITEMS.map((w) => `${s.warmupDone.includes(w.id) ? '✓' : '✗'} ${w.label}`).join(' · ');
+  // v1 — чек-лист разминки, v2 — секундомеры.
+  const warmup =
+    formatWarmup(s) ?? WARMUP_ITEMS.map((w) => `${s.warmupDone?.includes(w.id) ? '✓' : '✗'} ${w.label}`).join(' · ');
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -49,12 +51,7 @@ export default function SessionDetailsScreen() {
 function ExerciseDetails({ log }: { log: ExerciseLog }) {
   const ex = getExercise(log.exerciseId);
   const variant = getVariant(ex, log.variant);
-  const meta = [
-    log.rating ? RATING_LABEL[log.rating] : 'без оценки',
-    log.difficulty != null ? `сложность ${log.difficulty}/10` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = exerciseMeta(log, variant);
   let warm = 0;
   let work = 0;
 
@@ -74,7 +71,7 @@ function ExerciseDetails({ log }: { log: ExerciseLog }) {
           <Text style={[styles.cell, styles.col, styles.fact]}>{formatFact(set, variant)}</Text>
         </View>
       ))}
-      <Text style={styles.meta}>{meta}</Text>
+      {meta ? <Text style={styles.meta}>{meta}</Text> : null}
       {log.comment ? <Text style={styles.comment}>«{log.comment}»</Text> : null}
     </Card>
   );
