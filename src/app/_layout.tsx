@@ -33,11 +33,14 @@ function RootStack() {
         <Stack.Screen name="history/index" options={{ title: 'История тренировок' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'Тренировка' }} />
         <Stack.Screen name="progress" options={{ title: 'Прогресс по упражнению' }} />
-        <Stack.Screen name="profile" options={{ title: 'Профиль' }} />
+        <Stack.Screen name="personal" options={{ title: 'Возраст, рост, старт' }} />
         <Stack.Screen name="data" options={{ title: 'Экспорт / импорт' }} />
         <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
         <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
         <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />
+        <Stack.Screen name="sleep" options={{ title: 'Сон' }} />
+        <Stack.Screen name="sleep-edit" options={{ title: 'Записать сон' }} />
+        <Stack.Screen name="runs" options={{ title: 'Пробежки' }} />
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />

@@ -8,7 +8,7 @@ import type { AppData } from '../types';
 
 const describe = (d: AppData) =>
   `тренировок: ${finishedSessions(d.sessions).length}, записей веса: ${d.bodyWeight.length}, замеров: ${d.measurements.length}, ` +
-  `дней с отметками еды: ${Object.keys(d.food.eaten).length}`;
+  `дней с отметками еды: ${Object.keys(d.food.eaten).length}, ночей сна: ${Object.keys(d.sleep).length}, пробежек: ${Object.keys(d.runs).length}`;
 
 export default function DataScreen() {
   const { data, update } = useStore();

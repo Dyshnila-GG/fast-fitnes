@@ -21,7 +21,8 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Тренировки', tabBarIcon: icon('🏋') }} />
+      <Tabs.Screen name="index" options={{ title: 'Главная', tabBarIcon: icon('🏠') }} />
+      <Tabs.Screen name="workouts" options={{ title: 'Тренировки', tabBarIcon: icon('🏋') }} />
       <Tabs.Screen
         name="food"
         options={{
@@ -34,7 +35,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="metrics" options={{ title: 'Метрики', tabBarIcon: icon('📈') }} />
+      <Tabs.Screen name="profile" options={{ title: 'Профиль', tabBarIcon: icon('👤') }} />
     </Tabs>
   );
 }

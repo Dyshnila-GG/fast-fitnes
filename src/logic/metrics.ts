@@ -170,7 +170,10 @@ export function parseImport(text: string): ImportResult {
       sessions: sessions as Session[],
       bodyWeight: bodyWeight as BodyWeightEntry[],
       measurements: measurements as MeasurementEntry[],
-      food: raw.food as AppData['food'], // проверяется в migrateData
+      // Еда, сон и пробежки проверяются в migrateData.
+      food: raw.food as AppData['food'],
+      sleep: raw.sleep as AppData['sleep'],
+      runs: raw.runs as AppData['runs'],
       // Незавершённая тренировка и открытый итог не переносятся.
       activeSession: null,
       summaryId: null,

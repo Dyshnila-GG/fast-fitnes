@@ -40,7 +40,8 @@
           "cameraPermission": "GymLog использует камеру, чтобы сфотографировать блюдо.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "gymlog",
     "backgroundColor": "#000000"

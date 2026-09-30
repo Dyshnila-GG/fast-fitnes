@@ -39,7 +39,7 @@ export function DayPicker({ value, onChange }: { value: string; onChange: (day: 
   );
 }
 
-// Карточка-переход на вкладке «Метрики».
+// Карточка-переход на вкладке «Профиль».
 export function NavCard({ title, subtitle, onPress }: { title: string; subtitle: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.nav, pressed && styles.pressed]}>

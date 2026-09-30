@@ -9,6 +9,7 @@ import {
 import { defaultFood } from '../store/defaults';
 import type { AppData, FoodData } from '../types';
 import { dayDate, shiftDay } from './dates';
+import { fromMinutes, isTime, toMinutes } from './time';
 
 // Приём пищи на конкретную дату (с учётом Вс-исключений, замен и своего времени).
 export type Meal = {
@@ -117,18 +118,6 @@ export function setPhoto(d: AppData, dish: DishId, uri: string | null): AppData 
 }
 
 // ---- Время приёмов ----
-
-export function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
-export function fromMinutes(total: number): string {
-  const t = ((total % 1440) + 1440) % 1440;
-  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
-}
-
-export const isTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 
 // «07:00» → «~7:00»
 export const formatMealTime = (time: string) => `~${Number(time.slice(0, 2))}:${time.slice(3)}`;

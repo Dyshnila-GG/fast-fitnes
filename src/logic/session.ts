@@ -46,6 +46,16 @@ export function buildSession(data: AppData, templateId: TemplateId, length: Leng
   };
 }
 
+// Старт тренировки выбранной длины (вкладка «Тренировки» и «Главная»). Экран тренировки откроется сам (см. _layout).
+export function startWorkout(d: AppData, templateId: TemplateId, now = new Date()): AppData {
+  if (d.activeSession) return d;
+  return { ...d, activeSession: buildSession(d, templateId, d.lengthChoice[templateId] ?? 'long', now) };
+}
+
+export function setLengthChoice(d: AppData, templateId: TemplateId, length: Length): AppData {
+  return { ...d, lengthChoice: { ...d.lengthChoice, [templateId]: length } };
+}
+
 export function lastFinished(data: AppData, templateId: TemplateId): Session | undefined {
   return data.sessions
     .filter((s) => s.templateId === templateId && s.finishedAt)

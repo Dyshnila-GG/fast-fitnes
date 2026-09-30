@@ -1,22 +1,28 @@
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { NavCard } from '../../components/form';
-import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/format';
 import { foodStats, formatNum } from '../../logic/food';
+import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/format';
 import { dayKey, finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
+import { formatSleep, sleepAverage } from '../../logic/sleep';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
-export default function MetricsScreen() {
+// «Профиль» (бывшие «Метрики», SPEC_v3 §10).
+export default function ProfileScreen() {
   const { data } = useStore();
   const { profile } = data;
+  const today = dayKey();
   const lastWeight = latestFirst(data.bodyWeight)[0];
   const lastMeasure = latestFirst(data.measurements)[0];
   const sessions = finishedSessions(data.sessions);
   const progress = progressItems(data.sessions);
-  const food = foodStats(data.food, dayKey());
+  const food = foodStats(data.food, today);
+  const sleep7 = sleepAverage(data.sleep, today, 7);
+  const runDays = Object.keys(data.runs).sort().reverse();
+  const lastRun = runDays[0] ? data.runs[runDays[0]] : undefined;
 
   const weightSub = lastWeight
     ? `${lastWeight.value} lb · ${formatDay(lastWeight.date)} · ${signed(round(lastWeight.value - profile.startWeight))} lb от стартового`
@@ -24,6 +30,11 @@ export default function MetricsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <NavCard
+        title="Профиль"
+        subtitle={`${formatAge(profile.age)} · ${formatHeight(profile.heightIn)} · старт ${profile.startWeight} lb`}
+        onPress={() => router.push('/personal')}
+      />
       <NavCard title="Вес тела" subtitle={weightSub} onPress={() => router.push('/weight')} />
       <NavCard
         title="Замеры"
@@ -46,10 +57,20 @@ export default function MetricsScreen() {
         onPress={() => router.push('/food')}
       />
       <NavCard
-        title="Профиль"
-        subtitle={`${formatAge(profile.age)} · ${formatHeight(profile.heightIn)} · старт ${profile.startWeight} lb`}
-        onPress={() => router.push('/profile')}
+        title="Сон"
+        subtitle={sleep7 != null ? `Среднее за 7 дней: ${formatSleep(sleep7)}` : 'Нет записей'}
+        onPress={() => router.push('/sleep')}
       />
+      <NavCard
+        title="Пробежки"
+        subtitle={
+          lastRun
+            ? `${runDays.length} · последняя ${formatDay(runDays[0])}, ${lastRun.minutes} мин${lastRun.distanceMi != null ? ` · ${lastRun.distanceMi} mi` : ''}`
+            : 'Отмечаются на «Главной» в Ср и Пт'
+        }
+        onPress={() => router.push('/runs')}
+      />
+      <NavCard title="Настройки еды" subtitle="Время приёмов пищи для «Дня зала» и «Обычного дня»" onPress={() => router.push('/food-settings')} />
       <NavCard title="Экспорт / импорт" subtitle="Резервная копия всех данных в JSON" onPress={() => router.push('/data')} />
     </ScrollView>
   );

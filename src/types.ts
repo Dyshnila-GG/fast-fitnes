@@ -120,6 +120,11 @@ export type FoodData = {
   times: { gym: Record<string, string>; rest: Record<string, string> }; // своё время приёмов «HH:MM»
 };
 
+// Сон (SPEC_v3 §9): ключ — день пробуждения «YYYY-MM-DD»; «лёг» может быть накануне до полуночи.
+export type SleepEntry = { bed: string; wake: string; quality: number }; // «HH:MM», качество 1–5
+// Пробежка (Ср/Пт): ключ — день «YYYY-MM-DD».
+export type RunEntry = { minutes: number; distanceMi?: number };
+
 export type AppData = {
   version: 2;
   profile: Profile;
@@ -133,4 +138,6 @@ export type AppData = {
   bodyWeight: BodyWeightEntry[];
   measurements: MeasurementEntry[];
   food: FoodData;
+  sleep: Record<string, SleepEntry>;
+  runs: Record<string, RunEntry>;
 };

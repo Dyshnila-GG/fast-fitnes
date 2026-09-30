@@ -18,5 +18,7 @@ export function defaultData(): AppData {
     bodyWeight: [],
     measurements: [],
     food: defaultFood(),
+    sleep: {},
+    runs: {},
   };
 }

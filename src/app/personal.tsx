@@ -6,7 +6,7 @@ import { parseNum } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 
-export default function ProfileScreen() {
+export default function PersonalScreen() {
   const { data, update } = useStore();
   const p = data.profile;
   const [age, setAge] = useState(String(p.age));
