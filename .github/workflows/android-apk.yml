@@ -1,0 +1,76 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Номер запуска -> android.versionCode (app.config.ts): каждая сборка ставится поверх предыдущей.
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      # SHA-256 сертификата debug.keystore из шаблона expo prebuild. Если не совпадёт — APK не встанет поверх, сборка падает.
+      EXPECTED_CERT_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+      # Пакет установленного приложения: менять нельзя, иначе это другое приложение и данные не сохранятся.
+      EXPECTED_PACKAGE: com.dyshnila.gymlog
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
+
+      - name: Verify package and signature
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          BADGING=$("$BUILD_TOOLS/aapt2" dump badging "$APK" | head -1)
+          echo "$BADGING"
+          if ! echo "$BADGING" | grep -q "name='$EXPECTED_PACKAGE'"; then
+            echo "::error::Пакет APK не $EXPECTED_PACKAGE — обновление не встанет поверх установленного приложения, данные пропадут."
+            exit 1
+          fi
+          APKSIGNER=$BUILD_TOOLS/apksigner
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')
+          echo "Certificate SHA-256: $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error::Подпись APK изменилась (ожидалось $EXPECTED_CERT_SHA256) — обновление поверх установленного приложения не встанет."
+            exit 1
+          fi
+
+      - name: Rename APK
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "APK_NAME=TOCHKA-Fitness-$VERSION-$GITHUB_RUN_NUMBER.apk" >> "$GITHUB_ENV"
+          mv android/app/build/outputs/apk/release/app-release.apk "TOCHKA-Fitness-$VERSION-$GITHUB_RUN_NUMBER.apk"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.APK_NAME }}
+          archive: false
+          retention-days: 30
+          if-no-files-found: error
