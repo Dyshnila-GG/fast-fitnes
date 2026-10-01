@@ -5,7 +5,7 @@ import { colors } from '../../theme';
 import type { SetLog, Variant } from '../../types';
 import { Button } from '../ui';
 import { Icon } from '../Icon';
-import { t as tr, type Key } from '../../i18n';
+import { cleanDecimal, inputNum, t as tr, type Key } from '../../i18n';
 import { formatWeightNum } from '../../logic/format';
 import { weightToLb, weightUnit, weightValue } from '../../logic/units';
 import { useT } from '../../i18n/useT';
@@ -42,7 +42,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
         </Pressable>
       </View>
       <View style={styles.headRow}>
-        <Text style={[styles.head, styles.num]}>№</Text>
+        <Text style={[styles.head, styles.num]}>{t('set.num')}</Text>
         <Text style={[styles.head, styles.plan]}>{t('report.plan')}</Text>
         <Text style={[styles.head, styles.fact]}>{t('report.fact')}</Text>
       </View>
@@ -80,7 +80,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
 }
 
 function planText(s: SetLog, variant: Variant): string {
-  if (s.planSeconds != null) return `${s.planSeconds} ${tr('unit.sec')}`;
+  if (s.planSeconds != null) return `${s.planSeconds}\u00A0${tr('unit.sec')}`;
   const reps = s.planRepsMax ? `${s.planReps}–${s.planRepsMax}` : `${s.planReps ?? '—'}`;
   const weight = variant.mode === 'bodyweight' ? tr('set.own') : s.planWeight != null ? formatWeightNum(s.planWeight) : '—';
   return `${weight} × ${reps}`;
@@ -88,7 +88,7 @@ function planText(s: SetLog, variant: Variant): string {
 
 function parse(text: string): number | undefined {
   if (text.trim() === '') return undefined;
-  const n = Number(text);
+  const n = Number(text.replace(',', '.'));
   return Number.isFinite(n) ? n : undefined;
 }
 
@@ -106,10 +106,10 @@ function NumField({
   weight?: boolean; // вес: показ и ввод в выбранных единицах, хранение — lb
 }) {
   const shown = value == null ? undefined : weight ? weightValue(value) : value;
-  const [text, setText] = useState(shown == null ? '' : String(shown));
+  const [text, setText] = useState(inputNum(shown));
   // Синхронизация, если значение поменялось извне (кнопка ✓, удаление подхода).
   useEffect(() => {
-    setText((prev) => (parse(prev) === shown ? prev : shown == null ? '' : String(shown)));
+    setText((prev) => (parse(prev) === shown ? prev : inputNum(shown)));
   }, [shown]);
 
   return (
@@ -120,7 +120,7 @@ function NumField({
       keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
       returnKeyType="done"
       onChangeText={(t) => {
-        const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
+        const clean = decimal ? cleanDecimal(t) : t.replace(/[^0-9]/g, '');
         setText(clean);
         const n = parse(clean);
         onChange(n != null && weight ? weightToLb(n) : n);

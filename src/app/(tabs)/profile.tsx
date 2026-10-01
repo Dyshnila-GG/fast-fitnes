@@ -9,7 +9,7 @@ import { formatRunTime } from '../../logic/run';
 import { backupSupported } from '../../services/backup';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
-import { formatNumber, LANG_NAMES } from '../../i18n';
+import { formatNumber, LANG_NAMES, tp } from '../../i18n';
 import { weightUnit, weightValue } from '../../logic/units';
 import { useT } from '../../i18n/useT';
 
@@ -52,17 +52,17 @@ export default function ProfileScreen() {
       />
       <NavCard
         title={t('profile.history')}
-        subtitle={sessions.length > 0 ? t('profile.historySub', { n: sessions.length, date: formatDate(sessions[0].finishedAt!) }) : t('profile.empty')}
+        subtitle={sessions.length > 0 ? t('profile.historySub', { workouts: tp('count.workouts', sessions.length), date: formatDate(sessions[0].finishedAt!) }) : t('profile.empty')}
         onPress={() => router.push('/history')}
       />
       <NavCard
         title={t('profile.progress')}
-        subtitle={progress.length > 0 ? t('profile.progressSub', { n: progress.length }) : t('profile.progressEmpty')}
+        subtitle={progress.length > 0 ? t('profile.progressSub', { exercises: tp('count.exercises', progress.length) }) : t('profile.progressEmpty')}
         onPress={() => router.push('/progress')}
       />
       <NavCard
         title={t('tabs.food')}
-        subtitle={t('profile.foodSub', { eaten: food.eaten, total: food.total, kcal: formatNum(food.avgKcal), protein: food.avgProtein })}
+        subtitle={t('profile.foodSub', { meals: tp('count.meals', food.eaten), total: food.total, kcal: formatNum(food.avgKcal), protein: food.avgProtein })}
         onPress={() => router.push('/food')}
       />
       <NavCard
@@ -74,13 +74,13 @@ export default function ProfileScreen() {
         title={t('profile.runs')}
         subtitle={
           lastRun
-            ? t('profile.runsSub', { n: runDays.length, date: formatDay(runDays[0]), time: formatRunTime(lastRun.minutes) }) +
+            ? t('profile.runsSub', { runs: tp('count.runs', runDays.length), date: formatDay(runDays[0]), time: formatRunTime(lastRun.minutes) }) +
               (lastRun.distanceMi != null ? ` · ${formatDistance(lastRun.distanceMi)}` : '')
             : t('profile.runsEmpty')
         }
         onPress={() => router.push('/runs')}
       />
-      <NavCard title={t('profile.menu')} subtitle={t('profile.menuSub', { n: Object.keys(data.food.dishes).length })} onPress={() => router.push('/menu')} />
+      <NavCard title={t('profile.menu')} subtitle={t('profile.menuSub', { dishes: tp('count.dishes', Object.keys(data.food.dishes).length) })} onPress={() => router.push('/menu')} />
       <NavCard title={t('profile.schedule')} subtitle={t('profile.scheduleSub')} onPress={() => router.push('/food-settings')} />
       <NavCard
         title={t('profile.backup')}

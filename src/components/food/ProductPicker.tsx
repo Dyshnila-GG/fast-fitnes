@@ -3,7 +3,7 @@ import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PRODUCT_SECTIONS, type ProductSection } from '../../data/food';
 import { addProduct, knownProducts } from '../../logic/food';
-import { useStore } from '../../store/AppStore';
+import { useSettings, useStore } from '../../store/AppStore';
 import { colors, gap, radius } from '../../theme';
 import { Icon } from '../Icon';
 import { Text, TextInput } from '../Text';
@@ -18,7 +18,10 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [section, setSection] = useState<ProductSection | null>(null);
-  const all = useMemo(() => knownProducts(data.food), [data.food]);
+  const { lang } = useSettings();
+  // Сортировка по названию на текущем языке.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const all = useMemo(() => knownProducts(data.food), [data.food, lang]);
   const q = query.trim().toLowerCase();
   const nameOf = (p: (typeof all)[number]) => productName(p.id, p.product);
   const list = q ? all.filter((p) => nameOf(p).toLowerCase().includes(q)) : all;

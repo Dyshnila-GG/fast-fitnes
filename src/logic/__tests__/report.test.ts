@@ -47,17 +47,17 @@ describe('отчёт по тренировке (SPEC_v3_3 §B2)', () => {
     expect(md).toContain('- Версия: длинная');
     expect(md).toContain('- Длительность: 1:05:00');
     expect(md).toContain('- Общая пауза: 00:00');
-    expect(md).toContain('- Разминка: Пробежка 6:12 · 0,52 mi · Суставная 3:05');
-    expect(md).toMatch(/- Тоннаж: [\d\s]+ lb/);
+    expect(md).toContain('- Разминка: Пробежка 6:12 · 0,52\u00A0mi · Суставная 3:05');
+    expect(md).toMatch(/- Тоннаж: [\d\s]+\u00A0lb/);
   });
 
   it('упражнение: вариант, рекорд было → стало, ответ, вес «сегодня», таблица План | Факт, оценка, заметка', () => {
     const md = sessionReport(finished()).markdown;
     expect(md).toContain('## 1. Жим лёжа в Смите');
     expect(md).toContain('- Вариант: тренажёр');
-    expect(md).toContain('- Рекорд: 75 lb → 80 lb');
+    expect(md).toContain('- Рекорд: 75\u00A0lb → 80\u00A0lb');
     expect(md).toContain('- Ответ после разминки: Легко');
-    expect(md).toContain('- Вес «сегодня»: 80 lb');
+    expect(md).toContain('- Вес «сегодня»: 80\u00A0lb');
     expect(md).toContain('- Оценка: Нормально');
     expect(md).toContain('- Заметка: Плечи / ок');
     expect(md).toContain('| Подход | План | Факт |');
@@ -69,8 +69,8 @@ describe('отчёт по тренировке (SPEC_v3_3 §B2)', () => {
     const r = runReport('2026-09-30', { minutes: 28, distanceMi: 3 });
     expect(r.fileName).toBe('TOCHKA-Fitness_2026-09-30_Пробежка.md');
     expect(r.markdown).toContain('- Время: 28 мин');
-    expect(r.markdown).toContain('- Дистанция: 3 mi');
-    expect(r.markdown).toContain('- Темп: 9:20 мин/mi');
+    expect(r.markdown).toContain('- Дистанция: 3\u00A0mi');
+    expect(r.markdown).toContain('- Темп: 9:20\u00A0мин/mi');
     expect(runReport('2026-09-30', { minutes: 20 }).markdown).toContain('- Темп: —');
   });
 });

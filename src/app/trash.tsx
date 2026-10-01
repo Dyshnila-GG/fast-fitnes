@@ -37,7 +37,7 @@ export default function TrashScreen() {
         <View style={styles.empty}>
           <Icon name="delete-outline" size={44} color={colors.muted} />
           <Text style={styles.emptyTitle}>{t('trash.empty')}</Text>
-          <Text style={styles.muted}>{t('trash.emptyHint', { days: TRASH_DAYS })}</Text>
+          <Text style={styles.muted}>{t('trash.emptyHint', { days: tp('days', TRASH_DAYS) })}</Text>
         </View>
       ) : (
         <>
@@ -63,7 +63,9 @@ export default function TrashScreen() {
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.danger, pressed && styles.pressed]}
                   >
-                    <Text style={styles.dangerText}>{t('trash.deleteForever')}</Text>
+                    <Text style={styles.dangerText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                      {t('trash.deleteForever')}
+                    </Text>
                   </Pressable>
                 </View>
               </Card>
@@ -85,15 +87,17 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   left: { fontSize: 14, fontWeight: '600', color: colors.text },
   actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  // По ширине текста («Видалити назавжди» не обрезается), «Восстановить» занимает остаток.
   danger: {
-    flex: 1,
+    flexShrink: 0,
     borderRadius: 12,
     paddingVertical: 9,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.button,
   },
-  dangerText: { fontSize: 14, fontWeight: '600', color: colors.danger },
+  dangerText: { fontSize: 13, fontWeight: '600', color: colors.danger, textAlign: 'center' },
   pressed: { opacity: 0.7 },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 64 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text },

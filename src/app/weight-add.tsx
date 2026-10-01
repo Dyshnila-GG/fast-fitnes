@@ -4,6 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'r
 import { DayPicker, NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { addBodyWeight, dayKey, latestFirst, parseNum } from '../logic/metrics';
+import { inputNum } from '../i18n';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 import { weightToLb, weightUnit, weightValue } from '../logic/units';
@@ -32,7 +33,7 @@ export default function WeightAddScreen() {
             label={t('weight.label', { u: weightUnit() })}
             value={text}
             onChangeText={setText}
-            placeholder={String(weightValue(last?.value ?? data.profile.startWeight))}
+            placeholder={inputNum(weightValue(last?.value ?? data.profile.startWeight))}
             autoFocus
           />
           <DayPicker value={day} onChange={setDay} />

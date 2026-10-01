@@ -16,7 +16,7 @@ import {
   type ProductSection,
 } from '../data/food';
 import { formatNumber, getLang, t } from '../i18n';
-import { dishIngredientTexts, dishName, dishSteps, pieceUnit, productName, sectionTitle } from '../i18n/content';
+import { dishIngredientTexts, dishName, dishSteps, mealTitle, pieceUnit, productName, sectionTitle } from '../i18n/content';
 import { defaultFood } from '../store/defaults';
 import type { AppData, FoodData } from '../types';
 import { dayDate, shiftDay, weekStart } from './dates';
@@ -59,7 +59,7 @@ export function mealsFor(food: FoodData, day: string): Meal[] {
     const dishes = swapped ? [swap] : existing(food, s.dishes);
     return {
       slot: s.id,
-      title: s.title,
+      title: mealTitle(s.title),
       time: s.time,
       dishes,
       swapped,
@@ -142,7 +142,7 @@ export function itemText(food: FoodData, item: DishItem): string {
   const p = productOf(food, item.product);
   const name = productName(item.product, p);
   const count = item.count ?? (p?.piece ? Math.round((item.g / p.piece.g) * 10) / 10 : undefined);
-  const grams = `${formatNum(item.g)} ${t('unit.g')}`;
+  const grams = `${formatNum(item.g)}\u00A0${t('unit.g')}`;
   if (count != null) return `${name} — ${formatNumber(count)} ${p?.piece ? pieceUnit(p.piece.unit) : t('unit.pcs')} (~${grams})`;
   return `${name} — ${grams}`;
 }
@@ -314,7 +314,7 @@ export type ProductGroup = { section: ProductSection; title: string; rows: Produ
 export function formatProductRow(food: FoodData, product: string, g: number): ProductRow {
   const p = productOf(food, product);
   const name = productName(product, p);
-  const grams = `${formatNum(g)} ${t('unit.g')}`;
+  const grams = `${formatNum(g)}\u00A0${t('unit.g')}`;
   const count = p?.piece ? Math.round((g / p.piece.g) * 10) / 10 : undefined;
   const amount = p?.piece && count != null ? `${formatNumber(count)} ${pieceUnit(p.piece.unit)} (~${grams})` : grams;
   return { product, name, g, count, amount, text: `${name} — ${amount}` };

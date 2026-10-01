@@ -94,7 +94,7 @@ function ExerciseDetails({ log }: { log: ExerciseLog }) {
       <Text style={styles.muted}>{exerciseTitle(ex)}</Text>
       <Text style={styles.name}>{variantName(variant)}</Text>
       <View style={styles.head}>
-        <Text style={[styles.headText, styles.num]}>№</Text>
+        <Text style={[styles.headText, styles.num]}>{t('set.num')}</Text>
         <Text style={[styles.headText, styles.col]}>{t('report.plan')}</Text>
         <Text style={[styles.headText, styles.col]}>{t('report.fact')}</Text>
       </View>

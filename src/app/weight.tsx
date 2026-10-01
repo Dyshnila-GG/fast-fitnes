@@ -6,6 +6,7 @@ import { DayPicker, EntryRow, NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { formatDay, formatWeight } from '../logic/format';
 import { addBodyWeight, dayKey, latestFirst, parseNum, removeEntry, weightSeries } from '../logic/metrics';
+import { inputNum } from '../i18n';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import { weightToLb, weightUnit, weightValue } from '../logic/units';
@@ -29,7 +30,7 @@ export default function WeightScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
-          <NumInput label={t('weight.label', { u: weightUnit() })} value={text} onChangeText={setText} placeholder={String(weightValue(data.profile.startWeight))} />
+          <NumInput label={t('weight.label', { u: weightUnit() })} value={text} onChangeText={setText} placeholder={inputNum(weightValue(data.profile.startWeight))} />
           <DayPicker value={day} onChange={setDay} />
           <Button title={t('common.save')} onPress={save} />
         </Card>

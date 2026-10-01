@@ -10,6 +10,7 @@ import { shareReport } from '../services/share';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import { useT } from '../i18n/useT';
+import { tp } from '../i18n';
 
 // История пробежек. Отмечаются только на «Главной» (Ср и Пт).
 export default function RunsScreen() {
@@ -22,7 +23,7 @@ export default function RunsScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.muted}>
         {t('runs.hint')}
-        {days.length > 0 ? ` ${t('runs.total', { n: days.length, distance: formatDistance(total) })}` : ''}
+        {days.length > 0 ? ` ${t('runs.total', { runs: tp('count.runs', days.length), distance: formatDistance(total) })}` : ''}
       </Text>
       <Card>
         {days.length === 0 && <Text style={styles.muted}>{t('runs.empty')}</Text>}

@@ -169,7 +169,7 @@ describe('последняя тренировка', () => {
     const last = lastSession(d)!;
     expect(recordGains(d, last)).toEqual([]);
     d = { ...d, records: { ...d.records, 'Жим лёжа в Смите': { weight: 80 } } };
-    expect(recordGains(d, last)).toEqual(['Жим лёжа в Смите 75 lb → 80 lb']);
+    expect(recordGains(d, last)).toEqual(['Жим лёжа в Смите 75\u00A0lb → 80\u00A0lb']);
   });
 });
 

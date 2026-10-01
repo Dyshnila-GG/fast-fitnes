@@ -13,6 +13,7 @@ import { FOOD_IMAGES } from '../data/foodImages';
 import { deleteDish, productOf, recipeOf, saveDish, setPhoto, setRecipe, standardRecipe } from '../logic/food';
 import { newId } from '../logic/id';
 import { parseNum } from '../logic/metrics';
+import { inputNum } from '../i18n';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
 import { dishName, pieceUnit, productName } from '../i18n/content';
@@ -20,9 +21,9 @@ import { useT } from '../i18n/useT';
 
 type Row = { key: string; product?: string; g: string; count: string };
 
-const toRow = (i: DishItem): Row => ({ key: newId(), product: i.product, g: String(i.g), count: i.count != null ? String(i.count) : '' });
+const toRow = (i: DishItem): Row => ({ key: newId(), product: i.product, g: inputNum(i.g), count: inputNum(i.count) });
 const emptyRow = (): Row => ({ key: newId(), g: '', count: '' });
-const num = (v: number | undefined) => (v != null ? String(v) : '');
+const num = inputNum;
 
 // Форма блюда (SPEC_v3_3 §C2): новое — без id, «Изменить» — с id. Та же форма для стандартных и своих блюд.
 export default function DishEditScreen() {

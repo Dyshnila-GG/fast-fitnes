@@ -43,9 +43,9 @@ describe('конвертация туда-обратно (SPEC_v3_3 §D3)', () =
     const back = { ...metric, settings: { ...metric.settings, units: 'imperial' as const } };
     expect(back.profile).toEqual(d.profile);
     setUnits('metric');
-    expect(formatWeight(d.profile.startWeight)).toBe('73 kg');
+    expect(formatWeight(d.profile.startWeight)).toBe('73\u00A0кг');
     setUnits('imperial');
-    expect(formatWeight(d.profile.startWeight)).toBe('161,3 lb');
+    expect(formatWeight(d.profile.startWeight)).toBe('161,3\u00A0lb');
   });
 
   it('рост ft/in ↔ cm, замеры in ↔ cm', () => {
@@ -54,20 +54,20 @@ describe('конвертация туда-обратно (SPEC_v3_3 §D3)', () =
     expect(heightCm(72)).toBe(183);
     expect(formatHeight(72)).toBe(`6'0"`);
     setUnits('metric');
-    expect(formatHeight(72)).toBe('183 cm');
+    expect(formatHeight(72)).toBe('183\u00A0см');
     expect(lengthValue(32, 'metric')).toBe(81.5);
     expect(lengthToIn(81.28, 'metric')).toBeCloseTo(32, 6);
-    expect(formatLength(32)).toBe('81,5 cm');
+    expect(formatLength(32)).toBe('81,5\u00A0см');
   });
 
   it('пробежка: mi ↔ km, темп мин/mi ↔ мин/km', () => {
     expect(distanceValue(3, 'metric')).toBe(4.83);
     expect(distanceToMi(5, 'metric')).toBeCloseTo(3.107, 3);
     expect(paceValue(9 + 20 / 60, 'metric')).toBeCloseTo(5.8, 2);
-    expect(formatPace(9 + 20 / 60)).toBe('9:20 мин/mi');
+    expect(formatPace(9 + 20 / 60)).toBe('9:20\u00A0мин/mi');
     setUnits('metric');
-    expect(formatPace(9 + 20 / 60)).toBe('5:48 мин/km');
-    expect(formatDistance(3)).toBe('4,83 km');
+    expect(formatPace(9 + 20 / 60)).toBe('5:48\u00A0мин/км');
+    expect(formatDistance(3)).toBe('4,83\u00A0км');
   });
 
   it('°F → °C в рецептах, округление до 5; хранимый текст не меняется', () => {
@@ -81,7 +81,7 @@ describe('конвертация туда-обратно (SPEC_v3_3 §D3)', () =
 });
 
 describe('шаги весов в kg', () => {
-  it('тренажёры и Смит — 2.5 kg, гантели — 2 kg; округление в выбранных единицах', () => {
+  it('тренажёры и Смит — 2.5\u00A0kg, гантели — 2 kg; округление в выбранных единицах', () => {
     expect(kg(weightStep(100, 'machine', 'metric'))).toBe(2.5);
     expect(kg(weightStep(30, 'free', 'metric'))).toBe(2);
     expect(kg(roundWeight(kgToLb(36.4), 'machine', 'metric'))).toBe(37.5);
@@ -91,7 +91,7 @@ describe('шаги весов в kg', () => {
     expect(roundWeight(37, 'machine', 'imperial')).toBe(35);
   });
 
-  it('вес «сегодня»: +5 lb ↔ +2.5 kg, −10 lb ↔ −5 kg; гантели — ±2 kg', () => {
+  it('вес «сегодня»: +5\u00A0lb ↔ +2.5\u00A0kg, −10\u00A0lb ↔ −5 kg; гантели — ±2\u00A0kg', () => {
     const rec = kgToLb(40);
     expect(kg(todayWeight(rec, 'easy', 'machine', 'metric'))).toBe(42.5);
     expect(kg(todayWeight(rec, 'hard', 'machine', 'metric'))).toBe(35);
@@ -104,7 +104,7 @@ describe('шаги весов в kg', () => {
 
   it('прибавка рекорда в kg; факт, введённый в kg с округлением 0.5, засчитывается', () => {
     const variant = getVariant(getExercise('tue1'), 'machine'); // Смит, 6–10
-    const record = 80; // lb → показ 36.5 kg
+    const record = 80; // lb → показ 36.5\u00A0kg
     const log: ExerciseLog = {
       exerciseId: 'tue1',
       variant: 'machine',

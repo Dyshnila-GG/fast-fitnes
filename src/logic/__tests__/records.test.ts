@@ -42,7 +42,7 @@ describe('программа v2', () => {
 });
 
 describe('разминка от рекорда', () => {
-  it('базовые: 50% × 10 и 75% × 5, шаг 5 lb', () => {
+  it('базовые: 50% × 10 и 75% × 5, шаг 5\u00A0lb', () => {
     const w = warmupSets(variant('tue1', 'machine'), { weight: 75 });
     expect(w.map((s) => [s.planWeight, s.planReps])).toEqual([
       [40, 10], // 37.5 → 40
@@ -50,7 +50,7 @@ describe('разминка от рекорда', () => {
     ]);
   });
 
-  it('гантели ≤ 15 lb — шаг 2.5', () => {
+  it('гантели ≤ 15\u00A0lb — шаг 2.5', () => {
     expect(warmupSets(variant('tue1', 'free'), { weight: 30 }).map((s) => s.planWeight)).toEqual([15, 25]); // 15; 22.5 → 25
     expect(warmupSets(variant('tue4', 'free'), { weight: 10 }).map((s) => [s.planWeight, s.planReps])).toEqual([[5, 10]]);
     expect(warmupSets(variant('tue3', 'free'), { weight: 15 }).map((s) => s.planWeight)).toEqual([7.5]);
@@ -144,7 +144,7 @@ describe('рост рекорда', () => {
     expect(growOf('thu1', 'free', { reps: 6, repsMax: 10 }, [...full(0, 10, 3), work(0, 8)])).toEqual({ reps: 6, repsMax: 10 });
   });
 
-  it('планка: все подходы ≥ цели → +5 сек', () => {
+  it('планка: все подходы ≥ цели → +5\u00A0сек', () => {
     const plank = (secs: number[]) => secs.map((x) => work(undefined, undefined, x));
     expect(growOf('thu7', 'free', { seconds: 40 }, plank([40, 45, 40]))).toEqual({ seconds: 45 });
     expect(growOf('thu7', 'free', { seconds: 40 }, plank([40, 35, 40]))).toEqual({ seconds: 40 });
@@ -199,22 +199,22 @@ describe('перенос рекордов из планов v1', () => {
 
 describe('форматирование', () => {
   it('предпросмотр: подходы × диапазон × рекорд', () => {
-    expect(formatPreview(variant('tue1', 'machine'), { weight: 75 }, 4)).toBe('4 × 6–10 × 75 lb');
+    expect(formatPreview(variant('tue1', 'machine'), { weight: 75 }, 4)).toBe('4 × 6–10 × 75\u00A0lb');
     expect(formatPreview(variant('thu1', 'free'), { reps: 6, repsMax: 10 }, 3)).toBe('3 × 6–10 · свой вес');
-    expect(formatPreview(variant('thu7', 'free'), { seconds: 40 }, 3)).toBe('3 × 40 сек');
+    expect(formatPreview(variant('thu7', 'free'), { seconds: 40 }, 3)).toBe('3 × 40\u00A0сек');
   });
 
   it('разминка в итоге и истории', () => {
     const s = { warmup: { run: { ms: 372_000, distanceMi: 0.52 }, joints: { ms: 185_000 } } };
-    expect(formatWarmup(s as never)).toBe('Пробежка 6:12 · 0,52 mi · Суставная 3:05');
+    expect(formatWarmup(s as never)).toBe('Пробежка 6:12 · 0,52\u00A0mi · Суставная 3:05');
     expect(formatWarmup({} as never)).toBeNull();
   });
 
   it('строка упражнения: v2 — ответ после разминки, v1 — оценка', () => {
     const v = variant('tue1', 'machine');
     const v2 = { ...log('tue1', 'machine', []), record: { weight: 75 }, feel: 'easy' as const, todayWeight: 80 };
-    expect(exerciseMeta({ ...v2, rating: 'normal' }, v)).toBe('Разминка: Легко · сегодня 80 lb · Оценка: Нормально');
-    expect(exerciseMeta(v2, v)).toBe('Разминка: Легко · сегодня 80 lb · без оценки');
+    expect(exerciseMeta({ ...v2, rating: 'normal' }, v)).toBe('Разминка: Легко · сегодня 80\u00A0lb · Оценка: Нормально');
+    expect(exerciseMeta(v2, v)).toBe('Разминка: Легко · сегодня 80\u00A0lb · без оценки');
     expect(exerciseMeta({ ...log('thu7', 'free', []), record: { seconds: 40 }, rating: 'fail' }, variant('thu7', 'free'))).toBe(
       'Оценка: Не смог',
     );

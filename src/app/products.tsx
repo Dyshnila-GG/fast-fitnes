@@ -5,7 +5,7 @@ import { formatShortDay } from '../logic/format';
 import { weekProducts, type ProductRow } from '../logic/food';
 import { dayKey, shiftDay } from '../logic/metrics';
 import { weekStart } from '../logic/home';
-import { useStore } from '../store/AppStore';
+import { useSettings, useStore } from '../store/AppStore';
 import { colors, radius } from '../theme';
 import { useT } from '../i18n/useT';
 
@@ -13,12 +13,15 @@ import { useT } from '../i18n/useT';
 export default function ProductsScreen() {
   const t = useT();
   const { data } = useStore();
+  const { lang } = useSettings();
   const thisWeek = weekStart(dayKey());
   const [monday, setMonday] = useState(thisWeek);
   const { food } = data;
   const sections = useMemo(
     () => weekProducts(food, monday).map((g) => ({ key: g.section, title: g.title, data: g.rows })),
-    [food, monday],
+    // Названия продуктов и разделов — на текущем языке.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [food, monday, lang],
   );
   const near = t(monday === thisWeek ? 'week.this' : monday === shiftDay(thisWeek, 7) ? 'week.next' : monday === shiftDay(thisWeek, -7) ? 'week.prev' : 'week.other');
 

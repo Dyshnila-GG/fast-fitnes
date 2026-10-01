@@ -6,6 +6,7 @@ import { NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { formatDay } from '../logic/format';
 import { dayKey, parseNum } from '../logic/metrics';
+import { inputNum } from '../i18n';
 import { removeRun, setRun } from '../logic/sleep';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
@@ -18,8 +19,8 @@ export default function RunEditScreen() {
   const { data, update } = useStore();
   const today = dayKey();
   const run = data.runs[today];
-  const [minutes, setMinutes] = useState(run ? String(run.minutes) : '');
-  const [distance, setDistance] = useState(run?.distanceMi != null ? String(distanceValue(run.distanceMi)) : '');
+  const [minutes, setMinutes] = useState(inputNum(run?.minutes));
+  const [distance, setDistance] = useState(inputNum(run?.distanceMi != null ? distanceValue(run.distanceMi) : undefined));
 
   const save = () => {
     const m = parseNum(minutes);

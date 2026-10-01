@@ -4,11 +4,12 @@ import { Text, TextInput } from '../Text';
 import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { parseNum } from '../../logic/metrics';
+import { cleanDecimal, inputNum } from '../../i18n';
 import { isWarmupItemDone, stopwatchMs, stopwatchState, WARMUP_ITEMS, type WarmupId } from '../../logic/session';
 import { colors } from '../../theme';
 import type { Length, SessionWarmup } from '../../types';
 import { Button, Card } from '../ui';
-import { distanceToMi, distanceUnit, distanceValue } from '../../logic/units';
+import { distanceToMi, distanceUnit, distanceValue, getUnits } from '../../logic/units';
 import { useT } from '../../i18n/useT';
 
 type Props = {
@@ -72,9 +73,9 @@ export function WarmupBlock({ length, warmup, paused, onStart, onPause, onFinish
 function DistanceField({ value, onChange }: { value?: number; onChange: (v: number | undefined) => void }) {
   const t = useT();
   const shown = value == null ? undefined : distanceValue(value);
-  const [text, setText] = useState(shown == null ? '' : String(shown));
+  const [text, setText] = useState(inputNum(shown));
   useEffect(() => {
-    setText((prev) => (parseNum(prev) === shown ? prev : shown == null ? '' : String(shown)));
+    setText((prev) => (parseNum(prev) === shown ? prev : inputNum(shown)));
   }, [shown]);
 
   return (
@@ -82,12 +83,12 @@ function DistanceField({ value, onChange }: { value?: number; onChange: (v: numb
       <Text style={styles.label}>{t('run.distanceLabel', { u: distanceUnit() })}</Text>
       <TextInput
         value={text}
-        placeholder={distanceUnit() === 'km' ? '0.7' : '0.45'}
+        placeholder={inputNum(getUnits() === 'metric' ? 0.7 : 0.45)}
         placeholderTextColor={colors.muted}
         keyboardType="decimal-pad"
         returnKeyType="done"
         onChangeText={(t) => {
-          const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
+          const clean = cleanDecimal(t);
           setText(clean);
           const n = parseNum(clean);
           onChange(n == null ? undefined : distanceToMi(n));

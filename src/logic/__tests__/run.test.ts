@@ -85,7 +85,7 @@ describe('активная пробежка (SPEC_v3_2 §4)', () => {
     expect(formatRunTime(23.33)).toBe('23 мин 20 с');
     expect(paceMinPerMi(28.5, 3)).toBe(9.5);
     expect(paceMinPerMi(28.5)).toBeUndefined();
-    expect(formatPace(9.5)).toBe('9:30 мин/mi');
+    expect(formatPace(9.5)).toBe('9:30\u00A0мин/mi');
   });
 
   it('битая активная пробежка при загрузке отбрасывается', () => {

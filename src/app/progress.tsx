@@ -8,7 +8,7 @@ import { progressItems, progressSeries } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import type { Mode } from '../types';
-import { formatNumber, t as tr } from '../i18n';
+import { formatNumber, getLang, t as tr } from '../i18n';
 import { variantNameByKey } from '../i18n/content';
 import { weightUnit, weightValue } from '../logic/units';
 import { useT } from '../i18n/useT';
@@ -19,7 +19,8 @@ const axisOf = (mode: Mode) => tr(`progress.axis.${mode}`, { u: weightUnit() });
 export default function ProgressScreen() {
   const t = useT();
   const { data } = useStore();
-  const items = progressItems(data.sessions);
+  // По переведённому названию, на текущем языке.
+  const items = progressItems(data.sessions).sort((a, b) => variantNameByKey(a.key).localeCompare(variantNameByKey(b.key), getLang()));
   const [key, setKey] = useState<string | null>(null);
   const selected = items.find((i) => i.key === key) ?? items[0];
 

@@ -33,6 +33,17 @@ export function productName(id: string, p: Product | undefined): string {
 const UNIT_KEYS: Record<string, Key> = { 'шт.': 'unit.pcs', 'кус.': 'unit.slice' };
 export const pieceUnit = (unit: string) => (UNIT_KEYS[unit] ? t(UNIT_KEYS[unit]) : unit);
 
+// Стандартные названия приёмов из стартового расписания — по словарю; свои названия — как сохранены.
+const MEAL_TITLE_KEYS: Record<string, Key> = {
+  'До зала': 'mealName.pre',
+  'После зала': 'mealName.post',
+  Завтрак: 'mealName.breakfast',
+  Обед: 'mealName.lunch',
+  Перекус: 'mealName.snack',
+  Ужин: 'mealName.dinner',
+};
+export const mealTitle = (title: string) => (MEAL_TITLE_KEYS[title] ? t(MEAL_TITLE_KEYS[title]) : title);
+
 // Стандартное (не изменённое) блюдо — по словарю, остальные — как сохранены.
 export const dishName = (d: Dish) => (d.std ? tk(`dish.${d.std}.name`, d.name) : d.name);
 export const dishNote = (d: Dish) => (d.note && d.std ? tk(`dish.${d.std}.note`, d.note) : d.note);

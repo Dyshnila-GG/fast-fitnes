@@ -4,6 +4,7 @@ import { Text, TextInput } from '../Text';
 import { feelLabel, formatWeight } from '../../logic/format';
 import { weightToLb, weightUnit, weightValue } from '../../logic/units';
 import { parseNum } from '../../logic/metrics';
+import { cleanDecimal, inputNum } from '../../i18n';
 import { colors } from '../../theme';
 import type { ExerciseLog, Feel, Variant } from '../../types';
 import { useT } from '../../i18n/useT';
@@ -55,9 +56,9 @@ export function FeelBlock({ log, variant, onFeel, onToday }: Props) {
 // Ввод в выбранных единицах (lb / kg), хранение — lb.
 function WeightField({ value, onChange }: { value?: number; onChange: (v: number) => void }) {
   const shown = value == null ? undefined : weightValue(value);
-  const [text, setText] = useState(shown == null ? '' : String(shown));
+  const [text, setText] = useState(inputNum(shown));
   useEffect(() => {
-    setText((prev) => (parseNum(prev) === shown ? prev : shown == null ? '' : String(shown)));
+    setText((prev) => (parseNum(prev) === shown ? prev : inputNum(shown)));
   }, [shown]);
 
   return (
@@ -66,13 +67,13 @@ function WeightField({ value, onChange }: { value?: number; onChange: (v: number
       keyboardType="decimal-pad"
       returnKeyType="done"
       onChangeText={(t) => {
-        const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
+        const clean = cleanDecimal(t);
         setText(clean);
         const n = parseNum(clean);
         if (n != null && n > 0) onChange(weightToLb(n));
       }}
       // Пустое или нулевое значение не сохраняется — возвращаем текущее.
-      onEndEditing={() => setText(shown == null ? '' : String(shown))}
+      onEndEditing={() => setText(inputNum(shown))}
       style={styles.input}
     />
   );

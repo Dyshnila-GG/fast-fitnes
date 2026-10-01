@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { Units } from '../types';
 
 // Единицы (SPEC_v3_3 §D3). Хранение всегда одинаковое: lb, дюймы, мили, °F в текстах рецептов.
@@ -28,7 +29,8 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 
 // ---- Вес (тело и тренировки): lb ↔ kg, kg — с точностью 0.5 ----
 
-export const weightUnit = (units: Units = current) => (units === 'metric' ? 'kg' : 'lb');
+// Подпись единицы — по языку: «кг» (ru/uk) / «kg» (en); lb, in, mi — латиницей во всех языках.
+export const weightUnit = (units: Units = current) => t(units === 'metric' ? 'unit.kg' : 'unit.lb');
 
 // Число для показа в выбранных единицах.
 export function weightValue(lb: number, units: Units = current): number {
@@ -56,7 +58,7 @@ export function lengthValue(inches: number, units: Units = current): number {
   return units === 'metric' ? roundTo(inToCm(inches), 0.5) : round1(inches);
 }
 
-export const lengthUnit = (units: Units = current) => (units === 'metric' ? 'cm' : 'in');
+export const lengthUnit = (units: Units = current) => t(units === 'metric' ? 'unit.cm' : 'unit.in');
 
 export function lengthToIn(value: number, units: Units = current): number {
   return units === 'metric' ? cmToIn(value) : value;
@@ -64,7 +66,7 @@ export function lengthToIn(value: number, units: Units = current): number {
 
 // ---- Пробежка: mi ↔ km, темп мин/mi ↔ мин/km ----
 
-export const distanceUnit = (units: Units = current) => (units === 'metric' ? 'km' : 'mi');
+export const distanceUnit = (units: Units = current) => t(units === 'metric' ? 'unit.km' : 'unit.mi');
 
 export function distanceValue(mi: number, units: Units = current): number {
   return units === 'metric' ? round2(miToKm(mi)) : round2(mi);

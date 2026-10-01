@@ -187,11 +187,11 @@ describe('продукты на неделю (SPEC_v3_2 §5.2)', () => {
     const groups = weekProducts(defaultData().food, NEXT_SUN); // любой день недели
     expect(groups.map((g) => g.title)).toEqual(['Мясо и рыба', 'Молочное и яйца', 'Крупы и хлеб', 'Овощи и фрукты', 'Прочее']);
     const rows = Object.fromEntries(groups.flatMap((g) => g.rows).map((r) => [r.product, r.text]));
-    expect(rows.rice).toBe('Рис (сухой) — 880 г');
-    expect(rows.chicken).toBe(`Куриное филе (сырое) — ${formatNum(1610)} г`);
-    expect(rows.milk).toBe(`Молоко — ${formatNum(2280)} г`);
-    expect(rows.bananas).toBe('Бананы — 8 шт. (~960 г)');
-    expect(rows.eggs).toBe('Яйца — 12 шт. (~600 г)');
+    expect(rows.rice).toBe('Рис (сухой) — 880\u00A0г');
+    expect(rows.chicken).toBe(`Куриное филе (сырое) — ${formatNum(1610)}\u00A0г`);
+    expect(rows.milk).toBe(`Молоко — ${formatNum(2280)}\u00A0г`);
+    expect(rows.bananas).toBe('Бананы — 8 шт. (~960\u00A0г)');
+    expect(rows.eggs).toBe('Яйца — 12 шт. (~600\u00A0г)');
     for (const g of groups) {
       expect(g.rows.every((r) => productOf(defaultData().food, r.product)?.section === g.section)).toBe(true);
       expect(g.rows.map((r) => r.name)).toEqual([...g.rows.map((r) => r.name)].sort((a, b) => a.localeCompare(b, 'ru')));
@@ -244,7 +244,7 @@ describe('время приёмов и ближайший приём', () => {
   it('формат времени и чисел', () => {
     expect(formatMealTime('07:00')).toBe('~7:00');
     expect(formatMealTime('19:30')).toBe('~19:30');
-    expect(formatNum(3320)).toBe('3 320');
+    expect(formatNum(3320)).toBe('3\u00A0320');
     expect(formatNum(850)).toBe('850');
   });
 
@@ -344,14 +344,14 @@ describe('свой рецепт (SPEC_v3_2 §5.3)', () => {
   });
 
   it('рецепт хранится по блюду и виден у этого блюда в другой день и другом приёме', () => {
-    const d = setRecipe(defaultData(), 'chicken_rice', '  Курица 250 г, рис 90 г\nЗапечь  ');
-    expect(d.food.recipes).toEqual({ chicken_rice: 'Курица 250 г, рис 90 г\nЗапечь' });
+    const d = setRecipe(defaultData(), 'chicken_rice', '  Курица 250\u00A0г, рис 90 г\nЗапечь  ');
+    expect(d.food.recipes).toEqual({ chicken_rice: 'Курица 250\u00A0г, рис 90 г\nЗапечь' });
     // Пн — ужин, Вс — обед: одно блюдо, один рецепт.
     const mon = mealsFor(d.food, MON).find((m) => m.dishes.includes('chicken_rice'))!;
     const sun = mealsFor(d.food, SUN).find((m) => m.dishes.includes('chicken_rice'))!;
     expect(mon.slot).toBe('dinner');
     expect(sun.slot).toBe('lunch');
-    for (const id of [...mon.dishes, ...sun.dishes]) expect(recipeOf(d.food, id)).toEqual({ text: 'Курица 250 г, рис 90 г\nЗапечь', custom: true });
+    for (const id of [...mon.dishes, ...sun.dishes]) expect(recipeOf(d.food, id)).toEqual({ text: 'Курица 250\u00A0г, рис 90 г\nЗапечь', custom: true });
     expect(recipeOf(d.food, 'salmon_rice').custom).toBe(false);
   });
 
@@ -395,7 +395,7 @@ describe('меню — библиотека блюд (SPEC_v3_3 §C2, C4)', () =
     expect(id).toMatch(/^d_/);
     expect(dish).toMatchObject({ id, name: 'Омлет', kcal: 300, protein: 20 });
     expect(dish.std).toBeUndefined();
-    expect(ingredientLines(data.food, dish)).toEqual(['Яйца — 3 шт. (~150 г)', 'Молоко — 50 г']);
+    expect(ingredientLines(data.food, dish)).toEqual(['Яйца — 3 шт. (~150\u00A0г)', 'Молоко — 50\u00A0г']);
     expect(swapDishes(data.food).map((d) => d.id)).toContain(id);
   });
 
@@ -411,7 +411,7 @@ describe('меню — библиотека блюд (SPEC_v3_3 §C2, C4)', () =
     expect(same.data.food.dishes.granola.ingredients).toEqual(std.ingredients);
     const changed = saveDish(defaultData(), 'granola', { name: std.name, items: [{ product: 'muesli', g: 100 }], kcal: 700, protein: 20, salad: false });
     expect(changed.data.food.dishes.granola.std).toBeUndefined();
-    expect(ingredientLines(changed.data.food, changed.data.food.dishes.granola)).toEqual(['Мюсли — 100 г']);
+    expect(ingredientLines(changed.data.food, changed.data.food.dishes.granola)).toEqual(['Мюсли — 100\u00A0г']);
     // В расписании Пн — изменённое блюдо.
     expect(mealsFor(changed.data.food, MON)[0]).toMatchObject({ dishes: ['granola'], kcal: 700 });
   });
@@ -442,7 +442,7 @@ describe('меню — библиотека блюд (SPEC_v3_3 §C2, C4)', () =
     expect(totals.pasta).toBe(200);
     expect(totals.salad_mix).toBe(1100 + 100); // «с салатом»
     const rows = weekProducts(d.food, MON).flatMap((g) => g.rows);
-    expect(rows.find((r) => r.product === tofu)?.text).toBe('Тофу — 200 г');
+    expect(rows.find((r) => r.product === tofu)?.text).toBe('Тофу — 200\u00A0г');
   });
 
   it('восстановить стандартное меню: стандартные блюда и расписание; свои блюда остаются в «Меню»', () => {

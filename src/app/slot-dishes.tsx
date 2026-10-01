@@ -7,7 +7,7 @@ import { formatNum, slotsOf, updateSlot } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
 import { getLang } from '../i18n';
-import { dishName } from '../i18n/content';
+import { dishName, mealTitle } from '../i18n/content';
 import { useT } from '../i18n/useT';
 
 // Блюда приёма в расписании: выбор из «Меню» (одно или несколько).
@@ -27,7 +27,7 @@ export default function SlotDishesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: slot.title || t('meal.default') }} />
+      <Stack.Screen options={{ title: mealTitle(slot.title) || t('meal.default') }} />
       <Text style={styles.muted}>{t('slot.hint')}</Text>
       {dishes.map((d) => {
         const on = slot.dishes.includes(d.id);

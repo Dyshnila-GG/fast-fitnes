@@ -49,24 +49,24 @@ export const formatAge = (age: number) => tp('years', Math.trunc(age));
 export const formatValue = (n: number, digits = 1) => formatNumber(n, digits);
 
 // 80 → «80 lb» / «36,5 kg»
-export const formatWeight = (lb: number) => `${formatNumber(weightValue(lb))} ${weightUnit()}`;
+export const formatWeight = (lb: number) => `${formatNumber(weightValue(lb))}\u00A0${weightUnit()}`;
 // Тоннаж: «11 150 lb» / «5 057 kg».
-export const formatTonnage = (lb: number) => `${formatNumber(Math.round(weightValue(lb)), 0)} ${weightUnit()}`;
+export const formatTonnage = (lb: number) => `${formatNumber(Math.round(weightValue(lb)), 0)}\u00A0${weightUnit()}`;
 // Только число веса в выбранных единицах (таблицы подходов).
 export const formatWeightNum = (lb: number) => formatNumber(weightValue(lb));
 
 // Рост: 72 → 6'0" / 183 cm
 export function formatHeight(inches: number): string {
-  if (getUnits() === 'metric') return `${heightCm(inches)} ${t('unit.cm')}`;
+  if (getUnits() === 'metric') return `${heightCm(inches)}\u00A0${t('unit.cm')}`;
   const { ft, inch } = feetInches(inches);
   return `${ft}'${inch}"`;
 }
 
 // Замер: «32 in» / «81,5 cm»
-export const formatLength = (inches: number) => `${formatNumber(lengthValue(inches))} ${lengthUnit()}`;
+export const formatLength = (inches: number) => `${formatNumber(lengthValue(inches))}\u00A0${lengthUnit()}`;
 
 // Дистанция: «2.5 mi» / «4,02 km»
-export const formatDistance = (mi: number) => `${formatNumber(distanceValue(mi), 2)} ${distanceUnit()}`;
+export const formatDistance = (mi: number) => `${formatNumber(distanceValue(mi), 2)}\u00A0${distanceUnit()}`;
 
 export function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -87,7 +87,7 @@ export function formatRest(sec: number): string {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
-const secText = (n: number) => `${n} ${t('unit.sec')}`;
+const secText = (n: number) => `${n}\u00A0${t('unit.sec')}`;
 
 export function formatReps(variant: Variant, plan: Best): string {
   if (variant.mode === 'time') return secText(plan.seconds ?? 0);

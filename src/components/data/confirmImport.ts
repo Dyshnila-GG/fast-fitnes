@@ -1,16 +1,16 @@
-import { t } from '../../i18n';
+import { t, tp } from '../../i18n';
 import { Alert } from 'react-native';
 import { finishedSessions, parseImport } from '../../logic/metrics';
 import type { AppData } from '../../types';
 
 export const describeData = (d: AppData) =>
   t('data.describe', {
-    sessions: finishedSessions(d.sessions).length,
-    weight: d.bodyWeight.length,
-    measurements: d.measurements.length,
-    food: Object.keys(d.food.eaten).length,
-    sleep: Object.keys(d.sleep).length,
-    runs: Object.keys(d.runs).length,
+    sessions: tp('count.workouts', finishedSessions(d.sessions).length),
+    weight: tp('count.weightEntries', d.bodyWeight.length),
+    measurements: tp('count.measurements', d.measurements.length),
+    food: tp('count.foodDays', Object.keys(d.food.eaten).length),
+    sleep: tp('count.nights', Object.keys(d.sleep).length),
+    runs: tp('count.runs', Object.keys(d.runs).length),
     trash: d.trash.length,
   });
 

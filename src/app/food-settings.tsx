@@ -12,6 +12,7 @@ import { addSlot, copyDay, dishTitle, formatNum, moveSlot, removeSlot, scheduleT
 import { fromMinutes, toMinutes } from '../logic/time';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { mealTitle } from '../i18n/content';
 import { useT } from '../i18n/useT';
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0]; // Пн … Вс
@@ -85,12 +86,20 @@ export default function FoodSettingsScreen() {
 function SlotCard({ weekday, slot, first, last }: { weekday: number; slot: MealSlot; first: boolean; last: boolean }) {
   const t = useT();
   const { data, update } = useStore();
-  const [title, setTitle] = useState(slot.title);
-  const commitTitle = () => title.trim() !== slot.title && update((d) => updateSlot(d, weekday, slot.id, { title: title.trim() }));
+  // Стандартное название показывается на текущем языке; сохраняется, только если его изменили.
+  const shown = mealTitle(slot.title);
+  const [title, setTitle] = useState(shown);
+  // Сменили язык — поле показывает название на новом языке (без эффекта: состояние от пропса).
+  const [prevShown, setPrevShown] = useState(shown);
+  if (prevShown !== shown) {
+    setPrevShown(shown);
+    setTitle(shown);
+  }
+  const commitTitle = () => title.trim() !== shown && update((d) => updateSlot(d, weekday, slot.id, { title: title.trim() }));
   const names = slot.dishes.map((id) => dishTitle(data.food, id)).filter(Boolean);
 
   const remove = () =>
-    Alert.alert(t('settings.deleteMeal', { name: slot.title || t('meal.default') }), weekdayOf(weekday), [
+    Alert.alert(t('settings.deleteMeal', { name: shown || t('meal.default') }), weekdayOf(weekday), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('common.delete'), style: 'destructive', onPress: () => update((d) => removeSlot(d, weekday, slot.id)) },
     ]);

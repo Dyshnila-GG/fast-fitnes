@@ -33,12 +33,27 @@ export function tk(key: string, fallback: string, params?: Params): string {
   return fill(text ?? fallback, params);
 }
 
-// Множественное число: ru/uk — one / few / many, en — one / many.
-export type PluralForm = 'one' | 'few' | 'many';
-export function pluralForm(n: number, lang: Lang = current): PluralForm {
+// Множественное число по правилам языка — Intl.PluralRules (CLDR): ru/uk — one / few / many / other (дроби),
+// en — one / other. Ключи словаря: base.one, base.few, base.many, base.other — во всех языках.
+export type PluralForm = 'one' | 'few' | 'many' | 'other';
+
+const pluralRules: Partial<Record<Lang, Intl.PluralRules | null>> = {};
+function rulesFor(lang: Lang): Intl.PluralRules | null {
+  if (!(lang in pluralRules)) {
+    try {
+      pluralRules[lang] = typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function' ? new Intl.PluralRules(lang) : null;
+    } catch {
+      pluralRules[lang] = null;
+    }
+  }
+  return pluralRules[lang] ?? null;
+}
+
+// Запасной вариант, если в движке нет Intl.PluralRules: те же правила CLDR.
+function fallbackForm(n: number, lang: Lang): PluralForm {
   const abs = Math.abs(n);
-  if (!Number.isInteger(abs)) return lang === 'en' ? 'many' : 'few';
-  if (lang === 'en') return abs === 1 ? 'one' : 'many';
+  if (lang === 'en') return abs === 1 ? 'one' : 'other';
+  if (!Number.isInteger(abs)) return 'other';
   const m10 = abs % 10;
   const m100 = abs % 100;
   if (m10 === 1 && m100 !== 11) return 'one';
@@ -46,14 +61,34 @@ export function pluralForm(n: number, lang: Lang = current): PluralForm {
   return 'many';
 }
 
-// tp('days', 3) → ключ «days.few» (в en — «days.many»), {n} подставляется.
+export function pluralForm(n: number, lang: Lang = current): PluralForm {
+  const rules = rulesFor(lang);
+  if (!rules) return fallbackForm(n, lang);
+  const form = rules.select(n);
+  return form === 'one' || form === 'few' || form === 'many' ? form : 'other';
+}
+
+// Для тестов: форма без Intl.PluralRules.
+export const pluralFormFallback = fallbackForm;
+
+// tp('count.workouts', 5) → «5 тренировок» / «5 workouts» / «5 тренувань».
 export function tp(base: string, n: number, params?: Params): string {
   return tk(`${base}.${pluralForm(n)}`, String(n), { n: formatNumber(n), ...params });
 }
 
 // ---- Числа и даты по языку ----
 
-const SPACE = ' ';
+// Неразрывный пробел: «11 890» не переносится по строкам.
+const SPACE = '\u00A0';
+
+// Поле ввода: число с десятичным разделителем языка, без разрядов («161,3» / «161.3»).
+export const decimalSep = (lang: Lang = current) => (lang === 'en' ? '.' : ',');
+export const inputNum = (n: number | undefined) => (n == null ? '' : String(n).replace('.', decimalSep()));
+// Набор в поле: «.» и «,» → разделитель языка, прочее вырезается (разбор — parseNum, принимает оба).
+export function cleanDecimal(text: string): string {
+  const sep = decimalSep();
+  return text.replace(/[.,]/g, sep).replace(sep === ',' ? /[^0-9,]/g : /[^0-9.]/g, '');
+}
 
 // 3320 → «3 320» (ru/uk) / «3,320» (en); дробная часть — «,» (ru/uk) / «.» (en).
 export function formatNumber(n: number, digits = 1, lang: Lang = current): string {

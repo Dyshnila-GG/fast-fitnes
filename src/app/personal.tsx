@@ -4,6 +4,7 @@ import { NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { parseNum } from '../logic/metrics';
+import { inputNum } from '../i18n';
 import { cmToIn, feetInches, heightCm, weightToLb, weightUnit, weightValue } from '../logic/units';
 import { useSettings, useStore } from '../store/AppStore';
 import { gap } from '../theme';
@@ -19,8 +20,8 @@ export default function PersonalScreen() {
   const [age, setAge] = useState(String(p.age));
   const [ft, setFt] = useState(String(fi.ft));
   const [inch, setInch] = useState(String(fi.inch));
-  const [cm, setCm] = useState(String(heightCm(p.heightIn)));
-  const [start, setStart] = useState(String(weightValue(p.startWeight)));
+  const [cm, setCm] = useState(inputNum(heightCm(p.heightIn)));
+  const [start, setStart] = useState(inputNum(weightValue(p.startWeight)));
 
   const save = () => {
     const a = parseNum(age);
@@ -38,7 +39,7 @@ export default function PersonalScreen() {
       return Alert.alert(t('personal.checkTitle'), t(metric ? 'personal.checkMetric' : 'personal.checkImperial'));
     }
     // Рост в см не меняли — храним прежние дюймы без потерь на округлении.
-    const keepHeight = metric && Number(cm) === heightCm(p.heightIn);
+    const keepHeight = metric && parseNum(cm) === heightCm(p.heightIn);
     const keepWeight = parseNum(start) === weightValue(p.startWeight);
     update((d) => ({
       ...d,

@@ -55,14 +55,14 @@ describe('язык: интерфейс, даты, числа, множестве
   });
 
   it('числа по языку: разделители тысяч и дробной части', () => {
-    expect(formatNumber(3320.5)).toBe('3 320,5');
+    expect(formatNumber(3320.5)).toBe('3\u00A0320,5');
     expect(formatNumber(3320.5, 1, 'en')).toBe('3,320.5');
     expect(formatNumber(-2.25, 1, 'uk')).toBe('−2,3');
   });
 
   it('множественное число: ru/uk — 3 формы, en — 2', () => {
     expect([1, 2, 5, 11, 21, 22, 25].map((n) => pluralForm(n, 'ru'))).toEqual(['one', 'few', 'many', 'many', 'one', 'few', 'many']);
-    expect([1, 2, 5].map((n) => pluralForm(n, 'en'))).toEqual(['one', 'many', 'many']);
+    expect([1, 2, 5].map((n) => pluralForm(n, 'en'))).toEqual(['one', 'other', 'other']);
     expect(formatAge(22)).toBe('22 года');
     expect(tp('days', 21)).toBe('21 день');
     setLang('en');
@@ -95,7 +95,7 @@ describe('стандартный контент переводится, свой
     expect(weekProducts(d.food, '2026-09-28').map((g) => g.title)).toContain('Meat and fish');
     const own = saveDish(d, null, { name: 'Мой омлет', items: [{ product: 'eggs', g: 100 }], kcal: 200, protein: 12, salad: false });
     expect(dishName(own.data.food.dishes[own.id])).toBe('Мой омлет');
-    expect(ingredientLines(own.data.food, own.data.food.dishes[own.id])).toEqual(['Eggs — 2 pcs (~100 g)']);
+    expect(ingredientLines(own.data.food, own.data.food.dishes[own.id])).toEqual(['Eggs — 2 pcs (~100\u00A0g)']);
   });
 
   it('уведомления и отчёт по тренировке — на языке приложения', () => {
@@ -109,7 +109,7 @@ describe('стандартный контент переводится, свой
     const r = runReport('2026-09-30', { minutes: 28, distanceMi: 3 });
     expect(r.markdown).toContain('# Run');
     expect(r.markdown).toContain('- Date: Sep 30, 2026');
-    expect(r.markdown).toContain('- Pace: 9:20 min/mi');
+    expect(r.markdown).toContain('- Pace: 9:20\u00A0min/mi');
   });
 });
 

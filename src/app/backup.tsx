@@ -9,6 +9,7 @@ import { backupSupported, pickBackupDir, readBackupFile, runBackup } from '../se
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import { useT } from '../i18n/useT';
+import { tp } from '../i18n';
 
 // «primary:Documents/Backup» → «Documents/Backup»
 const folderLabel = (uri: string) => decodeURIComponent(uri).split(':').pop() || uri;
@@ -65,7 +66,7 @@ export default function BackupScreen() {
           </Text>
           <Button title={t('backup.now')} onPress={now} disabled={!backup.dirUri} />
           <Text style={styles.hint}>
-            {t('backup.hint', { days: BACKUP_EVERY_DAYS, keep: BACKUP_KEEP })}
+            {t('backup.hint', { days: tp('days', BACKUP_EVERY_DAYS), files: tp('count.files', BACKUP_KEEP) })}
           </Text>
         </Card>
       ) : (

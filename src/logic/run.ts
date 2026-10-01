@@ -90,7 +90,7 @@ export function paceMinPerMi(minutes: number, distanceMi?: number): number | und
 }
 
 // Темп хранится в мин/mi: «9:30 мин/mi» / «5:54 мин/km».
-export const formatPace = (pace: number) => `${formatClock(paceValue(pace))} ${t('unit.pacePer', { u: distanceUnit() })}`;
+export const formatPace = (pace: number) => `${formatClock(paceValue(pace))}\u00A0${t('unit.pacePer', { u: distanceUnit() })}`;
 
 // ---- Импорт / восстановление ----
 

@@ -40,7 +40,7 @@ describe('автобэкап (SPEC_v3_3 §B3)', () => {
 });
 
 describe('напоминания (SPEC_v3_3 §B4)', () => {
-  it('по умолчанию: сон ежедневно в 21:30, тренировка Вт/Чт/Сб в 5:10 с названием по дню', () => {
+  it('по умолчанию: сон ежедневно в 21:30, тренировка Вт/Чт/Сб в 5:10\u00A0с названием по дню', () => {
     const r = defaultData().reminders;
     expect(r.sleep).toEqual({ on: true, time: '21:30' });
     expect(r.workout).toEqual({ on: true, time: '05:10' });

@@ -94,7 +94,7 @@ export function progressItems(sessions: Session[]): ProgressItem[] {
     const item = map.get(r.key) ?? { key: r.key, mode: r.mode, count: 0 };
     map.set(r.key, { ...item, count: item.count + 1 });
   }
-  return [...map.values()].sort((a, b) => a.key.localeCompare(b.key, 'ru'));
+  return [...map.values()];
 }
 
 // Рабочий вес (свой вес — повторы, планка — секунды): максимум среди рабочих подходов за тренировку.

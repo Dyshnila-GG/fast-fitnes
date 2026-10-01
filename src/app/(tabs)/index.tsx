@@ -26,7 +26,7 @@ import { dayKey, latestFirst } from '../../logic/metrics';
 import { formatRunTime } from '../../logic/run';
 import { startWorkout } from '../../logic/session';
 import { formatSleepClock, sleepScore } from '../../logic/sleep';
-import { useStore } from '../../store/AppStore';
+import { useSettings, useStore } from '../../store/AppStore';
 import { colors } from '../../theme';
 import type { AppData } from '../../types';
 import { formatNumber } from '../../i18n';
@@ -105,17 +105,23 @@ function WorkoutTile({ data, today }: TileProps) {
 function WeightTile({ data, today }: TileProps) {
   const t = useT();
   const last = latestFirst(data.bodyWeight).find((e) => e.date <= today);
+  const value = last ? formatNumber(weightValue(last.value)) : '—';
   return (
     <Tile onPress={() => router.push('/weight-add')}>
       <View style={styles.grow} />
       <Text style={styles.bigLine} numberOfLines={1} adjustsFontSizeToFit>
-        <Text style={styles.big}>{last ? formatNumber(weightValue(last.value)) : '—'}</Text>
+        <Text style={[styles.big, { fontSize: bigSize(value) }]}>{value}</Text>
         {last && <Text style={styles.unit}> {weightUnit()}</Text>}
       </Text>
       <Text style={styles.name}>{t('home.weight')}</Text>
       <Text style={styles.muted}>{last ? daysAgo(last.date, today) : t('common.noRecords')}</Text>
     </Tile>
   );
+}
+
+// Крупное число в ½ плитки: на web adjustsFontSizeToFit не работает — кегль по длине строки.
+function bigSize(text: string) {
+  return text.length <= 3 ? 48 : text.length === 4 ? 42 : text.length === 5 ? 36 : 30;
 }
 
 // «Активность»: календарь месяца, листается назад, но не дальше текущего месяца.
@@ -126,7 +132,9 @@ function ActivityTile({ data, today }: TileProps) {
   const [picked, setPicked] = useState(current);
   const month = picked > current ? current : picked;
   const { sessions, runs } = data;
-  const grid = useMemo(() => monthGrid({ sessions, runs }, month, today), [sessions, runs, month, today]);
+  const { lang } = useSettings();
+  // Заголовок месяца — на текущем языке: язык в зависимостях кэша.
+  const grid = useMemo(() => monthGrid({ sessions, runs }, month, today), [sessions, runs, month, today, lang]);
   const prev = useCallback(() => setPicked((m) => shiftMonth(m > current ? current : m, -1)), [current]);
   const next = useCallback(() => setPicked((m) => (m < current ? shiftMonth(m, 1) : current)), [current]);
   return (
@@ -231,7 +239,7 @@ const styles = StyleSheet.create({
   h1: { fontSize: 36, fontWeight: '700', color: colors.text },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
-  full: { flex: 0 },
+  full: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   grow: { flex: 1 },
   center: { alignItems: 'center', paddingVertical: 4 },
   ringNum: { fontSize: 30, fontWeight: '700', color: colors.text },

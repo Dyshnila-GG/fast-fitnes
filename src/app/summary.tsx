@@ -97,7 +97,9 @@ export default function SummaryScreen() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {value}
+      </Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 15, color: colors.muted, marginTop: 4 },
   stats: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, gap: 2 },
-  statValue: { fontSize: 24, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  statValue: { fontSize: 20, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
   statLabel: { fontSize: 13, color: colors.muted },
   card: { gap: 4 },
   section: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 0.5 },

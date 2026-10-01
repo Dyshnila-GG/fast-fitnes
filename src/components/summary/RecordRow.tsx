@@ -3,7 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../Text';
 import { getExercise, getVariant } from '../../data/program';
 import { formatBest, formatSetPlan } from '../../logic/format';
+import { parseNum } from '../../logic/metrics';
 import { startBest, warmupSets } from '../../logic/records';
+import { cleanDecimal, inputNum } from '../../i18n';
 import { colors } from '../../theme';
 import type { Best, ExerciseLog } from '../../types';
 import { variantName } from '../../i18n/content';
@@ -51,9 +53,9 @@ export function RecordRow({ log, best, onChange }: Props) {
 // weight — вес: показ и ввод в выбранных единицах, хранение — lb.
 function PlanField({ value, weight: decimal, onChange }: { value?: number; weight: boolean; onChange: (v: number) => void }) {
   const shown = value == null ? undefined : decimal ? weightValue(value) : value;
-  const [text, setText] = useState(shown == null ? '' : String(shown));
+  const [text, setText] = useState(inputNum(shown));
   useEffect(() => {
-    setText((prev) => (Number(prev) === shown ? prev : shown == null ? '' : String(shown)));
+    setText((prev) => (parseNum(prev) === shown ? prev : inputNum(shown)));
   }, [shown]);
 
   return (
@@ -62,13 +64,13 @@ function PlanField({ value, weight: decimal, onChange }: { value?: number; weigh
       keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
       returnKeyType="done"
       onChangeText={(t) => {
-        const clean = t.replace(',', '.').replace(decimal ? /[^0-9.]/g : /[^0-9]/g, '');
+        const clean = decimal ? cleanDecimal(t) : t.replace(/[^0-9]/g, '');
         setText(clean);
-        const n = Number(clean);
+        const n = parseNum(clean) ?? NaN;
         if (clean !== '' && Number.isFinite(n) && n > 0) onChange(decimal ? weightToLb(n) : n);
       }}
       // Пустое или нулевое значение не сохраняется — возвращаем текущее.
-      onEndEditing={() => setText(shown == null ? '' : String(shown))}
+      onEndEditing={() => setText(inputNum(shown))}
       style={styles.input}
     />
   );

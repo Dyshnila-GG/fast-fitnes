@@ -11,6 +11,7 @@ import type { Length, TemplateId } from '../../types';
 import { Button, Card, Segmented } from '../ui';
 import { lengths, WorkoutPreview } from './WorkoutPreview';
 import { templateTitle } from '../../i18n/content';
+import { tp } from '../../i18n';
 import { useT } from '../../i18n/useT';
 
 // «Силовые»: тренировки Вт/Чт/Сб — длина, предпросмотр, «Начать».
@@ -43,8 +44,8 @@ export function StrengthList() {
             <Segmented options={lengths()} value={length} onChange={(l) => setLength(tpl.id, l)} />
             <Text style={styles.meta}>
               {length === 'long'
-                ? t('strength.longInfo', { n: tpl.exercises.length })
-                : t('strength.shortInfo', { n: SHORT_EXERCISES, sets: SHORT_MAX_WORK_SETS })}
+                ? t('strength.longInfo', { exercises: tp('count.exercises', tpl.exercises.length) })
+                : t('strength.shortInfo', { exercises: tp('count.exercises', SHORT_EXERCISES), sets: SHORT_MAX_WORK_SETS })}
             </Text>
             <Button
               title={t(open === tpl.id ? 'strength.hideExercises' : 'strength.exercises')}
@@ -65,9 +66,10 @@ const styles = StyleSheet.create({
   list: { gap },
   card: { gap: 12 },
   cardHighlighted: { borderColor: colors.highlight },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 24, fontWeight: '800', color: colors.text },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  title: { flex: 1, fontSize: 24, fontWeight: '800', color: colors.text },
   badge: {
+    flexShrink: 0,
     backgroundColor: colors.button,
     color: colors.text,
     fontWeight: '600',
