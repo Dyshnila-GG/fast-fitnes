@@ -1,63 +1,69 @@
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { TILE_GAP } from '../../components/home/Tile';
 import { Icon, type IconName } from '../../components/Icon';
 import { Text } from '../../components/Text';
-import { colors, gap } from '../../theme';
 import type { Key } from '../../i18n';
 import { useT } from '../../i18n/useT';
+import { colors } from '../../theme';
 
 const KINDS: { title: Key; icon: IconName; href: Href }[] = [
   { title: 'nav.strength', icon: 'dumbbell', href: '/strength' },
   { title: 'nav.run_start', icon: 'run', href: '/run-start' },
 ];
 
-// «Тренировки» (SPEC_v3_3 §A5): только две большие плитки; списки — на следующем уровне.
+const TILE_HEIGHT = 160;
+
+// «Тренировки» (SPEC_v3_3 §A5): две плитки по ½ ширины в стиле «Главной»; списки — на следующем уровне.
 export default function WorkoutsScreen() {
   const t = useT();
   return (
-    <View style={styles.content}>
-      {KINDS.map((k) => (
-        <Pressable
-          key={k.title}
-          onPress={() => router.push(k.href)}
-          accessibilityRole="button"
-          accessibilityLabel={t(k.title)}
-          style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
-        >
-          <View style={styles.badge}>
-            <Icon name={k.icon} size={40} />
-          </View>
-          <View style={styles.bottom}>
-            <Text style={styles.title}>{t(k.title)}</Text>
-            <Icon name="arrow-right" size={28} color={colors.muted} />
-          </View>
-        </Pressable>
-      ))}
-    </View>
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.row}>
+        {KINDS.map((k) => (
+          <Pressable
+            key={k.title}
+            onPress={() => router.push(k.href)}
+            accessibilityRole="button"
+            accessibilityLabel={t(k.title)}
+            style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+          >
+            <View style={styles.top}>
+              <View style={styles.badge}>
+                <Icon name={k.icon} size={28} />
+              </View>
+              <Icon name="chevron-right" size={24} color={colors.muted} />
+            </View>
+            <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+              {t(k.title)}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flex: 1, padding: 16, gap },
+  content: { padding: 16 },
+  row: { flexDirection: 'row', gap: TILE_GAP },
   tile: {
     flex: 1,
-    maxHeight: 280,
-    borderRadius: 32,
-    padding: 24,
+    height: TILE_HEIGHT,
+    borderRadius: 28,
+    padding: 16,
     justifyContent: 'space-between',
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.97 }] },
+  top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   badge: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.button,
   },
-  bottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  title: { fontSize: 40, fontWeight: '800', color: colors.text, letterSpacing: -1 },
+  title: { fontSize: 24, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
 });
