@@ -42,12 +42,19 @@ export function DayPicker({ value, onChange }: { value: string; onChange: (day: 
 }
 
 // Карточка-переход на вкладке «Профиль».
-export function NavCard({ title, subtitle, onPress }: { title: string; subtitle: string; onPress: () => void }) {
+// warning — предупреждение красным под подписью (например, папка бэкапа недоступна).
+export function NavCard({ title, subtitle, warning, onPress }: { title: string; subtitle: string; warning?: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.nav, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.nav, warning && styles.navWarning, pressed && styles.pressed]}>
       <View style={styles.flex}>
         <Text style={styles.navTitle}>{title}</Text>
         <Text style={styles.navSub}>{subtitle}</Text>
+        {warning ? (
+          <View style={styles.warning}>
+            <Icon name="alert-circle-outline" size={16} color={colors.danger} />
+            <Text style={styles.warningText}>{warning}</Text>
+          </View>
+        ) : null}
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
@@ -107,6 +114,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   navTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   navSub: { fontSize: 14, color: colors.muted, marginTop: 2 },
+  navWarning: { borderColor: colors.danger },
+  warning: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
+  warningText: { flex: 1, fontSize: 14, color: colors.danger },
   chevron: { fontSize: 26, color: colors.muted },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border },
   rowTitle: { fontSize: 16, fontWeight: '600', color: colors.text },

@@ -1,9 +1,12 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Icon } from '../components/Icon';
 import { Text } from '../components/Text';
 import { Card } from '../components/ui';
 import { formatDay, WEEKDAYS } from '../logic/format';
 import { dayDate } from '../logic/metrics';
+import { runReport } from '../logic/report';
 import { formatRunTime } from '../logic/run';
+import { shareReport } from '../services/share';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 
@@ -32,6 +35,15 @@ export default function RunsScreen() {
               <Text style={styles.value}>
                 {formatRunTime(r.minutes)}{r.distanceMi != null ? ` · ${r.distanceMi} mi` : ''}
               </Text>
+              <Pressable
+                onPress={() => shareReport(runReport(day, r))}
+                accessibilityRole="button"
+                accessibilityLabel="Скачать отчёт"
+                hitSlop={6}
+                style={({ pressed }) => [styles.download, pressed && styles.pressed]}
+              >
+                <Icon name="file-download-outline" size={20} />
+              </Pressable>
             </View>
           );
         })}
@@ -48,4 +60,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '600', color: colors.text },
   muted: { fontSize: 14, color: colors.muted },
   value: { fontSize: 16, fontWeight: '700', color: colors.text },
+  download: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.button },
+  pressed: { opacity: 0.7 },
 });

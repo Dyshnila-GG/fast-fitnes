@@ -6,6 +6,7 @@ import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/form
 import { dayKey, finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
 import { formatSleep, sleepAverage } from '../../logic/sleep';
 import { formatRunTime } from '../../logic/run';
+import { backupSupported } from '../../services/backup';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
 
@@ -72,6 +73,33 @@ export default function ProfileScreen() {
         onPress={() => router.push('/runs')}
       />
       <NavCard title="Настройки еды" subtitle="Время приёмов пищи для «Дня зала» и «Обычного дня»" onPress={() => router.push('/food-settings')} />
+      <NavCard
+        title="Бэкап"
+        subtitle={
+          !backupSupported
+            ? 'Восстановить из файла'
+            : data.backup.lastAt
+              ? `Последний бэкап: ${formatDate(data.backup.lastAt)}`
+              : data.backup.dirUri
+                ? 'Бэкапа ещё не было'
+                : 'Выберите папку на телефоне — бэкап раз в неделю'
+        }
+        warning={data.backup.error}
+        onPress={() => router.push('/backup')}
+      />
+      <NavCard
+        title="Напоминания"
+        subtitle={[
+          `Сон ${data.reminders.sleep.on ? data.reminders.sleep.time : 'выкл.'}`,
+          `Тренировка ${data.reminders.workout.on ? data.reminders.workout.time : 'выкл.'}`,
+        ].join(' · ')}
+        onPress={() => router.push('/reminders')}
+      />
+      <NavCard
+        title="Корзина"
+        subtitle={data.trash.length > 0 ? `Удалённых тренировок: ${data.trash.length}` : 'Пусто'}
+        onPress={() => router.push('/trash')}
+      />
       <NavCard title="Экспорт / импорт" subtitle="Резервная копия всех данных в JSON" onPress={() => router.push('/data')} />
     </ScrollView>
   );

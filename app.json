@@ -50,7 +50,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-notifications"
     ],
     "scheme": "gymlog",
     "backgroundColor": "#000000"

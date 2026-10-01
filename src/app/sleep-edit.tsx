@@ -95,7 +95,7 @@ export default function SleepEditScreen() {
               <Button title="Убрать время" variant="secondary" small onPress={() => setTimes(null)} />
             </>
           ) : (
-            <Button title="Указать время" variant="secondary" small onPress={() => changeTimes({ bed: '23:00', wake: '07:00' })} />
+            <Button title="Указать время" variant="secondary" small onPress={() => changeTimes({ bed: '22:00', wake: '05:00' })} />
           )}
         </Card>
         <Button title="Сохранить" onPress={save} />

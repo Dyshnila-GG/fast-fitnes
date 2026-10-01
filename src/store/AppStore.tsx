@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { AppData } from '../types';
+import { purgeTrash } from '../logic/trash';
 import { defaultData } from './defaults';
 import { migrateData } from './migrate';
 
@@ -17,7 +18,7 @@ export function AppStoreProvider({ children, fallback }: { children: ReactNode; 
   const [data, setData] = useState<AppData | null>(null);
   useEffect(() => {
     AsyncStorage.getItem(KEY)
-      .then((raw) => setData(raw ? migrateData(JSON.parse(raw)) : defaultData()))
+      .then((raw) => setData(purgeTrash(raw ? migrateData(JSON.parse(raw)) : defaultData())))
       .catch(() => setData(defaultData()));
   }, []);
 

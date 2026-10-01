@@ -1,8 +1,9 @@
-import { getExercise, getTemplate, getVariant } from '../data/program';
+import { getExercise, getVariant } from '../data/program';
 import { defaultData } from '../store/defaults';
 import { migrateData } from '../store/migrate';
 import type { AppData, BodyWeightEntry, MeasurementEntry, Mode, Session } from '../types';
 import { newId } from './id';
+import { isNum, isObj, validSession } from './validate';
 
 // Точка графика: x — время (мс), y — значение.
 export type Point = { x: number; y: number; date: string };
@@ -114,28 +115,6 @@ export function exportData(d: AppData): string {
 
 export type ImportResult = { ok: true; data: AppData } | { ok: false; error: string };
 
-const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
-const isNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
-
-function validSession(s: unknown): boolean {
-  if (!isObj(s) || typeof s.id !== 'string' || typeof s.startedAt !== 'string') return false;
-  try {
-    getTemplate(String(s.templateId));
-  } catch {
-    return false;
-  }
-  if (!Array.isArray(s.exercises)) return false;
-  return s.exercises.every((l) => {
-    if (!isObj(l) || !Array.isArray(l.sets) || (l.variant !== 'machine' && l.variant !== 'free')) return false;
-    try {
-      getExercise(String(l.exerciseId));
-      return true;
-    } catch {
-      return false;
-    }
-  });
-}
-
 export function parseImport(text: string): ImportResult {
   let raw: unknown;
   try {
@@ -174,6 +153,10 @@ export function parseImport(text: string): ImportResult {
       food: raw.food as AppData['food'],
       sleep: raw.sleep as AppData['sleep'],
       runs: raw.runs as AppData['runs'],
+      // Корзина, бэкап и напоминания проверяются в migrateData.
+      trash: raw.trash as AppData['trash'],
+      backup: raw.backup as AppData['backup'],
+      reminders: raw.reminders as AppData['reminders'],
       // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
       activeRun: null,

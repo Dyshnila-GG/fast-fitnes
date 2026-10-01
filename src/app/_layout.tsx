@@ -11,6 +11,8 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { BackButton } from '../components/nav/BackButton';
 import { FONT } from '../components/Text';
+import { useAutoBackup } from '../services/useAutoBackup';
+import { useReminders } from '../services/useReminders';
 import { AppStoreProvider, useStore } from '../store/AppStore';
 import { colors } from '../theme';
 
@@ -29,6 +31,8 @@ function RootStack() {
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
+  useAutoBackup();
+  useReminders();
   return (
     <Stack
       screenOptions={{
@@ -51,6 +55,9 @@ function RootStack() {
         <Stack.Screen name="progress" options={{ title: 'Прогресс по упражнению' }} />
         <Stack.Screen name="personal" options={{ title: 'Возраст, рост, старт' }} />
         <Stack.Screen name="data" options={{ title: 'Экспорт / импорт' }} />
+        <Stack.Screen name="trash" options={{ title: 'Корзина' }} />
+        <Stack.Screen name="backup" options={{ title: 'Бэкап' }} />
+        <Stack.Screen name="reminders" options={{ title: 'Напоминания' }} />
         <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
         <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
         <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />

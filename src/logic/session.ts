@@ -1,5 +1,5 @@
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
-import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, Variant } from '../types';
+import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, TrashItem, Variant } from '../types';
 import { newId } from './id';
 import { getBest, grow, needsFeel, startBest, warmupSets, workSet } from './records';
 
@@ -293,13 +293,15 @@ function recordStep(log: ExerciseLog): { variant: Variant; before: Best; after: 
   return { variant, before, after: grow(before, log, variant) };
 }
 
-// Удаляет тренировку из истории (а значит из статистики, календаря и счётчиков недели).
+// Удаляет тренировку в корзину (SPEC_v3_3 §B1): из истории, статистики, календаря и счётчиков недели — сразу.
 // Рекорд откатывается к «было», только если эта тренировка его подняла и после неё он не менялся:
 // текущий рекорд равен её «стало» и ни одна более поздняя тренировка этот вариант не подняла.
-export function deleteSession(d: AppData, id: string): AppData {
+// Откаты запоминаются в корзине — для «Восстановить».
+export function deleteSession(d: AppData, id: string, now = new Date()): AppData {
   const s = d.sessions.find((x) => x.id === id);
   if (!s) return d;
   const records = { ...d.records };
+  const rolledBack: TrashItem['rolledBack'] = {};
   if (s.finishedAt && !isLegacyTemplate(s.templateId)) {
     const later = d.sessions.filter(
       (x) => x.id !== id && x.finishedAt && x.finishedAt > s.finishedAt! && !isLegacyTemplate(x.templateId),
@@ -315,7 +317,9 @@ export function deleteSession(d: AppData, id: string): AppData {
           return !sameBest(step.before, step.after);
         }),
       );
-      if (!changedLater) records[variant.name] = { ...records[variant.name], ...before };
+      if (changedLater) continue;
+      records[variant.name] = { ...records[variant.name], ...before };
+      rolledBack[variant.name] = { before, after };
     }
   }
   return {
@@ -323,6 +327,27 @@ export function deleteSession(d: AppData, id: string): AppData {
     records,
     sessions: d.sessions.filter((x) => x.id !== id),
     summaryId: d.summaryId === id ? null : d.summaryId,
+    trash: [...d.trash.filter((t) => t.session.id !== id), { session: s, deletedAt: now.toISOString(), rolledBack }],
+  };
+}
+
+// Возвращает тренировку из корзины. Откатанный при удалении рекорд снова поднимается,
+// если текущий рекорд равен значению «было» (после удаления его не меняли).
+export function restoreSession(d: AppData, id: string): AppData {
+  const item = d.trash.find((t) => t.session.id === id);
+  if (!item) return d;
+  const records = { ...d.records };
+  for (const log of item.session.exercises) {
+    const variant = variantOf(log);
+    const step = item.rolledBack[variant.name];
+    if (!step || !sameBest(getBest({ ...d, records }, variant), step.before)) continue;
+    records[variant.name] = { ...records[variant.name], ...step.after };
+  }
+  return {
+    ...d,
+    records,
+    sessions: [...d.sessions.filter((x) => x.id !== id), item.session],
+    trash: d.trash.filter((t) => t.session.id !== id),
   };
 }
 

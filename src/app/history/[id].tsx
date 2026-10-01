@@ -7,7 +7,9 @@ import { Card } from '../../components/ui';
 import { getExercise, getTemplate, getVariant } from '../../data/program';
 import { exerciseMeta, formatDate, formatDuration, formatFact, formatSetPlan, formatTime, formatWarmup } from '../../logic/format';
 import { tonnage } from '../../logic/tonnage';
+import { sessionReport } from '../../logic/report';
 import { deleteSession, elapsedMs, WARMUP_ITEMS } from '../../logic/session';
+import { shareReport } from '../../services/share';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import type { ExerciseLog } from '../../types';
@@ -48,6 +50,14 @@ export default function SessionDetailsScreen() {
       {s.exercises.map((log) => (
         <ExerciseDetails key={log.exerciseId} log={log} />
       ))}
+      <Pressable
+        onPress={() => shareReport(sessionReport(s))}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+      >
+        <Icon name="file-download-outline" size={22} color={colors.onPrimary} />
+        <Text style={styles.actionText}>Скачать отчёт</Text>
+      </Pressable>
       <Pressable
         onPress={() =>
           confirmDeleteSession(s, () => {
@@ -121,5 +131,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   deleteText: { fontSize: 17, fontWeight: '600', color: colors.danger },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 56,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    marginTop: 4,
+  },
+  actionText: { fontSize: 17, fontWeight: '700', color: colors.onPrimary },
   pressed: { opacity: 0.7 },
 });

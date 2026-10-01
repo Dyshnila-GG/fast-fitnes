@@ -3,8 +3,11 @@ import { PROGRAM } from '../data/program';
 import { sanitizeFood } from '../logic/food';
 import { sanitizeActiveRun } from '../logic/run';
 import { sanitizeRuns, sanitizeSleep } from '../logic/sleep';
-import type { AppData, Best, Plan } from '../types';
-import { defaultData } from './defaults';
+import { sanitizeTrash } from '../logic/trash';
+import { isObj } from '../logic/validate';
+import type { AppData, BackupState, Best, Plan, Reminder, Reminders } from '../types';
+import { isTime } from '../logic/time';
+import { defaultData, defaultReminders } from './defaults';
 
 type LegacyPlans = AppData['plans'];
 
@@ -45,5 +48,32 @@ export function migrateData(raw: Record<string, unknown>): AppData {
     sleep: sanitizeSleep(raw.sleep),
     runs: sanitizeRuns(raw.runs),
     activeRun: sanitizeActiveRun(raw.activeRun),
+    trash: sanitizeTrash(raw.trash),
+    backup: sanitizeBackup(raw.backup),
+    reminders: sanitizeReminders(raw.reminders),
   };
+}
+
+const str = (v: unknown) => (typeof v === 'string' && v !== '' ? v : undefined);
+
+function sanitizeBackup(raw: unknown): BackupState {
+  if (!isObj(raw)) return {};
+  const out: BackupState = {};
+  const dirUri = str(raw.dirUri);
+  const lastAt = str(raw.lastAt);
+  const error = str(raw.error);
+  if (dirUri) out.dirUri = dirUri;
+  if (lastAt && !Number.isNaN(Date.parse(lastAt))) out.lastAt = lastAt;
+  if (error) out.error = error;
+  return out;
+}
+
+function sanitizeReminders(raw: unknown): Reminders {
+  const base = defaultReminders();
+  if (!isObj(raw)) return base;
+  const one = (v: unknown, def: Reminder): Reminder =>
+    isObj(v) ? { on: typeof v.on === 'boolean' ? v.on : def.on, time: isTime(v.time) ? v.time : def.time } : def;
+  const out: Reminders = { sleep: one(raw.sleep, base.sleep), workout: one(raw.workout, base.workout) };
+  if (raw.asked === true) out.asked = true;
+  return out;
 }

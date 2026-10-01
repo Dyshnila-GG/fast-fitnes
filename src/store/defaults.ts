@@ -1,7 +1,11 @@
-import type { AppData, FoodData } from '../types';
+import type { AppData, FoodData, Reminders } from '../types';
 
 export function defaultFood(): FoodData {
   return { eaten: {}, swaps: {}, photos: {}, recipes: {}, times: { gym: {}, rest: {} } };
+}
+
+export function defaultReminders(): Reminders {
+  return { sleep: { on: true, time: '21:30' }, workout: { on: true, time: '05:10' } };
 }
 
 export function defaultData(): AppData {
@@ -21,5 +25,8 @@ export function defaultData(): AppData {
     food: defaultFood(),
     sleep: {},
     runs: {},
+    trash: [],
+    backup: {},
+    reminders: defaultReminders(),
   };
 }

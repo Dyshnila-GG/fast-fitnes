@@ -128,6 +128,16 @@ export type RunEntry = { minutes: number; distanceMi?: number }; // minutes мо
 // Активная пробежка (SPEC_v3_2 §4): секундомер по меткам времени; done — нажато «Завершить», открыт итог.
 export type ActiveRun = { startedAt: string; sw: Stopwatch };
 
+// Корзина (SPEC_v3_3 §B1): удалённая тренировка и откаты рекордов, сделанные при удалении (ключ — название варианта).
+export type TrashItem = { session: Session; deletedAt: string; rolledBack: Record<string, { before: Best; after: Best }> };
+
+// Автобэкап (SPEC_v3_3 §B3): папка Android (SAF), время последнего бэкапа, ошибка доступа к папке.
+export type BackupState = { dirUri?: string; lastAt?: string; error?: string };
+
+// Напоминания (SPEC_v3_3 §B4): время «HH:MM».
+export type Reminder = { on: boolean; time: string };
+export type Reminders = { sleep: Reminder; workout: Reminder; asked?: boolean };
+
 export type AppData = {
   version: 2;
   profile: Profile;
@@ -144,4 +154,7 @@ export type AppData = {
   food: FoodData;
   sleep: Record<string, SleepEntry>;
   runs: Record<string, RunEntry>;
+  trash: TrashItem[];
+  backup: BackupState;
+  reminders: Reminders;
 };

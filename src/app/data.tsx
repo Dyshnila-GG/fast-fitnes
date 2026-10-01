@@ -2,14 +2,10 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet } from 'react-native';
 import { Text, TextInput } from '../components/Text';
 import { Button, Card } from '../components/ui';
-import { exportData, finishedSessions, parseImport } from '../logic/metrics';
+import { exportData } from '../logic/metrics';
+import { confirmImport, describeData } from '../components/data/confirmImport';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
-import type { AppData } from '../types';
-
-const describe = (d: AppData) =>
-  `тренировок: ${finishedSessions(d.sessions).length}, записей веса: ${d.bodyWeight.length}, замеров: ${d.measurements.length}, ` +
-  `дней с отметками еды: ${Object.keys(d.food.eaten).length}, ночей сна: ${Object.keys(d.sleep).length}, пробежек: ${Object.keys(d.runs).length}`;
 
 export default function DataScreen() {
   const { data, update } = useStore();
@@ -21,29 +17,14 @@ export default function DataScreen() {
     );
   };
 
-  const importData = () => {
-    const res = parseImport(text);
-    if (!res.ok) return Alert.alert('Импорт невозможен', res.error);
-    Alert.alert('Заменить все данные?', `Сейчас: ${describe(data)}.\nВ копии: ${describe(res.data)}.`, [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Заменить',
-        style: 'destructive',
-        onPress: () => {
-          update(() => res.data);
-          setText('');
-          Alert.alert('Данные импортированы');
-        },
-      },
-    ]);
-  };
+  const importData = () => confirmImport(text, data, update, () => setText(''));
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
           <Text style={styles.title}>Экспорт</Text>
-          <Text style={styles.muted}>Все данные одним JSON: {describe(data)}. Сохраните его, например, в заметки или отправьте себе.</Text>
+          <Text style={styles.muted}>Все данные одним JSON: {describeData(data)}. Сохраните его, например, в заметки или отправьте себе.</Text>
           <Button title="Поделиться" onPress={share} />
         </Card>
         <Card style={styles.card}>

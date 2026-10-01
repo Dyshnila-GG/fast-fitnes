@@ -10,6 +10,7 @@ import {
   finishStopwatch,
   lastNote,
   lastRating,
+  restoreSession,
   pauseStopwatch,
   resetStopwatch,
   setRunDistance,
@@ -19,6 +20,8 @@ import {
   stopwatchState,
   togglePause,
 } from '../session';
+import { daysLeft, deleteForever, purgeTrash, sanitizeTrash } from '../trash';
+import { exportData, parseImport } from '../metrics';
 
 const T0 = new Date('2026-01-01T10:00:00.000Z');
 const at = (min: number) => new Date(T0.getTime() + min * 60_000);
@@ -277,5 +280,59 @@ describe('удаление тренировки (SPEC_v3_2 §3)', () => {
     expect(deleteSession(manual, d.sessions[0].id).records[SMITH]).toEqual({ weight: 90 });
     const hard = workout(defaultData(), 0, 'hard');
     expect(deleteSession(hard, hard.sessions[0].id).records).toEqual(hard.records);
+  });
+});
+
+describe('корзина (SPEC_v3_3 §B1)', () => {
+  const SMITH = 'Жим лёжа в Смите';
+  function workout(d: AppData, days: number, feel: Feel = 'normal'): AppData {
+    const start = at(days * 24 * 60);
+    const s = completeAll(buildSession(d, 'tue', 'long', start), feel);
+    return { ...finishActive({ ...d, activeSession: s }, new Date(start.getTime() + 60 * 60_000)), summaryId: null };
+  }
+
+  it('удалить → в корзине, из истории пропала; восстановить → вернулась, рекорд снова поднят', () => {
+    const d = workout(defaultData(), 0);
+    const id = d.sessions[0].id;
+    const deleted = deleteSession(d, id, at(60 * 24));
+    expect(deleted.sessions).toHaveLength(0);
+    expect(deleted.trash).toHaveLength(1);
+    expect(deleted.trash[0].session.id).toBe(id);
+    expect(deleted.records[SMITH]).toEqual({ weight: 75 });
+    expect(deleted.trash[0].rolledBack[SMITH]).toEqual({ before: { weight: 75 }, after: { weight: 80 } });
+
+    const restored = restoreSession(deleted, id);
+    expect(restored.sessions.map((s) => s.id)).toEqual([id]);
+    expect(restored.trash).toHaveLength(0);
+    expect(restored.records[SMITH]).toEqual({ weight: 80 });
+    expect(restoreSession(restored, id)).toBe(restored);
+  });
+
+  it('рекорд изменили после удаления — при восстановлении не трогаем', () => {
+    const d = workout(defaultData(), 0);
+    const deleted = deleteSession(d, d.sessions[0].id);
+    const manual = { ...deleted, records: { ...deleted.records, [SMITH]: { weight: 95 } } };
+    expect(restoreSession(manual, d.sessions[0].id).records[SMITH]).toEqual({ weight: 95 });
+  });
+
+  it('автоудаление через 30 дней; «осталось N дней»', () => {
+    const d = workout(defaultData(), 0);
+    const deletedAt = new Date('2026-03-01T12:00:00.000Z');
+    const deleted = deleteSession(d, d.sessions[0].id, deletedAt);
+    const day = (n: number) => new Date(deletedAt.getTime() + n * 24 * 60 * 60_000);
+    expect(daysLeft(deleted.trash[0], deletedAt)).toBe(30);
+    expect(daysLeft(deleted.trash[0], day(29.5))).toBe(1);
+    expect(purgeTrash(deleted, day(29.9)).trash).toHaveLength(1);
+    expect(purgeTrash(deleted, day(29.9))).toBe(deleted);
+    expect(purgeTrash(deleted, day(30)).trash).toHaveLength(0);
+  });
+
+  it('удалить навсегда; корзина входит в экспорт/импорт, битые записи отбрасываются', () => {
+    const d = workout(defaultData(), 0);
+    const deleted = deleteSession(d, d.sessions[0].id);
+    expect(deleteForever(deleted, d.sessions[0].id).trash).toHaveLength(0);
+    const res = parseImport(exportData(deleted));
+    expect(res.ok && res.data.trash).toEqual(deleted.trash);
+    expect(sanitizeTrash([{ session: { id: 'x' }, deletedAt: 'нет' }, 5, ...deleted.trash])).toEqual(deleted.trash);
   });
 });
