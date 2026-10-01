@@ -13,6 +13,7 @@ export function defaultData(): AppData {
     records: {},
     plans: {},
     activeSession: null,
+    activeRun: null,
     summaryId: null,
     sessions: [],
     bodyWeight: [],

@@ -174,8 +174,9 @@ export function parseImport(text: string): ImportResult {
       food: raw.food as AppData['food'],
       sleep: raw.sleep as AppData['sleep'],
       runs: raw.runs as AppData['runs'],
-      // Незавершённая тренировка и открытый итог не переносятся.
+      // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
+      activeRun: null,
       summaryId: null,
     }),
   };

@@ -10,12 +10,13 @@ const loading = (
   </View>
 );
 
-// Пока идёт тренировка, доступен только её экран (в т.ч. сразу при запуске приложения).
-// После завершения — экран итога, пока его не закроют кнопкой «Готово».
+// Пока идёт тренировка или пробежка, доступен только её экран (в т.ч. сразу при запуске приложения).
+// После завершения тренировки — экран итога, пока его не закроют кнопкой «Готово».
 function RootStack() {
   const { data } = useStore();
   const active = data.activeSession != null;
-  const summary = !active && data.summaryId != null;
+  const running = !active && data.activeRun != null;
+  const summary = !active && !running && data.summaryId != null;
   return (
     <Stack
       screenOptions={{
@@ -26,7 +27,7 @@ function RootStack() {
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
-      <Stack.Protected guard={!active && !summary}>
+      <Stack.Protected guard={!active && !running && !summary}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="weight" options={{ title: 'Вес тела' }} />
         <Stack.Screen name="measurements" options={{ title: 'Замеры' }} />
@@ -47,6 +48,9 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={running}>
+        <Stack.Screen name="run" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
       </Stack.Protected>
       <Stack.Protected guard={summary}>
         <Stack.Screen name="summary" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />

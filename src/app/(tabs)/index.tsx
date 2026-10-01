@@ -23,6 +23,7 @@ import {
   WORKOUTS_PER_WEEK,
 } from '../../logic/home';
 import { dayKey, latestFirst } from '../../logic/metrics';
+import { formatRunTime } from '../../logic/run';
 import { startWorkout } from '../../logic/session';
 import { formatSleepClock, sleepScore } from '../../logic/sleep';
 import { useStore } from '../../store/AppStore';
@@ -207,7 +208,7 @@ function RunTile({ data, today }: TileProps) {
         {runs}/{RUNS_PER_WEEK}
       </Text>
       <Text style={styles.name}>Пробежки за неделю</Text>
-      {runDay && <Text style={styles.muted}>{run ? `Сегодня: ${run.minutes} мин` : 'Сегодня пробежка'}</Text>}
+      {runDay && <Text style={styles.muted}>{run ? `Сегодня: ${formatRunTime(run.minutes)}` : 'Сегодня пробежка'}</Text>}
     </Tile>
   );
 }

@@ -5,6 +5,7 @@ import { foodStats, formatNum } from '../../logic/food';
 import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/format';
 import { dayKey, finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
 import { formatSleep, sleepAverage } from '../../logic/sleep';
+import { formatRunTime } from '../../logic/run';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
 
@@ -65,8 +66,8 @@ export default function ProfileScreen() {
         title="Пробежки"
         subtitle={
           lastRun
-            ? `${runDays.length} · последняя ${formatDay(runDays[0])}, ${lastRun.minutes} мин${lastRun.distanceMi != null ? ` · ${lastRun.distanceMi} mi` : ''}`
-            : 'Отмечаются на «Главной» в Ср и Пт'
+            ? `${runDays.length} · последняя ${formatDay(runDays[0])}, ${formatRunTime(lastRun.minutes)}${lastRun.distanceMi != null ? ` · ${lastRun.distanceMi} mi` : ''}`
+            : 'Тренировки → Пробежка или отметка на «Главной»'
         }
         onPress={() => router.push('/runs')}
       />

@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui';
 import { formatDay, WEEKDAYS } from '../logic/format';
 import { dayDate } from '../logic/metrics';
+import { formatRunTime } from '../logic/run';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 
@@ -14,7 +15,7 @@ export default function RunsScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.muted}>
-        Пробежки отмечаются на «Главной» в среду и пятницу.
+        Пробежки записываются из «Тренировки → Пробежка» или отмечаются на «Главной» в среду и пятницу.
         {days.length > 0 ? ` Всего: ${days.length}, ${Math.round(total * 100) / 100} mi.` : ''}
       </Text>
       <Card>
@@ -28,7 +29,7 @@ export default function RunsScreen() {
                 <Text style={styles.muted}>{WEEKDAYS[dayDate(day).getDay()]}</Text>
               </View>
               <Text style={styles.value}>
-                {r.minutes} мин{r.distanceMi != null ? ` · ${r.distanceMi} mi` : ''}
+                {formatRunTime(r.minutes)}{r.distanceMi != null ? ` · ${r.distanceMi} mi` : ''}
               </Text>
             </View>
           );

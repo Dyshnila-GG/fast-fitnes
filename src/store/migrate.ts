@@ -1,6 +1,7 @@
 import { LEGACY_PROGRAM } from '../data/legacy';
 import { PROGRAM } from '../data/program';
 import { sanitizeFood } from '../logic/food';
+import { sanitizeActiveRun } from '../logic/run';
 import { sanitizeRuns, sanitizeSleep } from '../logic/sleep';
 import type { AppData, Best, Plan } from '../types';
 import { defaultData } from './defaults';
@@ -30,7 +31,7 @@ export function recordsFromLegacyPlans(plans: LegacyPlans): Record<string, Best>
 }
 
 // Приводит сохранённые или импортированные данные к текущей версии. История, метрики и профиль не меняются;
-// еда, сон и пробежки (SPEC_v3) — только корректные записи, отсутствуют — пустые.
+// еда, сон и пробежки (SPEC_v3) — только корректные записи, отсутствуют — пустые; битая активная пробежка — нет пробежки.
 export function migrateData(raw: Record<string, unknown>): AppData {
   const base = defaultData();
   const d = { ...base, ...raw } as AppData;
@@ -43,5 +44,6 @@ export function migrateData(raw: Record<string, unknown>): AppData {
     food: sanitizeFood(raw.food),
     sleep: sanitizeSleep(raw.sleep),
     runs: sanitizeRuns(raw.runs),
+    activeRun: sanitizeActiveRun(raw.activeRun),
   };
 }

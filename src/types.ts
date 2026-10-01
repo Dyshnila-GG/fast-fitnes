@@ -124,7 +124,9 @@ export type FoodData = {
 // Главное — длительность и оценка Garmin 0–100; «лёг/встал» — необязательно; quality 1–5 — только у старых записей.
 export type SleepEntry = { minutes: number; garmin?: number; bed?: string; wake?: string; quality?: number };
 // Пробежка (Ср/Пт): ключ — день «YYYY-MM-DD».
-export type RunEntry = { minutes: number; distanceMi?: number };
+export type RunEntry = { minutes: number; distanceMi?: number }; // minutes может быть дробным (секундомер)
+// Активная пробежка (SPEC_v3_2 §4): секундомер по меткам времени; done — нажато «Завершить», открыт итог.
+export type ActiveRun = { startedAt: string; sw: Stopwatch };
 
 export type AppData = {
   version: 2;
@@ -134,6 +136,7 @@ export type AppData = {
   records: Record<string, Best>; // ключ — название варианта
   plans: Record<string, Partial<Record<Kind, Plan>>>; // v1 — источник переноса рекордов
   activeSession: Session | null;
+  activeRun: ActiveRun | null;
   summaryId: string | null; // завершённая тренировка, итог которой ещё не закрыт
   sessions: Session[];
   bodyWeight: BodyWeightEntry[];
