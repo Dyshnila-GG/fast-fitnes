@@ -2,23 +2,27 @@ import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
 import type { DishId } from '../../data/food';
-import { dishOf, formatMealTime, formatNum, ingredientLines, saladLine, type Meal } from '../../logic/food';
+import { dishOf, dishTitle, formatMealTime, formatNum, ingredientLines, saladLine, type Meal } from '../../logic/food';
 import { useStore } from '../../store/AppStore';
 import type { FoodData } from '../../types';
 import { colors, gap, radius } from '../../theme';
 import { Button } from '../ui';
 import { DishImage } from './DishImage';
 import { Icon } from '../Icon';
+import { t as tr } from '../../i18n';
+import { dishName } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 // Ингредиенты блюда списком; у блюд «с салатом» салат — отдельной строкой.
 export function Ingredients({ dish, withTitle }: { dish: DishId; withTitle?: boolean }) {
+  const t = useT();
   const { food } = useStore().data;
   const d = dishOf(food, dish);
   if (!d) return null;
   const salad = d.salad ? saladLine(food) : undefined;
   return (
     <View style={styles.ingredients}>
-      {withTitle && <Text style={styles.groupTitle}>{d.name}</Text>}
+      {withTitle && <Text style={styles.groupTitle}>{dishName(d)}</Text>}
       {ingredientLines(food, d).map((i, n) => (
         <Text key={`${n}-${i}`} style={styles.ingredient}>
           • {i}
@@ -43,13 +47,14 @@ export function openRecipe(food: FoodData, dishes: DishId[]) {
   const go = (dish: DishId) => router.push({ pathname: '/recipe', params: { dish } });
   if (dishes.length === 0) return;
   if (dishes.length === 1) return go(dishes[0]);
-  Alert.alert('Рецепт', 'Какое блюдо?', [
-    ...dishes.map((id) => ({ text: dishOf(food, id)?.name ?? id, onPress: () => go(id) })),
-    { text: 'Отмена', style: 'cancel' as const },
+  Alert.alert(tr('meal.recipe'), tr('meal.whichDish'), [
+    ...dishes.map((id) => ({ text: dishTitle(food, id) || id, onPress: () => go(id) })),
+    { text: tr('common.cancel'), style: 'cancel' as const },
   ]);
 }
 
 export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
+  const t = useT();
   const { food } = useStore().data;
   const open = () => router.push({ pathname: '/meal', params: { day, slot: meal.slot } });
   const multi = meal.dishes.length > 1;
@@ -59,11 +64,11 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
         <Text style={styles.title}>
           {meal.title} · {formatMealTime(meal.time)}
         </Text>
-        {next && <Text style={styles.badge}>Следующий</Text>}
+        {next && <Text style={styles.badge}>{t('meal.next')}</Text>}
         {eaten && (
           <View style={styles.badgeRow}>
             <Icon name="check" size={14} />
-            <Text style={styles.badgeText}>Съедено</Text>
+            <Text style={styles.badgeText}>{t('meal.eaten')}</Text>
           </View>
         )}
       </View>
@@ -75,17 +80,17 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
         </View>
       )}
       <Text style={[styles.name, meal.dishes.length === 0 && styles.empty]}>
-        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishOf(food, id)?.name).join(' + ') : 'Блюдо не выбрано'}
+        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishTitle(food, id)).join(' + ') : t('meal.noDish')}
       </Text>
-      {meal.swapped && <Text style={styles.muted}>Замена на этот день</Text>}
+      {meal.swapped && <Text style={styles.muted}>{t('meal.swapped')}</Text>}
       {!compact && meal.dishes.map((id) => <Ingredients key={id} dish={id} withTitle={multi} />)}
       <View style={styles.numbers}>
-        <Text style={styles.kcal}>~{formatNum(meal.kcal)} ккал</Text>
-        <Text style={styles.protein}>{meal.protein} г белка</Text>
+        <Text style={styles.kcal}>~{formatNum(meal.kcal)} {t('unit.kcal')}</Text>
+        <Text style={styles.protein}>{t('food.protein', { n: meal.protein })}</Text>
       </View>
       <View style={styles.actions}>
         <Button
-          title={eaten ? 'Съедено' : 'Съел'}
+          title={t(eaten ? 'meal.eaten' : 'meal.eat')}
           variant={eaten ? 'secondary' : 'primary'}
           onPress={onToggle}
           style={[styles.flex, styles.tight]}
@@ -93,12 +98,12 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
         {!compact && (
           <>
             <Button
-              title="Заменить"
+              title={t('common.replace')}
               variant="secondary"
               onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
               style={[styles.flex, styles.tight]}
             />
-            <Button title="Рецепт" variant="secondary" onPress={() => openRecipe(food, meal.dishes)} style={[styles.flex, styles.tight]} />
+            <Button title={t('meal.recipe')} variant="secondary" onPress={() => openRecipe(food, meal.dishes)} style={[styles.flex, styles.tight]} />
           </>
         )}
       </View>

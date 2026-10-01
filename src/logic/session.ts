@@ -1,5 +1,7 @@
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
-import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, TrashItem, Variant } from '../types';
+import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, TrashItem, Units, Variant } from '../types';
+import { t } from '../i18n';
+import { variantName } from '../i18n/content';
 import { newId } from './id';
 import { getBest, grow, needsFeel, startBest, warmupSets, workSet } from './records';
 
@@ -16,15 +18,15 @@ export function workSetCount(variant: Variant, length: Length): number {
 }
 
 // Разминка от рекорда, рабочие — по рекорду, пока нет ответа «Как пошла разминка?».
-export function buildSets(variant: Variant, best: Best, length: Length): SetLog[] {
-  const work = Array.from({ length: workSetCount(variant, length) }, () => workSet(variant, best));
-  return [...warmupSets(variant, best), ...work];
+export function buildSets(variant: Variant, best: Best, length: Length, units: Units = 'imperial'): SetLog[] {
+  const work = Array.from({ length: workSetCount(variant, length) }, () => workSet(variant, best, undefined, undefined, units));
+  return [...warmupSets(variant, best, units), ...work];
 }
 
 export function buildExerciseLog(data: AppData, exercise: Exercise, kind: Kind, length: Length): ExerciseLog {
   const variant = getVariant(exercise, kind);
   const record = getBest(data, variant);
-  return { exerciseId: exercise.id, variant: kind, record, sets: buildSets(variant, record, length) };
+  return { exerciseId: exercise.id, variant: kind, record, sets: buildSets(variant, record, length, data.settings.units) };
 }
 
 export function sessionExercises(templateId: TemplateId, length: Length): Exercise[] {
@@ -37,6 +39,7 @@ export function buildSession(data: AppData, templateId: TemplateId, length: Leng
     id: newId(),
     templateId,
     length,
+    units: data.settings.units,
     startedAt: now.toISOString(),
     pausedMs: 0,
     warmup: emptyWarmup(),
@@ -67,19 +70,27 @@ export function lastFinished(data: AppData, templateId: TemplateId): Session | u
 
 export type WarmupId = keyof SessionWarmup;
 
-export const WARMUP_ITEMS: { id: WarmupId; label: string; title: string; hint: (length: Length) => string }[] = [
+// Тексты — геттеры: язык может смениться без перезапуска.
+export const WARMUP_ITEMS: { id: WarmupId; readonly label: string; readonly title: string; hint: (length: Length) => string }[] = [
   {
     id: 'run',
-    label: 'пробежка',
-    title: 'Пробежка на дорожке',
-    hint: (length) =>
-      `Цель ${length === 'short' ? '~5 мин' : '5–8 мин'}, лёгкий темп. Если ноет голеностоп — велотренажёр.`,
+    get label() {
+      return t('warmup.run.label');
+    },
+    get title() {
+      return t('warmup.run.title');
+    },
+    hint: (length) => t('warmup.run.hint', { goal: t(length === 'short' ? 'warmup.run.goalShort' : 'warmup.run.goalLong') }),
   },
   {
     id: 'joints',
-    label: 'суставная разминка',
-    title: 'Суставная разминка',
-    hint: () => 'Круги голеностопом, махи ногами, ягодичный мост ×15, подъём на носки ×15, круги плечами (~3 мин).',
+    get label() {
+      return t('warmup.joints.label');
+    },
+    get title() {
+      return t('warmup.joints.title');
+    },
+    hint: () => t('warmup.joints.hint'),
   },
 ];
 
@@ -245,14 +256,14 @@ export function skippedItems(s: Session): string[] {
   const out: string[] = [];
   const warmup = warmupOf(s);
   for (const item of WARMUP_ITEMS) {
-    if (!isWarmupItemDone(warmup[item.id])) out.push(`Разминка: ${item.label}`);
+    if (!isWarmupItemDone(warmup[item.id])) out.push(t('skip.warmup', { item: item.label }));
   }
   for (const log of s.exercises) {
     const variant = variantOf(log);
-    if (needsFeel(variant) && !log.feel) out.push(`${variant.name}: нет ответа после разминки`);
+    if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name: variantName(variant) }));
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
-    if (empty > 0) out.push(`${variant.name}: не заполнены рабочие подходы (${empty})`);
-    if (!log.rating) out.push(`${variant.name}: нет оценки`);
+    if (empty > 0) out.push(t('skip.emptySets', { name: variantName(variant), n: empty }));
+    if (!log.rating) out.push(t('skip.noRating', { name: variantName(variant) }));
   }
   return out;
 }
@@ -276,7 +287,7 @@ export function applyRecords(d: AppData, s: Session): AppData {
   for (const log of s.exercises) {
     const variant = variantOf(log);
     const best = { ...getBest(d, variant), ...records[variant.name] };
-    records[variant.name] = grow(best, log, variant);
+    records[variant.name] = grow(best, log, variant, sessionUnits(s));
   }
   return { ...d, records };
 }
@@ -286,11 +297,14 @@ export function applyRecords(d: AppData, s: Session): AppData {
 const BEST_FIELDS = ['weight', 'reps', 'repsMax', 'seconds'] as const;
 const sameBest = (a: Best, b: Best) => BEST_FIELDS.every((f) => a[f] === b[f]);
 
+// Единицы, в которых считались округления и рост рекорда этой тренировки (старые — имперские).
+export const sessionUnits = (s: Session): Units => s.units ?? 'imperial';
+
 // Рекорд «было» и «стало» по логу упражнения.
-function recordStep(log: ExerciseLog): { variant: Variant; before: Best; after: Best } {
+export function recordStep(log: ExerciseLog, units: Units = 'imperial'): { variant: Variant; before: Best; after: Best } {
   const variant = variantOf(log);
   const before = log.record ?? startBest(variant);
-  return { variant, before, after: grow(before, log, variant) };
+  return { variant, before, after: grow(before, log, variant, units) };
 }
 
 // Удаляет тренировку в корзину (SPEC_v3_3 §B1): из истории, статистики, календаря и счётчиков недели — сразу.
@@ -307,13 +321,13 @@ export function deleteSession(d: AppData, id: string, now = new Date()): AppData
       (x) => x.id !== id && x.finishedAt && x.finishedAt > s.finishedAt! && !isLegacyTemplate(x.templateId),
     );
     for (const log of s.exercises) {
-      const { variant, before, after } = recordStep(log);
+      const { variant, before, after } = recordStep(log, sessionUnits(s));
       if (sameBest(before, after)) continue;
       if (!sameBest(getBest({ ...d, records }, variant), after)) continue;
       const changedLater = later.some((x) =>
         x.exercises.some((l) => {
           if (variantOf(l).name !== variant.name) return false;
-          const step = recordStep(l);
+          const step = recordStep(l, sessionUnits(x));
           return !sameBest(step.before, step.after);
         }),
       );

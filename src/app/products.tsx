@@ -7,9 +7,11 @@ import { dayKey, shiftDay } from '../logic/metrics';
 import { weekStart } from '../logic/home';
 import { useStore } from '../store/AppStore';
 import { colors, radius } from '../theme';
+import { useT } from '../i18n/useT';
 
 // «Продукты на неделю» (SPEC_v3_2 §5.2): сумма ингредиентов меню пн–вс с заменами, без галочек.
 export default function ProductsScreen() {
+  const t = useT();
   const { data } = useStore();
   const thisWeek = weekStart(dayKey());
   const [monday, setMonday] = useState(thisWeek);
@@ -18,7 +20,7 @@ export default function ProductsScreen() {
     () => weekProducts(food, monday).map((g) => ({ key: g.section, title: g.title, data: g.rows })),
     [food, monday],
   );
-  const near = monday === thisWeek ? 'Эта неделя' : monday === shiftDay(thisWeek, 7) ? 'Следующая неделя' : monday === shiftDay(thisWeek, -7) ? 'Прошлая неделя' : 'Неделя';
+  const near = t(monday === thisWeek ? 'week.this' : monday === shiftDay(thisWeek, 7) ? 'week.next' : monday === shiftDay(thisWeek, -7) ? 'week.prev' : 'week.other');
 
   return (
     <SectionList
@@ -28,14 +30,14 @@ export default function ProductsScreen() {
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={
         <View style={styles.week}>
-          <Arrow label="‹" onPress={() => setMonday((m) => shiftDay(m, -7))} accessibilityLabel="Предыдущая неделя" />
+          <Arrow label="‹" onPress={() => setMonday((m) => shiftDay(m, -7))} accessibilityLabel={t('week.prevA11y')} />
           <View style={styles.weekText}>
             <Text style={styles.weekTitle}>{near}</Text>
             <Text style={styles.weekRange}>
               {formatShortDay(monday)} – {formatShortDay(shiftDay(monday, 6))}
             </Text>
           </View>
-          <Arrow label="›" onPress={() => setMonday((m) => shiftDay(m, 7))} accessibilityLabel="Следующая неделя" />
+          <Arrow label="›" onPress={() => setMonday((m) => shiftDay(m, 7))} accessibilityLabel={t('week.nextA11y')} />
         </View>
       }
       renderSectionHeader={({ section }) => <Text style={styles.section}>{section.title}</Text>}

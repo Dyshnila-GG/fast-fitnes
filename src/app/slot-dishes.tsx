@@ -6,15 +6,19 @@ import { Button } from '../components/ui';
 import { formatNum, slotsOf, updateSlot } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { getLang } from '../i18n';
+import { dishName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 // Блюда приёма в расписании: выбор из «Меню» (одно или несколько).
 export default function SlotDishesScreen() {
+  const t = useT();
   const params = useLocalSearchParams<{ weekday: string; slot: string }>();
   const weekday = Number(params.weekday);
   const { data, update } = useStore();
   const slot = slotsOf(data.food, weekday).find((s) => s.id === params.slot);
   if (!slot) return null;
-  const dishes = Object.values(data.food.dishes).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  const dishes = Object.values(data.food.dishes).sort((a, b) => dishName(a).localeCompare(dishName(b), getLang()));
 
   const toggle = (id: string) =>
     update((d) =>
@@ -23,8 +27,8 @@ export default function SlotDishesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: slot.title || 'Приём' }} />
-      <Text style={styles.muted}>Отметьте одно или несколько блюд. Их порядок — порядок выбора.</Text>
+      <Stack.Screen options={{ title: slot.title || t('meal.default') }} />
+      <Text style={styles.muted}>{t('slot.hint')}</Text>
       {dishes.map((d) => {
         const on = slot.dishes.includes(d.id);
         const n = slot.dishes.indexOf(d.id) + 1;
@@ -38,9 +42,9 @@ export default function SlotDishesScreen() {
           >
             <DishImage key={d.id} dish={d.id} style={styles.thumb} iconSize={22} />
             <View style={styles.flex}>
-              <Text style={styles.name}>{d.name}</Text>
+              <Text style={styles.name}>{dishName(d)}</Text>
               <Text style={styles.muted}>
-                {formatNum(d.kcal)} ккал · {d.protein} г белка
+                {t('food.kcalProtein', { kcal: formatNum(d.kcal), protein: d.protein })}
               </Text>
             </View>
             <View style={[styles.check, on && styles.checkOn]}>
@@ -49,8 +53,8 @@ export default function SlotDishesScreen() {
           </Pressable>
         );
       })}
-      <Button title="Новое блюдо" variant="secondary" onPress={() => router.push('/dish-edit')} />
-      <Button title="Готово" onPress={() => router.back()} />
+      <Button title={t('dish.new')} variant="secondary" onPress={() => router.push('/dish-edit')} />
+      <Button title={t('common.done')} onPress={() => router.back()} />
     </ScrollView>
   );
 }

@@ -2,16 +2,18 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { Text } from '../components/Text';
 import { Card } from '../components/ui';
-import { formatDay, WEEKDAYS } from '../logic/format';
+import { formatDay, formatDistance, weekdayOf } from '../logic/format';
 import { dayDate } from '../logic/metrics';
 import { runReport } from '../logic/report';
 import { formatRunTime } from '../logic/run';
 import { shareReport } from '../services/share';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { useT } from '../i18n/useT';
 
 // История пробежек. Отмечаются только на «Главной» (Ср и Пт).
 export default function RunsScreen() {
+  const t = useT();
   const { data } = useStore();
   const days = Object.keys(data.runs).sort().reverse();
   const total = days.reduce((n, d) => n + (data.runs[d].distanceMi ?? 0), 0);
@@ -19,26 +21,26 @@ export default function RunsScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.muted}>
-        Пробежки записываются из «Тренировки → Пробежка» или отмечаются на «Главной» в среду и пятницу.
-        {days.length > 0 ? ` Всего: ${days.length}, ${Math.round(total * 100) / 100} mi.` : ''}
+        {t('runs.hint')}
+        {days.length > 0 ? ` ${t('runs.total', { n: days.length, distance: formatDistance(total) })}` : ''}
       </Text>
       <Card>
-        {days.length === 0 && <Text style={styles.muted}>Пробежек пока нет.</Text>}
+        {days.length === 0 && <Text style={styles.muted}>{t('runs.empty')}</Text>}
         {days.map((day, i) => {
           const r = data.runs[day];
           return (
             <View key={day} style={[styles.row, i > 0 && styles.border]}>
               <View style={styles.flex}>
                 <Text style={styles.title}>{formatDay(day)}</Text>
-                <Text style={styles.muted}>{WEEKDAYS[dayDate(day).getDay()]}</Text>
+                <Text style={styles.muted}>{weekdayOf(dayDate(day).getDay())}</Text>
               </View>
               <Text style={styles.value}>
-                {formatRunTime(r.minutes)}{r.distanceMi != null ? ` · ${r.distanceMi} mi` : ''}
+                {formatRunTime(r.minutes)}{r.distanceMi != null ? ` · ${formatDistance(r.distanceMi)}` : ''}
               </Text>
               <Pressable
                 onPress={() => shareReport(runReport(day, r))}
                 accessibilityRole="button"
-                accessibilityLabel="Скачать отчёт"
+                accessibilityLabel={t('report.download')}
                 hitSlop={6}
                 style={({ pressed }) => [styles.download, pressed && styles.pressed]}
               >

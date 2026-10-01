@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Text } from '../Text';
 import { colors } from '../../theme';
+import { useT } from '../../i18n/useT';
 
 const BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises';
 const FRAME_MS = 700;
@@ -17,6 +18,7 @@ type Props = { gifId: string; playing?: boolean; style?: StyleProp<ViewStyle> };
 // Имитация GIF: чередование кадров. Оба кадра наложены друг на друга — смена без мерцания.
 // При смене gifId вызывающий передаёт key={gifId}, чтобы состояние сбрасывалось.
 export function ExerciseGif({ gifId, playing = true, style }: Props) {
+  const t = useT();
   const [frame, setFrame] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [errored, setErrored] = useState(false);
@@ -40,7 +42,7 @@ export function ExerciseGif({ gifId, playing = true, style }: Props) {
   return (
     <View style={[styles.box, style]}>
       {failed ? (
-        <Text style={styles.stub}>демонстрация не подключена</Text>
+        <Text style={styles.stub}>{t('exercise.noDemo')}</Text>
       ) : (
         demoUrls(gifId).map((uri, i) => (
           <Image

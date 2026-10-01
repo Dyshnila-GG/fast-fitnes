@@ -8,6 +8,8 @@ import { isWarmupItemDone, stopwatchMs, stopwatchState, WARMUP_ITEMS, type Warmu
 import { colors } from '../../theme';
 import type { Length, SessionWarmup } from '../../types';
 import { Button, Card } from '../ui';
+import { distanceToMi, distanceUnit, distanceValue } from '../../logic/units';
+import { useT } from '../../i18n/useT';
 
 type Props = {
   length: Length;
@@ -22,68 +24,73 @@ type Props = {
 
 // Разминка (SPEC §3.2): пробежка и суставная разминка, у каждой свой секундомер.
 export function WarmupBlock({ length, warmup, paused, onStart, onPause, onFinish, onReset, onDistance }: Props) {
+  const t = useT();
   const running = WARMUP_ITEMS.some((i) => warmup[i.id].since);
   const now = useNow(running ? 250 : 60_000);
   const complete = WARMUP_ITEMS.every((i) => isWarmupItemDone(warmup[i.id]));
 
   return (
     <Card style={[styles.card, !complete && styles.pending]}>
-      <Text style={styles.title}>Разминка</Text>
+      <Text style={styles.title}>{t('report.warmup')}</Text>
       {WARMUP_ITEMS.map((item) => {
         const sw = warmup[item.id];
         const state = stopwatchState(sw);
         const reset = () =>
-          Alert.alert('Сбросить?', item.id === 'run' ? 'Время и дистанция будут обнулены.' : 'Время будет обнулено.', [
-            { text: 'Отмена', style: 'cancel' },
-            { text: 'Сбросить', style: 'destructive', onPress: () => onReset(item.id) },
+          Alert.alert(t('warmup.resetTitle'), t(item.id === 'run' ? 'warmup.resetRun' : 'warmup.resetJoints'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('warmup.reset'), style: 'destructive', onPress: () => onReset(item.id) },
           ]);
         return (
           <View key={item.id} style={[styles.item, state !== 'done' && styles.pending]}>
             <View style={styles.row}>
               <Text style={[styles.name, styles.flex]}>{item.title}</Text>
-              {state === 'done' && <Text style={styles.badge}>Выполнено</Text>}
+              {state === 'done' && <Text style={styles.badge}>{t('warmup.done')}</Text>}
             </View>
             <Text style={styles.hint}>{item.hint(length)}</Text>
             <Text style={[styles.clock, state === 'done' && styles.clockDone]}>{formatDuration(stopwatchMs(sw, now))}</Text>
-            {state === 'idle' && <Button title="Старт" disabled={paused} onPress={() => onStart(item.id)} />}
-            {state === 'running' && <Button title="Пауза" variant="secondary" onPress={() => onPause(item.id)} />}
-            {state === 'paused' && <Button title="Продолжить" disabled={paused} onPress={() => onStart(item.id)} />}
+            {state === 'idle' && <Button title={t('warmup.start')} disabled={paused} onPress={() => onStart(item.id)} />}
+            {state === 'running' && <Button title={t('control.pause')} variant="secondary" onPress={() => onPause(item.id)} />}
+            {state === 'paused' && <Button title={t('control.resume')} disabled={paused} onPress={() => onStart(item.id)} />}
             {state !== 'idle' && (
               <View style={styles.row}>
                 {state !== 'done' && (
-                  <Button title="Завершить" variant="secondary" style={styles.flex} onPress={() => onFinish(item.id)} />
+                  <Button title={t('control.finish')} variant="secondary" style={styles.flex} onPress={() => onFinish(item.id)} />
                 )}
-                <Button title="Сброс" variant="danger" style={styles.flex} onPress={reset} />
+                <Button title={t('warmup.resetShort')} variant="danger" style={styles.flex} onPress={reset} />
               </View>
             )}
             {item.id === 'run' && <DistanceField value={warmup.run.distanceMi} onChange={onDistance} />}
           </View>
         );
       })}
-      {paused && <Text style={styles.hint}>Тренировка на паузе — секундомеры тоже.</Text>}
+      {paused && <Text style={styles.hint}>{t('warmup.paused')}</Text>}
     </Card>
   );
 }
 
+// Дистанция в выбранных единицах (mi / km), хранение — мили.
 function DistanceField({ value, onChange }: { value?: number; onChange: (v: number | undefined) => void }) {
-  const [text, setText] = useState(value == null ? '' : String(value));
+  const t = useT();
+  const shown = value == null ? undefined : distanceValue(value);
+  const [text, setText] = useState(shown == null ? '' : String(shown));
   useEffect(() => {
-    setText((prev) => (parseNum(prev) === value ? prev : value == null ? '' : String(value)));
-  }, [value]);
+    setText((prev) => (parseNum(prev) === shown ? prev : shown == null ? '' : String(shown)));
+  }, [shown]);
 
   return (
     <View style={styles.row}>
-      <Text style={styles.label}>Дистанция, mi</Text>
+      <Text style={styles.label}>{t('run.distanceLabel', { u: distanceUnit() })}</Text>
       <TextInput
         value={text}
-        placeholder="0.45"
+        placeholder={distanceUnit() === 'km' ? '0.7' : '0.45'}
         placeholderTextColor={colors.muted}
         keyboardType="decimal-pad"
         returnKeyType="done"
         onChangeText={(t) => {
           const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
           setText(clean);
-          onChange(parseNum(clean));
+          const n = parseNum(clean);
+          onChange(n == null ? undefined : distanceToMi(n));
         }}
         style={styles.input}
       />

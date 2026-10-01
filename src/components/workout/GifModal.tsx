@@ -5,27 +5,30 @@ import { colors, radius } from '../../theme';
 import type { Exercise, Variant } from '../../types';
 import { ExerciseGif } from './ExerciseGif';
 import { Icon } from '../Icon';
+import { variantCue, variantEquipment, variantName } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 type Props = { exercise: Exercise; variant: Variant; visible: boolean; onClose: () => void };
 
 // Большая анимация, название и техника (SPEC §3.3).
 export function GifModal({ exercise, variant, visible, onClose }: Props) {
+  const t = useT();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.head}>
-            <Text style={styles.title}>{variant.name}</Text>
+            <Text style={styles.title}>{variantName(variant)}</Text>
             <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
               <Icon name="close" size={20} />
             </Pressable>
           </View>
           <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={visible} />
           <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-            <Text style={styles.meta}>{variant.equipment}</Text>
-            <Text style={styles.cue}>{variant.cue}</Text>
+            <Text style={styles.meta}>{variantEquipment(variant)}</Text>
+            <Text style={styles.cue}>{variantCue(exercise, variant)}</Text>
             <Text style={styles.meta}>
-              Темп {exercise.tempo} · отдых {formatRest(exercise.restSec)}
+              {t('exercise.tempoRest', { tempo: exercise.tempo, rest: formatRest(exercise.restSec) })}
             </Text>
           </ScrollView>
         </View>

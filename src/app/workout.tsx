@@ -37,8 +37,11 @@ import { applyFeel, setTodayWeight } from '../logic/records';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 import type { ExerciseLog, Kind, Session } from '../types';
+import { sessionUnits } from '../logic/session';
+import { useT } from '../i18n/useT';
 
 export default function WorkoutScreen() {
+  const t = useT();
   useKeepAwake();
   const { data, update } = useStore();
   const insets = useSafeAreaInsets();
@@ -57,7 +60,7 @@ export default function WorkoutScreen() {
   // Системная кнопка «назад» на Android заблокирована.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (Platform.OS === 'android') ToastAndroid.show('Поставьте на паузу или завершите тренировку', ToastAndroid.SHORT);
+      if (Platform.OS === 'android') ToastAndroid.show(t('workout.backBlocked'), ToastAndroid.SHORT);
       return true;
     });
     return () => sub.remove();
@@ -84,7 +87,8 @@ export default function WorkoutScreen() {
         if (!s) return d;
         const ex = getExercise(s.exercises[index].exerciseId);
         const prev = s.exercises[index];
-        const log = { ...buildExerciseLog(d, ex, kind, s.length), comment: prev.comment };
+        // Единицы — как у этой тренировки (округления разминки и плана).
+        const log = { ...buildExerciseLog({ ...d, settings: { ...d.settings, units: sessionUnits(s) } }, ex, kind, s.length), comment: prev.comment };
         return {
           ...d,
           variantChoice: { ...d.variantChoice, [ex.id]: kind },
@@ -92,9 +96,9 @@ export default function WorkoutScreen() {
         };
       });
     if (!hasFacts(session.exercises[index])) return apply();
-    Alert.alert('Сменить вариант?', 'Введённые подходы этого упражнения будут сброшены.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Сменить', style: 'destructive', onPress: apply },
+    Alert.alert(t('workout.switchTitle'), t('workout.switchText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('workout.switch'), style: 'destructive', onPress: apply },
     ]);
   };
 
@@ -138,8 +142,8 @@ export default function WorkoutScreen() {
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
-                onFeel={(feel) => updateLog(i, (l) => applyFeel(l, variantOf(l), feel))}
-                onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w))}
+                onFeel={(feel) => updateLog(i, (l) => applyFeel(l, variantOf(l), feel, sessionUnits(session)))}
+                onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w, sessionUnits(session)))}
                 onNote={(comment) => updateLog(i, (l) => ({ ...l, comment }))}
                 onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
                 prevRating={lastRating(data.sessions, variantOf(log).name)}

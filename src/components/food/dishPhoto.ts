@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
@@ -24,7 +25,7 @@ async function pick(source: 'camera' | 'library'): Promise<string | null> {
   const perm =
     source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Нет доступа', source === 'camera' ? 'Разрешите доступ к камере в настройках.' : 'Разрешите доступ к фото в настройках.');
+    Alert.alert(t('photo.noAccess'), t(source === 'camera' ? 'photo.allowCamera' : 'photo.allowLibrary'));
     return null;
   }
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', allowsEditing: true, aspect: [4, 3], quality: 0.7 };
@@ -33,7 +34,7 @@ async function pick(source: 'camera' | 'library'): Promise<string | null> {
   try {
     return await savePhoto(res.assets[0].uri);
   } catch {
-    Alert.alert('Не удалось сохранить фото');
+    Alert.alert(t('photo.saveFailed'));
     return null;
   }
 }
@@ -41,9 +42,9 @@ async function pick(source: 'camera' | 'library'): Promise<string | null> {
 // Меню «Сфотографировать / Из галереи»; onPicked — путь к сохранённому файлу.
 export function choosePhoto(title: string, onPicked: (uri: string) => void) {
   const run = (source: 'camera' | 'library') => pick(source).then((uri) => uri && onPicked(uri));
-  Alert.alert('Своё фото', title, [
-    { text: 'Сфотографировать', onPress: () => run('camera') },
-    { text: 'Из галереи', onPress: () => run('library') },
-    { text: 'Отмена', style: 'cancel' },
+  Alert.alert(t('photo.title'), title, [
+    { text: t('photo.camera'), onPress: () => run('camera') },
+    { text: t('photo.library'), onPress: () => run('library') },
+    { text: t('common.cancel'), style: 'cancel' },
   ]);
 }

@@ -2,18 +2,20 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { NavCard } from '../../components/form';
 import { foodStats, formatNum } from '../../logic/food';
-import { formatAge, formatDate, formatDay, formatHeight } from '../../logic/format';
+import { formatAge, formatDate, formatDay, formatDistance, formatHeight, formatWeight } from '../../logic/format';
 import { dayKey, finishedSessions, latestFirst, progressItems } from '../../logic/metrics';
 import { formatSleep, sleepAverage } from '../../logic/sleep';
 import { formatRunTime } from '../../logic/run';
 import { backupSupported } from '../../services/backup';
 import { useStore } from '../../store/AppStore';
 import { gap } from '../../theme';
-
-const round = (n: number) => Math.round(n * 10) / 10;
+import { formatNumber, LANG_NAMES } from '../../i18n';
+import { weightUnit, weightValue } from '../../logic/units';
+import { useT } from '../../i18n/useT';
 
 // «Профиль» (бывшие «Метрики», SPEC_v3 §10).
 export default function ProfileScreen() {
+  const t = useT();
   const { data } = useStore();
   const { profile } = data;
   const today = dayKey();
@@ -27,86 +29,97 @@ export default function ProfileScreen() {
   const lastRun = runDays[0] ? data.runs[runDays[0]] : undefined;
 
   const weightSub = lastWeight
-    ? `${lastWeight.value} lb · ${formatDay(lastWeight.date)} · ${signed(round(lastWeight.value - profile.startWeight))} lb от стартового`
-    : 'Нет записей';
+    ? t('profile.weightSub', {
+        w: formatWeight(lastWeight.value),
+        date: formatDay(lastWeight.date),
+        diff: signed(weightValue(lastWeight.value) - weightValue(profile.startWeight)),
+        u: weightUnit(),
+      })
+    : t('common.noRecords');
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <NavCard
-        title="Профиль"
-        subtitle={`${formatAge(profile.age)} · ${formatHeight(profile.heightIn)} · старт ${profile.startWeight} lb`}
+        title={t('tabs.profile')}
+        subtitle={t('profile.personalSub', { age: formatAge(profile.age), height: formatHeight(profile.heightIn), start: formatWeight(profile.startWeight) })}
         onPress={() => router.push('/personal')}
       />
-      <NavCard title="Вес тела" subtitle={weightSub} onPress={() => router.push('/weight')} />
+      <NavCard title={t('home.weight')} subtitle={weightSub} onPress={() => router.push('/weight')} />
       <NavCard
-        title="Замеры"
-        subtitle={lastMeasure ? `Последние: ${formatDay(lastMeasure.date)}` : 'Нет записей'}
+        title={t('profile.measurements')}
+        subtitle={lastMeasure ? t('profile.measurementsLast', { date: formatDay(lastMeasure.date) }) : t('common.noRecords')}
         onPress={() => router.push('/measurements')}
       />
       <NavCard
-        title="История тренировок"
-        subtitle={sessions.length > 0 ? `${sessions.length} · последняя ${formatDate(sessions[0].finishedAt!)}` : 'Пока пусто'}
+        title={t('profile.history')}
+        subtitle={sessions.length > 0 ? t('profile.historySub', { n: sessions.length, date: formatDate(sessions[0].finishedAt!) }) : t('profile.empty')}
         onPress={() => router.push('/history')}
       />
       <NavCard
-        title="Прогресс по упражнению"
-        subtitle={progress.length > 0 ? `Упражнений с результатами: ${progress.length}` : 'Появится после первой тренировки'}
+        title={t('profile.progress')}
+        subtitle={progress.length > 0 ? t('profile.progressSub', { n: progress.length }) : t('profile.progressEmpty')}
         onPress={() => router.push('/progress')}
       />
       <NavCard
-        title="Еда"
-        subtitle={`7 дней: отмечено ${food.eaten} из ${food.total} приёмов · в среднем ${formatNum(food.avgKcal)} ккал и ${food.avgProtein} г белка в день`}
+        title={t('tabs.food')}
+        subtitle={t('profile.foodSub', { eaten: food.eaten, total: food.total, kcal: formatNum(food.avgKcal), protein: food.avgProtein })}
         onPress={() => router.push('/food')}
       />
       <NavCard
-        title="Сон"
-        subtitle={sleep7 != null ? `Среднее за 7 дней: ${formatSleep(sleep7)}` : 'Нет записей'}
+        title={t('reminder.sleep.title')}
+        subtitle={sleep7 != null ? t('profile.sleepSub', { avg: formatSleep(sleep7) }) : t('common.noRecords')}
         onPress={() => router.push('/sleep')}
       />
       <NavCard
-        title="Пробежки"
+        title={t('profile.runs')}
         subtitle={
           lastRun
-            ? `${runDays.length} · последняя ${formatDay(runDays[0])}, ${formatRunTime(lastRun.minutes)}${lastRun.distanceMi != null ? ` · ${lastRun.distanceMi} mi` : ''}`
-            : 'Тренировки → Пробежка или отметка на «Главной»'
+            ? t('profile.runsSub', { n: runDays.length, date: formatDay(runDays[0]), time: formatRunTime(lastRun.minutes) }) +
+              (lastRun.distanceMi != null ? ` · ${formatDistance(lastRun.distanceMi)}` : '')
+            : t('profile.runsEmpty')
         }
         onPress={() => router.push('/runs')}
       />
-      <NavCard title="Меню" subtitle={`Блюд: ${Object.keys(data.food.dishes).length} · добавить своё, изменить, удалить`} onPress={() => router.push('/menu')} />
-      <NavCard title="Расписание еды" subtitle="Приёмы пищи по дням недели: время, название, блюда" onPress={() => router.push('/food-settings')} />
+      <NavCard title={t('profile.menu')} subtitle={t('profile.menuSub', { n: Object.keys(data.food.dishes).length })} onPress={() => router.push('/menu')} />
+      <NavCard title={t('profile.schedule')} subtitle={t('profile.scheduleSub')} onPress={() => router.push('/food-settings')} />
       <NavCard
-        title="Бэкап"
+        title={t('profile.backup')}
         subtitle={
           !backupSupported
-            ? 'Восстановить из файла'
+            ? t('backup.restore')
             : data.backup.lastAt
-              ? `Последний бэкап: ${formatDate(data.backup.lastAt)}`
+              ? t('profile.backupLast', { date: formatDate(data.backup.lastAt) })
               : data.backup.dirUri
-                ? 'Бэкапа ещё не было'
-                : 'Выберите папку на телефоне — бэкап раз в неделю'
+                ? t('profile.backupNever')
+                : t('profile.backupPick')
         }
-        warning={data.backup.error}
+        warning={data.backup.error ? t('backup.dirError') : undefined}
         onPress={() => router.push('/backup')}
       />
       <NavCard
-        title="Напоминания"
+        title={t('profile.reminders')}
         subtitle={[
-          `Сон ${data.reminders.sleep.on ? data.reminders.sleep.time : 'выкл.'}`,
-          `Тренировка ${data.reminders.workout.on ? data.reminders.workout.time : 'выкл.'}`,
+          `${t('reminder.sleep.title')} ${data.reminders.sleep.on ? data.reminders.sleep.time : t('common.off')}`,
+          `${t('reminder.workout.title')} ${data.reminders.workout.on ? data.reminders.workout.time : t('common.off')}`,
         ].join(' · ')}
         onPress={() => router.push('/reminders')}
       />
       <NavCard
-        title="Корзина"
-        subtitle={data.trash.length > 0 ? `Удалённых тренировок: ${data.trash.length}` : 'Пусто'}
+        title={t('profile.trash')}
+        subtitle={data.trash.length > 0 ? t('profile.trashSub', { n: data.trash.length }) : t('profile.trashEmpty')}
         onPress={() => router.push('/trash')}
       />
-      <NavCard title="Экспорт / импорт" subtitle="Резервная копия всех данных в JSON" onPress={() => router.push('/data')} />
+      <NavCard
+        title={t('profile.appSettings')}
+        subtitle={`${LANG_NAMES[data.settings.lang]} · ${t(`settings.units.${data.settings.units}`)}`}
+        onPress={() => router.push('/app-settings')}
+      />
+      <NavCard title={t('profile.data')} subtitle={t('profile.dataSub')} onPress={() => router.push('/data')} />
     </ScrollView>
   );
 }
 
-const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+const signed = (n: number) => (n > 0 ? `+${formatNumber(n)}` : formatNumber(n));
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap },

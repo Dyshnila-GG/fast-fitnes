@@ -4,12 +4,15 @@ import { Text } from '../components/Text';
 import { LineChart } from '../components/charts/LineChart';
 import { DayPicker, EntryRow, NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
-import { formatDay } from '../logic/format';
+import { formatDay, formatWeight } from '../logic/format';
 import { addBodyWeight, dayKey, latestFirst, parseNum, removeEntry, weightSeries } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { weightToLb, weightUnit, weightValue } from '../logic/units';
+import { useT } from '../i18n/useT';
 
 export default function WeightScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const [text, setText] = useState('');
   const [day, setDay] = useState(dayKey());
@@ -17,8 +20,8 @@ export default function WeightScreen() {
 
   const save = () => {
     const value = parseNum(text);
-    if (value == null || value <= 0) return Alert.alert('Введите вес в lb');
-    update((d) => addBodyWeight(d, day, value));
+    if (value == null || value <= 0) return Alert.alert(t('weight.enter', { u: weightUnit() }));
+    update((d) => addBodyWeight(d, day, weightToLb(value)));
     setText('');
   };
 
@@ -26,20 +29,20 @@ export default function WeightScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
-          <NumInput label="Вес, lb" value={text} onChangeText={setText} placeholder={String(data.profile.startWeight)} />
+          <NumInput label={t('weight.label', { u: weightUnit() })} value={text} onChangeText={setText} placeholder={String(weightValue(data.profile.startWeight))} />
           <DayPicker value={day} onChange={setDay} />
-          <Button title="Сохранить" onPress={save} />
+          <Button title={t('common.save')} onPress={save} />
         </Card>
         <Card style={styles.card}>
-          <LineChart points={weightSeries(data.bodyWeight)} unit="lb" formatDate={formatDay} />
+          <LineChart points={weightSeries(data.bodyWeight).map((p) => ({ ...p, y: weightValue(p.y) }))} unit={weightUnit()} formatDate={formatDay} />
         </Card>
         <Card style={styles.list}>
-          <Text style={styles.section}>ЗАПИСИ</Text>
-          {entries.length === 0 && <Text style={styles.muted}>Пока нет записей.</Text>}
+          <Text style={styles.section}>{t('weight.entries')}</Text>
+          {entries.length === 0 && <Text style={styles.muted}>{t('weight.empty')}</Text>}
           {entries.map((e) => (
             <EntryRow
               key={e.id}
-              title={`${e.value} lb`}
+              title={formatWeight(e.value)}
               detail={formatDay(e.date)}
               onDelete={() => update((d) => removeEntry(d, 'bodyWeight', e.id))}
             />

@@ -6,6 +6,10 @@ import { formatBest, formatSetPlan } from '../../logic/format';
 import { startBest, warmupSets } from '../../logic/records';
 import { colors } from '../../theme';
 import type { Best, ExerciseLog } from '../../types';
+import { variantName } from '../../i18n/content';
+import { weightToLb, weightUnit, weightValue } from '../../logic/units';
+import { useSettings } from '../../store/AppStore';
+import { useT } from '../../i18n/useT';
 
 type Props = {
   log: ExerciseLog;
@@ -15,38 +19,42 @@ type Props = {
 
 // Строка блока «Рекорды»: было → стало (или «без изменений»), ручная правка, разминка в следующий раз.
 export function RecordRow({ log, best, onChange }: Props) {
+  const t = useT();
+  const { units } = useSettings();
   const variant = getVariant(getExercise(log.exerciseId), log.variant);
   const before = log.record ?? startBest(variant);
   const field = variant.mode === 'weight' ? 'weight' : variant.mode === 'time' ? 'seconds' : 'reps';
-  const unit = variant.mode === 'weight' ? 'lb' : variant.mode === 'time' ? 'сек' : 'повт';
+  const unit = variant.mode === 'weight' ? weightUnit() : variant.mode === 'time' ? t('unit.sec') : t('unit.reps');
   const same = before[field] === best[field];
-  const warmup = warmupSets(variant, best);
+  const warmup = warmupSets(variant, best, units);
 
   return (
     <View style={styles.box}>
-      <Text style={styles.name}>{variant.name}</Text>
+      <Text style={styles.name}>{variantName(variant)}</Text>
       <View style={styles.row}>
         <View style={styles.flex}>
           <Text style={styles.change}>
             {same ? formatBest(variant, best) : `${formatBest(variant, before)} → ${formatBest(variant, best)}`}
           </Text>
-          <Text style={styles.meta}>{same ? 'без изменений' : 'новый рекорд'}</Text>
+          <Text style={styles.meta}>{t(same ? 'records.same' : 'records.new')}</Text>
         </View>
-        <PlanField value={best[field]} decimal={field === 'weight'} onChange={(v) => onChange({ [field]: v })} />
+        <PlanField value={best[field]} weight={field === 'weight'} onChange={(v) => onChange({ [field]: v })} />
         <Text style={styles.unit}>{unit}</Text>
       </View>
       {warmup.length > 0 && variant.mode === 'weight' && (
-        <Text style={styles.meta}>Разминка: {warmup.map(formatSetPlan).join(' · ')}</Text>
+        <Text style={styles.meta}>{t('result.warmup', { sets: warmup.map(formatSetPlan).join(' · ') })}</Text>
       )}
     </View>
   );
 }
 
-function PlanField({ value, decimal, onChange }: { value?: number; decimal: boolean; onChange: (v: number) => void }) {
-  const [text, setText] = useState(value == null ? '' : String(value));
+// weight — вес: показ и ввод в выбранных единицах, хранение — lb.
+function PlanField({ value, weight: decimal, onChange }: { value?: number; weight: boolean; onChange: (v: number) => void }) {
+  const shown = value == null ? undefined : decimal ? weightValue(value) : value;
+  const [text, setText] = useState(shown == null ? '' : String(shown));
   useEffect(() => {
-    setText((prev) => (Number(prev) === value ? prev : value == null ? '' : String(value)));
-  }, [value]);
+    setText((prev) => (Number(prev) === shown ? prev : shown == null ? '' : String(shown)));
+  }, [shown]);
 
   return (
     <TextInput
@@ -57,10 +65,10 @@ function PlanField({ value, decimal, onChange }: { value?: number; decimal: bool
         const clean = t.replace(',', '.').replace(decimal ? /[^0-9.]/g : /[^0-9]/g, '');
         setText(clean);
         const n = Number(clean);
-        if (clean !== '' && Number.isFinite(n) && n > 0) onChange(n);
+        if (clean !== '' && Number.isFinite(n) && n > 0) onChange(decimal ? weightToLb(n) : n);
       }}
       // Пустое или нулевое значение не сохраняется — возвращаем текущее.
-      onEndEditing={() => setText(value == null ? '' : String(value))}
+      onEndEditing={() => setText(shown == null ? '' : String(shown))}
       style={styles.input}
     />
   );

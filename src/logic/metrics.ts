@@ -2,6 +2,7 @@ import { getExercise, getVariant } from '../data/program';
 import { defaultData } from '../store/defaults';
 import { migrateData } from '../store/migrate';
 import type { AppData, BodyWeightEntry, MeasurementEntry, Mode, Session } from '../types';
+import { t } from '../i18n';
 import { newId } from './id';
 import { isNum, isObj, validSession } from './validate';
 
@@ -120,20 +121,20 @@ export function parseImport(text: string): ImportResult {
   try {
     raw = JSON.parse(text.trim());
   } catch {
-    return { ok: false, error: 'Это не JSON. Скопируйте текст экспорта целиком.' };
+    return { ok: false, error: t('import.notJson') };
   }
-  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: 'Неизвестный формат: это не экспорт TOCHKA Fitness.' };
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: t('import.unknown') };
   const p = raw.profile;
   if (!isObj(p) || !isNum(p.age) || !isNum(p.heightIn) || !isNum(p.startWeight)) {
-    return { ok: false, error: 'Повреждён профиль.' };
+    return { ok: false, error: t('import.badProfile') };
   }
   const { sessions, bodyWeight, measurements } = raw;
-  if (!Array.isArray(sessions) || !sessions.every(validSession)) return { ok: false, error: 'Повреждена история тренировок.' };
+  if (!Array.isArray(sessions) || !sessions.every(validSession)) return { ok: false, error: t('import.badHistory') };
   if (!Array.isArray(bodyWeight) || !bodyWeight.every((e) => isObj(e) && typeof e.date === 'string' && isNum(e.value))) {
-    return { ok: false, error: 'Повреждены записи веса.' };
+    return { ok: false, error: t('import.badWeight') };
   }
   if (!Array.isArray(measurements) || !measurements.every((e) => isObj(e) && typeof e.date === 'string')) {
-    return { ok: false, error: 'Повреждены замеры.' };
+    return { ok: false, error: t('import.badMeasurements') };
   }
   const base = defaultData();
   return {
@@ -153,10 +154,11 @@ export function parseImport(text: string): ImportResult {
       food: raw.food as AppData['food'],
       sleep: raw.sleep as AppData['sleep'],
       runs: raw.runs as AppData['runs'],
-      // Корзина, бэкап и напоминания проверяются в migrateData.
+      // Корзина, бэкап, напоминания и настройки проверяются в migrateData.
       trash: raw.trash as AppData['trash'],
       backup: raw.backup as AppData['backup'],
       reminders: raw.reminders as AppData['reminders'],
+      settings: raw.settings as AppData['settings'],
       // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
       activeRun: null,

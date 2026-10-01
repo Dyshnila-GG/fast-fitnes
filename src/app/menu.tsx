@@ -7,19 +7,23 @@ import { Button } from '../components/ui';
 import { formatNum, restoreStandardMenu } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { getLang } from '../i18n';
+import { dishName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 // «Меню» (SPEC_v3_3 §C2): библиотека блюд — стандартные и свои.
 export default function MenuScreen() {
+  const t = useT();
   const { data, update } = useStore();
-  const dishes = Object.values(data.food.dishes).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  const dishes = Object.values(data.food.dishes).sort((a, b) => dishName(a).localeCompare(dishName(b), getLang()));
 
   const restore = () =>
     Alert.alert(
-      'Восстановить стандартное меню?',
-      'Стандартные блюда и расписание вернутся к стартовым. Ваши блюда останутся в «Меню», но уйдут из расписания.',
+      t('menu.restoreTitle'),
+      t('menu.restoreText'),
       [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Восстановить', style: 'destructive', onPress: () => update(restoreStandardMenu) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.restore'), style: 'destructive', onPress: () => update(restoreStandardMenu) },
       ],
     );
 
@@ -31,9 +35,9 @@ export default function MenuScreen() {
         style={({ pressed }) => [styles.add, pressed && styles.pressed]}
       >
         <Icon name="plus" size={22} color={colors.onPrimary} />
-        <Text style={styles.addText}>Добавить блюдо</Text>
+        <Text style={styles.addText}>{t('menu.add')}</Text>
       </Pressable>
-      {dishes.length === 0 && <Text style={styles.muted}>В «Меню» пока нет блюд.</Text>}
+      {dishes.length === 0 && <Text style={styles.muted}>{t('menu.empty')}</Text>}
       {dishes.map((d) => (
         <Pressable
           key={d.id}
@@ -43,16 +47,16 @@ export default function MenuScreen() {
           <DishImage key={d.id} dish={d.id} style={styles.thumb} iconSize={24} />
           <View style={styles.flex}>
             <Text style={styles.name} numberOfLines={2}>
-              {d.name}
+              {dishName(d)}
             </Text>
             <Text style={styles.muted}>
-              {formatNum(d.kcal)} ккал · {d.protein} г белка
+              {t('food.kcalProtein', { kcal: formatNum(d.kcal), protein: d.protein })}
             </Text>
           </View>
           <Icon name="chevron-right" size={22} color={colors.muted} />
         </Pressable>
       ))}
-      <Button title="Восстановить стандартное меню" variant="secondary" onPress={restore} style={styles.restore} />
+      <Button title={t('menu.restoreTitleShort')} variant="secondary" onPress={restore} style={styles.restore} />
     </ScrollView>
   );
 }

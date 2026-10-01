@@ -1,5 +1,7 @@
+import { t } from '../../i18n';
 import { Alert } from 'react-native';
-import { SHORT_WEEKDAYS } from '../../logic/format';
+import { weekdayShort } from '../../i18n';
+import { dishName } from '../../i18n/content';
 import { dishUsage } from '../../logic/food';
 import type { FoodData } from '../../types';
 
@@ -8,12 +10,10 @@ export function confirmDeleteDish(food: FoodData, id: string, onDelete: () => vo
   const dish = food.dishes[id];
   const days = dishUsage(food, id);
   const order = [1, 2, 3, 4, 5, 6, 0];
-  const where = order.filter((w) => days.includes(w)).map((w) => SHORT_WEEKDAYS[w]);
-  const text = where.length
-    ? `Блюдо стоит в расписании (${where.join(', ')}) — оно будет убрано из этих приёмов.`
-    : 'Это нельзя отменить.';
-  Alert.alert(`Удалить «${dish?.name ?? ''}»?`, text, [
-    { text: 'Отмена', style: 'cancel' },
-    { text: 'Удалить', style: 'destructive', onPress: onDelete },
+  const where = order.filter((w) => days.includes(w)).map(weekdayShort);
+  const text = where.length ? t('dish.deleteUsed', { days: where.join(', ') }) : t('common.irreversible');
+  Alert.alert(t('dish.deleteTitle', { name: dish ? dishName(dish) : '' }), text, [
+    { text: t('common.cancel'), style: 'cancel' },
+    { text: t('common.delete'), style: 'destructive', onPress: onDelete },
   ]);
 }

@@ -4,6 +4,7 @@ import { formatDay } from '../logic/format';
 import { dayKey, shiftDay } from '../logic/metrics';
 import { colors } from '../theme';
 import { Icon } from './Icon';
+import { useT } from '../i18n/useT';
 
 // Числовое поле с подписью.
 export function NumInput({ label, style, ...props }: TextInputProps & { label: string }) {
@@ -23,13 +24,14 @@ export function NumInput({ label, style, ...props }: TextInputProps & { label: s
 
 // Выбор дня кнопками ‹ ›, без клавиатуры. Будущие дни недоступны.
 export function DayPicker({ value, onChange }: { value: string; onChange: (day: string) => void }) {
+  const t = useT();
   const isToday = value >= dayKey();
   return (
     <View style={styles.day}>
       <Pressable onPress={() => onChange(shiftDay(value, -1))} hitSlop={8} style={styles.arrow}>
         <Text style={styles.arrowText}>‹</Text>
       </Pressable>
-      <Text style={styles.dayText}>{isToday ? `Сегодня, ${formatDay(value)}` : formatDay(value)}</Text>
+      <Text style={styles.dayText}>{isToday ? t('run.todayDate', { date: formatDay(value) }) : formatDay(value)}</Text>
       <Pressable
         onPress={() => !isToday && onChange(shiftDay(value, 1))}
         hitSlop={8}
@@ -63,10 +65,11 @@ export function NavCard({ title, subtitle, warning, onPress }: { title: string; 
 
 // Строка списка с удалением (✕ с подтверждением).
 export function EntryRow({ title, detail, onDelete }: { title: string; detail: string; onDelete: () => void }) {
+  const t = useT();
   const confirm = () =>
-    Alert.alert('Удалить запись?', title, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: onDelete },
+    Alert.alert(t('form.deleteEntry'), title, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: onDelete },
     ]);
   return (
     <View style={styles.row}>

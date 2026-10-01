@@ -1,6 +1,7 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
+import { getLang, LOCALES } from '../i18n';
 import { fromMinutes, toMinutes } from '../logic/time';
 import { colors } from '../theme';
 
@@ -29,7 +30,7 @@ export function TimeField({ label, value, onChange }: { label?: string; value: s
           value={toDate(value)}
           mode="time"
           display="compact"
-          locale="ru-RU"
+          locale={LOCALES[getLang()]}
           themeVariant="dark"
           onValueChange={(_, date) => onChange(fromDate(date))}
         />

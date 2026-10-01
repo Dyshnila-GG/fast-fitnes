@@ -3,19 +3,21 @@ import { Pressable, StyleSheet } from 'react-native';
 import { colors } from '../../theme';
 import { Icon } from '../Icon';
 import { Text } from '../Text';
+import { useT } from '../../i18n/useT';
 
 // Кнопка «Назад» в шапке: стрелка и подпись (на Android у системной шапки подписи нет).
 export function BackButton() {
+  const t = useT();
   return (
     <Pressable
       onPress={() => router.back()}
       hitSlop={10}
       accessibilityRole="button"
-      accessibilityLabel="Назад"
+      accessibilityLabel={t('common.back')}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
       <Icon name="chevron-left" size={28} />
-      <Text style={styles.text}>Назад</Text>
+      <Text style={styles.text}>{t('common.back')}</Text>
     </Pressable>
   );
 }

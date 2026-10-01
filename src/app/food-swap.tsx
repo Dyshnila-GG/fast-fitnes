@@ -9,9 +9,12 @@ import { formatNum, mealsFor, setSwap, swapDishes } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
 import { Icon } from '../components/Icon';
+import { dishName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 // «Заменить»: другое блюдо для приёма только на эту дату.
 export default function FoodSwapScreen() {
+  const t = useT();
   const { day, slot } = useLocalSearchParams<{ day: string; slot: string }>();
   const { data, update } = useStore();
   const meal = mealsFor(data.food, day).find((m) => m.slot === slot);
@@ -25,9 +28,9 @@ export default function FoodSwapScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.muted}>
-        {meal.title} · {formatDay(day)}. Замена действует только на этот день.
+        {t('swap.hint', { meal: meal.title, date: formatDay(day) })}
       </Text>
-      {meal.swapped && <Button title="Вернуть блюдо по расписанию" variant="secondary" onPress={() => choose(null)} />}
+      {meal.swapped && <Button title={t('swap.reset')} variant="secondary" onPress={() => choose(null)} />}
       {swapDishes(data.food).map((dish) => {
         const id = dish.id;
         const current = meal.dishes.length === 1 && meal.dishes[0] === id;
@@ -39,9 +42,9 @@ export default function FoodSwapScreen() {
           >
             <DishImage dish={id} style={styles.thumb} iconSize={24} />
             <View style={styles.flex}>
-              <Text style={styles.name}>{dish.name}</Text>
+              <Text style={styles.name}>{dishName(dish)}</Text>
               <Text style={styles.muted}>
-                ~{formatNum(dish.kcal)} ккал · {dish.protein} г белка
+                ~{t('food.kcalProtein', { kcal: formatNum(dish.kcal), protein: dish.protein })}
               </Text>
             </View>
             {current && <Icon name="check" size={22} />}

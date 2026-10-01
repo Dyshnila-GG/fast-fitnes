@@ -15,6 +15,8 @@ import { newId } from '../logic/id';
 import { parseNum } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { dishName, pieceUnit, productName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 type Row = { key: string; product?: string; g: string; count: string };
 
@@ -24,14 +26,15 @@ const num = (v: number | undefined) => (v != null ? String(v) : '');
 
 // Форма блюда (SPEC_v3_3 §C2): новое — без id, «Изменить» — с id. Та же форма для стандартных и своих блюд.
 export default function DishEditScreen() {
+  const t = useT();
   const params = useLocalSearchParams<{ id?: string; from?: string }>();
   const { data, update } = useStore();
   const prev = params.id ? data.food.dishes[params.id] : undefined;
   const dishId = useMemo(() => prev?.id ?? `d_${newId()}`, [prev?.id]);
 
-  const [name, setName] = useState(prev?.name ?? '');
+  const [name, setName] = useState(prev ? dishName(prev) : '');
   const [rows, setRows] = useState<Row[]>(() => (prev?.items.length ? prev.items.map(toRow) : [emptyRow()]));
-  const [recipe, setRecipeText] = useState(() => (prev ? recipeOf(data.food, prev.id).text : ''));
+  const [recipe, setRecipeText] = useState(() => (prev ? recipeOf(data.food, prev.id, false).text : ''));
   const [kcal, setKcal] = useState(num(prev?.kcal));
   const [protein, setProtein] = useState(num(prev?.protein));
   const [salad, setSalad] = useState(!!prev?.salad);
@@ -41,25 +44,26 @@ export default function DishEditScreen() {
   const currentPhoto = photo === undefined ? data.food.photos[dishId] : photo;
   const setRow = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
-  const pickPhoto = () => choosePhoto(name || 'Новое блюдо', (uri) => setPhotoUri(uri));
+  const pickPhoto = () => choosePhoto(name || t('dish.new'), (uri) => setPhotoUri(uri));
 
   const save = () => {
     const title = name.trim();
-    if (!title) return Alert.alert('Укажите название блюда');
+    if (!title) return Alert.alert(t('dishForm.needName'));
     const k = parseNum(kcal);
     const p = parseNum(protein);
-    if (k == null || k < 0 || p == null || p < 0) return Alert.alert('Укажите ккал и белок на порцию', 'Числа, не меньше 0.');
+    if (k == null || k < 0 || p == null || p < 0) return Alert.alert(t('dishForm.needKcal'), t('dishForm.needKcalText'));
     const filled = rows.filter((r) => r.product || r.g.trim() || r.count.trim());
     const items: DishItem[] = [];
     for (const r of filled) {
       const g = parseNum(r.g);
       const count = r.count.trim() ? parseNum(r.count) : undefined;
-      if (!r.product) return Alert.alert('Выберите продукт', 'В каждой строке ингредиента нужен продукт.');
-      if (g == null || g <= 0) return Alert.alert('Укажите граммы', `${productOf(data.food, r.product)?.name ?? 'Продукт'}: граммы обязательны.`);
-      if (count !== undefined && (count == null || count <= 0)) return Alert.alert('Количество штук — число больше 0');
+      if (!r.product) return Alert.alert(t('dishForm.pickProduct'), t('dishForm.pickProductText'));
+      if (g == null || g <= 0) return Alert.alert(t('dishForm.needGrams'), t('dishForm.needGramsText', { name: productName(r.product, productOf(data.food, r.product)) }));
+      if (count !== undefined && (count == null || count <= 0)) return Alert.alert(t('dishForm.countPositive'));
       items.push({ product: r.product, g, count: count ?? undefined });
     }
-    const input = { name: title, items, kcal: k, protein: p, salad };
+    // Название стандартного блюда не меняли — сохраняем исходное (перевод — по словарю).
+    const input = { name: prev?.std && title === dishName(prev) ? prev.name : title, items, kcal: k, protein: p, salad };
     const oldPhoto = data.food.photos[dishId];
     update((d) => {
       let next = saveDish(d, dishId, input).data;
@@ -85,33 +89,33 @@ export default function DishEditScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Stack.Screen options={{ title: prev ? 'Изменить блюдо' : 'Новое блюдо' }} />
+      <Stack.Screen options={{ title: t(prev ? 'dishForm.editTitle' : 'dish.new') }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel="Фото блюда">
+        <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel={t('dishForm.photo')}>
           {currentPhoto || FOOD_IMAGES[dishId as keyof typeof FOOD_IMAGES] ? (
             <DishImage key={currentPhoto ?? dishId} dish={dishId} photo={currentPhoto ?? null} style={styles.photo} iconSize={48} />
           ) : (
             <View style={[styles.photo, styles.photoEmpty]}>
               <Icon name="camera-plus-outline" size={36} color={colors.muted} />
-              <Text style={styles.muted}>Фото — необязательно</Text>
+              <Text style={styles.muted}>{t('dishForm.photoOptional')}</Text>
             </View>
           )}
         </Pressable>
-        {currentPhoto ? <Button title="Убрать своё фото" variant="secondary" small onPress={() => setPhotoUri(null)} /> : null}
+        {currentPhoto ? <Button title={t('dishForm.removePhoto')} variant="secondary" small onPress={() => setPhotoUri(null)} /> : null}
 
-        <Field label="Название">
-          <TextInput value={name} onChangeText={setName} placeholder="Например, Омлет с овощами" placeholderTextColor={colors.muted} style={styles.input} />
+        <Field label={t('report.title')}>
+          <TextInput value={name} onChangeText={setName} placeholder={t('dishForm.namePlaceholder')} placeholderTextColor={colors.muted} style={styles.input} />
         </Field>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Ингредиенты</Text>
+          <Text style={styles.cardTitle}>{t('dish.ingredients')}</Text>
           {rows.map((r) => {
             const product = r.product ? productOf(data.food, r.product) : undefined;
             return (
               <View key={r.key} style={styles.itemRow}>
                 <Pressable onPress={() => setPicking(r.key)} style={({ pressed }) => [styles.product, pressed && styles.pressed]}>
                   <Text style={[styles.productText, !product && styles.mutedText]} numberOfLines={2}>
-                    {product?.name ?? 'Выберите продукт'}
+                    {r.product ? productName(r.product, product) : t('dishForm.pickProduct')}
                   </Text>
                   <Icon name="chevron-down" size={18} color={colors.muted} />
                 </Pressable>
@@ -125,7 +129,7 @@ export default function DishEditScreen() {
                       placeholderTextColor={colors.muted}
                       style={styles.amountInput}
                     />
-                    <Text style={styles.unit}>г</Text>
+                    <Text style={styles.unit}>{t('unit.g')}</Text>
                   </View>
                   {product?.piece ? (
                     <View style={styles.amount}>
@@ -137,13 +141,13 @@ export default function DishEditScreen() {
                         placeholderTextColor={colors.muted}
                         style={styles.amountInput}
                       />
-                      <Text style={styles.unit}>{product.piece.unit}</Text>
+                      <Text style={styles.unit}>{pieceUnit(product.piece.unit)}</Text>
                     </View>
                   ) : null}
                   <Pressable
                     onPress={() => setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.key !== r.key) : [emptyRow()]))}
                     hitSlop={8}
-                    accessibilityLabel="Убрать продукт"
+                    accessibilityLabel={t('dishForm.removeProduct')}
                     style={styles.remove}
                   >
                     <Icon name="close" size={16} color={colors.muted} />
@@ -152,35 +156,35 @@ export default function DishEditScreen() {
               </View>
             );
           })}
-          <Button title="+ продукт" variant="secondary" small onPress={() => setRows((rs) => [...rs, emptyRow()])} />
-          <Text style={styles.hint}>Граммы — на одну порцию. У штучных продуктов количество штук — необязательно.</Text>
+          <Button title={t('dishForm.addProduct')} variant="secondary" small onPress={() => setRows((rs) => [...rs, emptyRow()])} />
+          <Text style={styles.hint}>{t('dishForm.gramsHint')}</Text>
         </Card>
 
-        <Field label="Рецепт">
+        <Field label={t('recipe.placeholder')}>
           <TextInput
             value={recipe}
             onChangeText={setRecipeText}
             multiline
             textAlignVertical="top"
-            placeholder="Как готовить"
+            placeholder={t('dish.howTo')}
             placeholderTextColor={colors.muted}
             style={[styles.input, styles.multiline]}
           />
         </Field>
 
         <View style={styles.pair}>
-          <Field label="Ккал на порцию">
+          <Field label={t('dishForm.kcal')}>
             <TextInput value={kcal} onChangeText={setKcal} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.muted} style={styles.input} />
           </Field>
-          <Field label="Белок, г">
+          <Field label={t('dishForm.protein')}>
             <TextInput value={protein} onChangeText={setProtein} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.muted} style={styles.input} />
           </Field>
         </View>
 
         <View style={styles.switchRow}>
           <View style={styles.flex}>
-            <Text style={styles.switchTitle}>Подавать с салатом</Text>
-            <Text style={styles.muted}>Ингредиенты салата добавятся в продукты недели</Text>
+            <Text style={styles.switchTitle}>{t('dishForm.salad')}</Text>
+            <Text style={styles.muted}>{t('dishForm.saladHint')}</Text>
           </View>
           <Switch
             value={salad}
@@ -191,8 +195,8 @@ export default function DishEditScreen() {
           />
         </View>
 
-        <Button title="Сохранить" onPress={save} />
-        {prev ? <Button title="Удалить блюдо" variant="danger" onPress={remove} /> : null}
+        <Button title={t('common.save')} onPress={save} />
+        {prev ? <Button title={t('dish.delete')} variant="danger" onPress={remove} /> : null}
       </ScrollView>
       <ProductPicker
         visible={picking != null}

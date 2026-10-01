@@ -6,14 +6,16 @@ import { exportData } from '../logic/metrics';
 import { confirmImport, describeData } from '../components/data/confirmImport';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { useT } from '../i18n/useT';
 
 export default function DataScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const [text, setText] = useState('');
 
   const share = () => {
-    Share.share({ message: exportData(data), title: 'TOCHKA Fitness — резервная копия' }).catch(() =>
-      Alert.alert('Не удалось открыть «Поделиться»'),
+    Share.share({ message: exportData(data), title: t('data.shareTitle') }).catch(() =>
+      Alert.alert(t('data.shareFailed')),
     );
   };
 
@@ -23,24 +25,24 @@ export default function DataScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
-          <Text style={styles.title}>Экспорт</Text>
-          <Text style={styles.muted}>Все данные одним JSON: {describeData(data)}. Сохраните его, например, в заметки или отправьте себе.</Text>
-          <Button title="Поделиться" onPress={share} />
+          <Text style={styles.title}>{t('data.export')}</Text>
+          <Text style={styles.muted}>{t('data.exportText', { data: describeData(data) })}</Text>
+          <Button title={t('data.share')} onPress={share} />
         </Card>
         <Card style={styles.card}>
-          <Text style={styles.title}>Импорт</Text>
-          <Text style={styles.muted}>Вставьте JSON из экспорта. Текущие данные будут заменены.</Text>
+          <Text style={styles.title}>{t('data.import')}</Text>
+          <Text style={styles.muted}>{t('data.importText')}</Text>
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Вставьте JSON"
+            placeholder={t('data.paste')}
             placeholderTextColor={colors.muted}
             multiline
             autoCorrect={false}
             autoCapitalize="none"
             style={styles.input}
           />
-          <Button title="Импортировать" variant="secondary" onPress={importData} disabled={text.trim() === ''} />
+          <Button title={t('data.importButton')} variant="secondary" onPress={importData} disabled={text.trim() === ''} />
         </Card>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { BackButton } from '../components/nav/BackButton';
 import { FONT } from '../components/Text';
+import { useT } from '../i18n/useT';
 import { useAutoBackup } from '../services/useAutoBackup';
 import { useReminders } from '../services/useReminders';
 import { AppStoreProvider, useStore } from '../store/AppStore';
@@ -28,6 +29,7 @@ function RootStack() {
   const active = data.activeSession != null;
   const running = !active && data.activeRun != null;
   const summary = !active && !running && data.summaryId != null;
+  const t = useT();
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
@@ -46,33 +48,34 @@ function RootStack() {
     >
       <Stack.Protected guard={!active && !running && !summary}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="strength" options={{ title: 'Силовые', headerLeft: () => <BackButton /> }} />
-        <Stack.Screen name="run-start" options={{ title: 'Пробежка', headerLeft: () => <BackButton /> }} />
-        <Stack.Screen name="weight" options={{ title: 'Вес тела' }} />
-        <Stack.Screen name="measurements" options={{ title: 'Замеры' }} />
-        <Stack.Screen name="history/index" options={{ title: 'История тренировок' }} />
-        <Stack.Screen name="history/[id]" options={{ title: 'Тренировка' }} />
-        <Stack.Screen name="progress" options={{ title: 'Прогресс по упражнению' }} />
-        <Stack.Screen name="personal" options={{ title: 'Возраст, рост, старт' }} />
-        <Stack.Screen name="data" options={{ title: 'Экспорт / импорт' }} />
-        <Stack.Screen name="trash" options={{ title: 'Корзина' }} />
-        <Stack.Screen name="backup" options={{ title: 'Бэкап' }} />
-        <Stack.Screen name="reminders" options={{ title: 'Напоминания' }} />
-        <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
-        <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
-        <Stack.Screen name="food-settings" options={{ title: 'Расписание еды' }} />
-        <Stack.Screen name="menu" options={{ title: 'Меню' }} />
-        <Stack.Screen name="dish" options={{ title: 'Блюдо' }} />
-        <Stack.Screen name="dish-edit" options={{ title: 'Блюдо' }} />
-        <Stack.Screen name="slot-dishes" options={{ title: 'Блюда приёма' }} />
-        <Stack.Screen name="products" options={{ title: 'Продукты на неделю' }} />
-        <Stack.Screen name="recipe" options={{ title: 'Рецепт' }} />
-        <Stack.Screen name="sleep" options={{ title: 'Сон' }} />
-        <Stack.Screen name="sleep-edit" options={{ title: 'Сон', presentation: 'modal' }} />
-        <Stack.Screen name="runs" options={{ title: 'Пробежки' }} />
-        <Stack.Screen name="weight-add" options={{ title: 'Вес тела', presentation: 'modal' }} />
-        <Stack.Screen name="run-edit" options={{ title: 'Пробежка', presentation: 'modal' }} />
-        <Stack.Screen name="workout-preview" options={{ title: 'Тренировка', presentation: 'modal' }} />
+        <Stack.Screen name="strength" options={{ title: t('nav.strength'), headerLeft: () => <BackButton /> }} />
+        <Stack.Screen name="run-start" options={{ title: t('nav.run_start'), headerLeft: () => <BackButton /> }} />
+        <Stack.Screen name="weight" options={{ title: t('nav.weight') }} />
+        <Stack.Screen name="measurements" options={{ title: t('nav.measurements') }} />
+        <Stack.Screen name="history/index" options={{ title: t('nav.history_index') }} />
+        <Stack.Screen name="history/[id]" options={{ title: t('nav.history_id') }} />
+        <Stack.Screen name="progress" options={{ title: t('nav.progress') }} />
+        <Stack.Screen name="personal" options={{ title: t('nav.personal') }} />
+        <Stack.Screen name="data" options={{ title: t('nav.data') }} />
+        <Stack.Screen name="app-settings" options={{ title: t('nav.app_settings') }} />
+        <Stack.Screen name="trash" options={{ title: t('nav.trash') }} />
+        <Stack.Screen name="backup" options={{ title: t('nav.backup') }} />
+        <Stack.Screen name="reminders" options={{ title: t('nav.reminders') }} />
+        <Stack.Screen name="meal" options={{ title: t('nav.meal') }} />
+        <Stack.Screen name="food-swap" options={{ title: t('nav.food_swap') }} />
+        <Stack.Screen name="food-settings" options={{ title: t('nav.food_settings') }} />
+        <Stack.Screen name="menu" options={{ title: t('nav.menu') }} />
+        <Stack.Screen name="dish" options={{ title: t('nav.dish') }} />
+        <Stack.Screen name="dish-edit" options={{ title: t('nav.dish_edit') }} />
+        <Stack.Screen name="slot-dishes" options={{ title: t('nav.slot_dishes') }} />
+        <Stack.Screen name="products" options={{ title: t('nav.products') }} />
+        <Stack.Screen name="recipe" options={{ title: t('nav.recipe') }} />
+        <Stack.Screen name="sleep" options={{ title: t('nav.sleep') }} />
+        <Stack.Screen name="sleep-edit" options={{ title: t('nav.sleep_edit'), presentation: 'modal' }} />
+        <Stack.Screen name="runs" options={{ title: t('nav.runs') }} />
+        <Stack.Screen name="weight-add" options={{ title: t('nav.weight_add'), presentation: 'modal' }} />
+        <Stack.Screen name="run-edit" options={{ title: t('nav.run_edit'), presentation: 'modal' }} />
+        <Stack.Screen name="workout-preview" options={{ title: t('nav.workout_preview'), presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={active}>
         <Stack.Screen name="workout" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />

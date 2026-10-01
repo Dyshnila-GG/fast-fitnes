@@ -7,9 +7,11 @@ import { dayKey } from '../logic/metrics';
 import { formatSleep, garminAverage, sleepAverage, sleepScore } from '../logic/sleep';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { useT } from '../i18n/useT';
 
 // Сон: среднее за 7 и 30 дней, список ночей (тап — исправить).
 export default function SleepScreen() {
+  const t = useT();
   const { data } = useStore();
   const today = dayKey();
   const days = Object.keys(data.sleep).sort().reverse();
@@ -21,15 +23,15 @@ export default function SleepScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Card style={styles.stats}>
-        <Stat label="Среднее за 7 дней" value={avg7 != null ? formatSleep(avg7) : '—'} sub={g7 != null ? `Garmin ${g7}` : undefined} />
-        <Stat label="За 30 дней" value={avg30 != null ? formatSleep(avg30) : '—'} sub={g30 != null ? `Garmin ${g30}` : undefined} />
+        <Stat label={t('sleep.avg7')} value={avg7 != null ? formatSleep(avg7) : '—'} sub={g7 != null ? `Garmin ${g7}` : undefined} />
+        <Stat label={t('sleep.avg30')} value={avg30 != null ? formatSleep(avg30) : '—'} sub={g30 != null ? `Garmin ${g30}` : undefined} />
       </Card>
       <Button
-        title={data.sleep[today] ? 'Исправить сегодняшнюю ночь' : 'Записать сон'}
+        title={t(data.sleep[today] ? 'sleep.fixToday' : 'sleep.add')}
         onPress={() => router.push({ pathname: '/sleep-edit', params: { day: today } })}
       />
       <Card>
-        {days.length === 0 && <Text style={styles.muted}>Записей пока нет.</Text>}
+        {days.length === 0 && <Text style={styles.muted}>{t('weight.empty')}</Text>}
         {days.map((day, i) => {
           const e = data.sleep[day];
           return (
@@ -41,7 +43,7 @@ export default function SleepScreen() {
               <View style={styles.flex}>
                 <Text style={styles.title}>{formatDay(day)}</Text>
                 <Text style={styles.muted}>
-                  {[e.bed && e.wake ? `Лёг ${e.bed} · Встал ${e.wake}` : '', sleepScore(e)].filter(Boolean).join(' · ') || '—'}
+                  {[e.bed && e.wake ? t('sleep.bedWake', { bed: e.bed, wake: e.wake }) : '', sleepScore(e)].filter(Boolean).join(' · ') || '—'}
                 </Text>
               </View>
               <Text style={styles.value}>{formatSleep(e.minutes)}</Text>

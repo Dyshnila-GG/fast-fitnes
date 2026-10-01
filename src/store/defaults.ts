@@ -29,5 +29,6 @@ export function defaultData(): AppData {
     trash: [],
     backup: {},
     reminders: defaultReminders(),
+    settings: { lang: 'ru', units: 'imperial' },
   };
 }

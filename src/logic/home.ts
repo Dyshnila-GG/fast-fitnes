@@ -1,4 +1,6 @@
 import { getExercise, getVariant, isLegacyTemplate, PROGRAM } from '../data/program';
+import { monthFull, t, tp, weekdayShort } from '../i18n';
+import { variantName } from '../i18n/content';
 import type { AppData, BodyWeightEntry, Session, WorkoutTemplate } from '../types';
 import { dayDate, dayKey, shiftDay, weekStart } from './dates';
 import { formatBest } from './format';
@@ -8,7 +10,7 @@ import { getBest, startBest } from './records';
 // Тип дня на «Главной»: Вт/Чт/Сб — зал, Ср/Пт — пробежка, Пн/Вс — отдых.
 export type HomeDayType = 'gym' | 'run' | 'rest';
 
-export const HOME_DAY_LABEL: Record<HomeDayType, string> = { gym: 'День зала', run: 'Пробежка', rest: 'Отдых' };
+export const homeDayLabel = (type: HomeDayType) => t(`homeDay.${type}`);
 
 export const WORKOUTS_PER_WEEK = 3;
 export const RUNS_PER_WEEK = 2;
@@ -44,7 +46,7 @@ export function nextWorkout(data: AppData, today: string): { day: string; templa
     const template = templateForDay(day);
     if (template) return { day, template };
   }
-  throw new Error('В программе нет дней зала');
+  throw new Error('No gym days in the program');
 }
 
 // Выросшие рекорды тренировки: «Жим лёжа в Смите 75 lb → 80 lb».
@@ -58,7 +60,7 @@ export function recordGains(data: AppData, s: Session): string[] {
     const before = log.record ?? startBest(variant);
     const after = getBest(data, variant);
     if ((after[field] ?? 0) > (before[field] ?? 0)) {
-      out.push(`${variant.name} ${formatBest(variant, before)} → ${formatBest(variant, after)}`);
+      out.push(`${variantName(variant)} ${formatBest(variant, before)} → ${formatBest(variant, after)}`);
     }
   }
   return out;
@@ -93,24 +95,19 @@ export function weightTrend(entries: BodyWeightEntry[], today: string): { value:
 
 // ---- Плитки «Главной» ----
 
-const WEEKDAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-
 // «Сегодня» / «Завтра» / «Сб»
 export function dayLabel(day: string, today: string): string {
-  if (day === today) return 'Сегодня';
-  if (day === shiftDay(today, 1)) return 'Завтра';
-  return WEEKDAY_SHORT[dayDate(day).getDay()];
+  if (day === today) return t('common.today');
+  if (day === shiftDay(today, 1)) return t('common.tomorrow');
+  return weekdayShort(dayDate(day).getDay());
 }
-
-const plural = (n: number, one: string, few: string, many: string) =>
-  n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many;
 
 // «сегодня» / «вчера» / «3 дня назад»
 export function daysAgo(day: string, today: string): string {
   const n = Math.round((dayDate(today).getTime() - dayDate(day).getTime()) / 86_400_000);
-  if (n <= 0) return 'сегодня';
-  if (n === 1) return 'вчера';
-  return `${n} ${plural(n, 'день', 'дня', 'дней')} назад`;
+  if (n <= 0) return t('common.todayLower');
+  if (n === 1) return t('common.yesterdayLower');
+  return tp('daysAgo', n);
 }
 
 // ---- Календарь активности: месяц, строки — недели пн–вс ----
@@ -119,8 +116,6 @@ export function daysAgo(day: string, today: string): string {
 export type Month = string;
 export type CalendarDay = { day: string; date: number; active: boolean; today: boolean; future: boolean };
 export type MonthGrid = { month: Month; title: string; weeks: (CalendarDay | null)[][] };
-
-const MONTHS_FULL = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
 export const monthOf = (day: string): Month => day.slice(0, 7);
 
@@ -133,7 +128,7 @@ export function shiftMonth(month: Month, delta: number): Month {
 // «Октябрь 2026»
 export function monthTitle(month: Month): string {
   const [y, m] = month.split('-').map(Number);
-  return `${MONTHS_FULL[m - 1]} ${y}`;
+  return t('date.monthYear', { m: monthFull(m - 1), y });
 }
 
 // Дни с завершённой тренировкой или пробежкой.

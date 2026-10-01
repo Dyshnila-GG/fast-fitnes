@@ -5,14 +5,17 @@ import { confirmDeleteSession } from '../../components/history/confirmDelete';
 import { Icon } from '../../components/Icon';
 import { Card } from '../../components/ui';
 import { getTemplate } from '../../data/program';
-import { formatDate, formatDuration, formatTime } from '../../logic/format';
+import { formatDate, formatDuration, formatTime, formatTonnage } from '../../logic/format';
 import { finishedSessions } from '../../logic/metrics';
 import { tonnage } from '../../logic/tonnage';
 import { deleteSession, elapsedMs } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
+import { templateTitle } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 export default function HistoryScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const sessions = finishedSessions(data.sessions);
 
@@ -20,7 +23,7 @@ export default function HistoryScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       {sessions.length === 0 && (
         <Card>
-          <Text style={styles.muted}>Завершённых тренировок пока нет.</Text>
+          <Text style={styles.muted}>{t('history.empty')}</Text>
         </Card>
       )}
       {sessions.map((s) => (
@@ -31,11 +34,11 @@ export default function HistoryScreen() {
           >
             <View style={styles.flex}>
               <Text style={styles.title}>
-                {getTemplate(s.templateId).title} · {s.length === 'short' ? 'короткая' : 'длинная'}
+                {templateTitle(getTemplate(s.templateId))} · {t(s.length === 'short' ? 'length.shortLower' : 'length.longLower')}
               </Text>
               <Text style={styles.muted}>
                 {formatDate(s.finishedAt!)}, {formatTime(s.startedAt)} · {formatDuration(elapsedMs(s, new Date(s.finishedAt!).getTime()))} ·{' '}
-                {Math.round(tonnage(s))} lb
+                {formatTonnage(tonnage(s))}
               </Text>
             </View>
             <Text style={styles.chevron}>›</Text>
@@ -43,7 +46,7 @@ export default function HistoryScreen() {
           <Pressable
             onPress={() => confirmDeleteSession(s, () => update((d) => deleteSession(d, s.id)))}
             accessibilityRole="button"
-            accessibilityLabel="Удалить"
+            accessibilityLabel={t('common.delete')}
             hitSlop={4}
             style={({ pressed }) => [styles.trash, pressed && styles.pressed]}
           >

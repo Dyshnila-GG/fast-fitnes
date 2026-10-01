@@ -6,9 +6,12 @@ import { Button, Card } from '../components/ui';
 import { addBodyWeight, dayKey, latestFirst, parseNum } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
+import { weightToLb, weightUnit, weightValue } from '../logic/units';
+import { useT } from '../i18n/useT';
 
 // Модалка с «Главной»: ввод веса тела.
 export default function WeightAddScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const [text, setText] = useState('');
   const [day, setDay] = useState(dayKey());
@@ -16,8 +19,8 @@ export default function WeightAddScreen() {
 
   const save = () => {
     const value = parseNum(text);
-    if (value == null || value <= 0) return Alert.alert('Введите вес в lb');
-    update((d) => addBodyWeight(d, day, value));
+    if (value == null || value <= 0) return Alert.alert(t('weight.enter', { u: weightUnit() }));
+    update((d) => addBodyWeight(d, day, weightToLb(value)));
     router.back();
   };
 
@@ -26,16 +29,16 @@ export default function WeightAddScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
           <NumInput
-            label="Вес, lb"
+            label={t('weight.label', { u: weightUnit() })}
             value={text}
             onChangeText={setText}
-            placeholder={String(last?.value ?? data.profile.startWeight)}
+            placeholder={String(weightValue(last?.value ?? data.profile.startWeight))}
             autoFocus
           />
           <DayPicker value={day} onChange={setDay} />
         </Card>
-        <Button title="Сохранить" onPress={save} />
-        <Button title="Вся история веса" variant="secondary" onPress={() => router.replace('/weight')} />
+        <Button title={t('common.save')} onPress={save} />
+        <Button title={t('weight.history')} variant="secondary" onPress={() => router.replace('/weight')} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

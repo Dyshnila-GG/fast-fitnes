@@ -4,9 +4,11 @@ import { Text } from '../components/Text';
 import { startRun } from '../logic/run';
 import { useStore } from '../store/AppStore';
 import { colors } from '../theme';
+import { useT } from '../i18n/useT';
 
 // «Пробежка» (SPEC_v3_3 §A5): одна большая кнопка «Начать пробежку», без счётчика недели.
 export default function RunStartScreen() {
+  const t = useT();
   const { update } = useStore();
   return (
     <View style={styles.content}>
@@ -16,7 +18,7 @@ export default function RunStartScreen() {
         style={({ pressed }) => [styles.start, pressed && styles.pressed]}
       >
         <Icon name="run" size={56} color={colors.onPrimary} />
-        <Text style={styles.text}>Начать пробежку</Text>
+        <Text style={styles.text}>{t('run.start')}</Text>
       </Pressable>
     </View>
   );

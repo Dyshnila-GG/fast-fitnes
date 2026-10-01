@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Text } from '../Text';
+import { FONT, Text } from '../Text';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import type { Point } from '../../logic/metrics';
 import { colors } from '../../theme';
+import { formatNumber } from '../../i18n';
+import { useT } from '../../i18n/useT';
 
 type Props = {
   points: Point[]; // по возрастанию x
@@ -17,11 +19,12 @@ const DOTS_MAX = 30; // больше точек — рисуем только в
 
 // Простой линейный график: одна серия, тап/проведение пальцем выбирает ближайшую дату.
 export function LineChart({ points, unit, formatDate, height = 180 }: Props) {
+  const t = useT();
   const [width, setWidth] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
 
   if (points.length === 0) {
-    return <Text style={styles.empty}>Пока нет данных для графика.</Text>;
+    return <Text style={styles.empty}>{t('chart.empty')}</Text>;
   }
 
   const index = picked != null && picked < points.length ? picked : points.length - 1;
@@ -75,19 +78,19 @@ export function LineChart({ points, unit, formatDate, height = 180 }: Props) {
       >
         {width > 0 && (
           <Svg width={width} height={height}>
-            {uniqTicks.map((t) => (
-              <Line key={`g${t}`} x1={PAD.left} x2={width - PAD.right} y1={sy(t)} y2={sy(t)} stroke={colors.border} strokeWidth={1} />
+            {uniqTicks.map((tick) => (
+              <Line key={`g${tick}`} x1={PAD.left} x2={width - PAD.right} y1={sy(tick)} y2={sy(tick)} stroke={colors.border} strokeWidth={1} />
             ))}
-            {uniqTicks.map((t) => (
-              <SvgText key={`l${t}`} x={PAD.left - 6} y={sy(t) + 4} fill={colors.muted} fontSize={11} textAnchor="end">
-                {fmt(t)}
+            {uniqTicks.map((tick) => (
+              <SvgText key={`l${tick}`} x={PAD.left - 6} y={sy(tick) + 4} fill={colors.muted} fontSize={11} fontFamily={FONT[500]} textAnchor="end">
+                {fmt(tick)}
               </SvgText>
             ))}
-            <SvgText x={PAD.left} y={height - 6} fill={colors.muted} fontSize={11} textAnchor="start">
+            <SvgText x={PAD.left} y={height - 6} fill={colors.muted} fontSize={11} fontFamily={FONT[500]} textAnchor="start">
               {formatDate(points[0].date)}
             </SvgText>
             {points.length > 1 && (
-              <SvgText x={width - PAD.right} y={height - 6} fill={colors.muted} fontSize={11} textAnchor="end">
+              <SvgText x={width - PAD.right} y={height - 6} fill={colors.muted} fontSize={11} fontFamily={FONT[500]} textAnchor="end">
                 {formatDate(points[points.length - 1].date)}
               </SvgText>
             )}
@@ -114,7 +117,7 @@ export function LineChart({ points, unit, formatDate, height = 180 }: Props) {
   );
 }
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10);
+const fmt = (n: number) => formatNumber(n);
 
 const styles = StyleSheet.create({
   box: { gap: 6 },

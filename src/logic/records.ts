@@ -1,13 +1,18 @@
-import type { AppData, Best, ExerciseLog, Feel, Kind, SetLog, Variant } from '../types';
-import { roundWeight, weightStep } from './weights';
+import type { AppData, Best, ExerciseLog, Feel, Kind, SetLog, Units, Variant } from '../types';
+import { kgToLb } from './units';
+import { addWeight, roundWeight, unitStep, weightTolerance } from './weights';
 
 // Подбор веса по самочувствию (SPEC_v2 §2). Рекорд хранится по названию варианта.
 
-const FEEL_DELTA: Record<Feel, number> = { easy: 5, normal: 0, hard: -10 };
-const FEEL_DELTA_DUMBBELL: Record<Feel, number> = { easy: 5, normal: 0, hard: -5 };
+// Вес «сегодня» по ответу: имперские — в lb, метрические — в kg (+5 lb ↔ +2.5 kg, −10 lb ↔ −5 kg; гантели — шаг 2 kg).
+const FEEL_DELTA: Record<Units, Record<Kind, Record<Feel, number>>> = {
+  imperial: { machine: { easy: 5, normal: 0, hard: -10 }, free: { easy: 5, normal: 0, hard: -5 } },
+  metric: { machine: { easy: 2.5, normal: 0, hard: -5 }, free: { easy: 2, normal: 0, hard: -2 } },
+};
 const PLANK_STEP = 5;
 
-const minWeight = (kind: Kind) => (kind === 'free' ? 2.5 : 5);
+// Минимальный вес «сегодня», lb.
+const minWeight = (kind: Kind, units: Units) => (units === 'metric' ? kgToLb(kind === 'free' ? 2 : 2.5) : kind === 'free' ? 2.5 : 5);
 
 // Стартовый рекорд из программы: только поля, которые относятся к режиму варианта.
 export function startBest(variant: Variant): Best {
@@ -28,10 +33,10 @@ export function topReps(variant: Variant, best: Best): number | undefined {
 }
 
 // Разминочные подходы от рекорда (§2.1).
-export function warmupSets(variant: Variant, best: Best): SetLog[] {
+export function warmupSets(variant: Variant, best: Best, units: Units = 'imperial'): SetLog[] {
   return variant.warmup.map((w) => ({
     type: 'warmup',
-    planWeight: w.pct > 0 && best.weight ? roundWeight(best.weight * w.pct, variant.kind) : undefined,
+    planWeight: w.pct > 0 && best.weight ? roundWeight(best.weight * w.pct, variant.kind, units) : undefined,
     planReps: w.reps,
     planSeconds: w.seconds,
     done: false,
@@ -39,10 +44,10 @@ export function warmupSets(variant: Variant, best: Best): SetLog[] {
 }
 
 // Вес «сегодня» по ответу после разминки (§2.2). Без ответа — рекорд.
-export function todayWeight(record: number, feel: Feel | undefined, kind: Kind): number {
-  if (!feel) return record;
-  const delta = (kind === 'free' ? FEEL_DELTA_DUMBBELL : FEEL_DELTA)[feel];
-  return delta < 0 ? Math.max(minWeight(kind), record + delta) : record + delta;
+export function todayWeight(record: number, feel: Feel | undefined, kind: Kind, units: Units = 'imperial'): number {
+  if (!feel || feel === 'normal') return record;
+  const next = addWeight(record, kind, FEEL_DELTA[units][kind][feel], units);
+  return feel === 'hard' ? Math.max(minWeight(kind, units), next) : next;
 }
 
 // Свой вес: цель повторов по ответу (Легко — верх, Нормально — середина, Тяжело — низ).
@@ -61,7 +66,7 @@ export function needsFeel(variant: Variant): boolean {
 }
 
 // План рабочего подхода: вес «сегодня» × диапазон, цель повторов своего веса или секунды.
-export function workSet(variant: Variant, best: Best, feel?: Feel, weight?: number): SetLog {
+export function workSet(variant: Variant, best: Best, feel?: Feel, weight?: number, units: Units = 'imperial'): SetLog {
   if (variant.mode === 'time') return { type: 'work', planSeconds: best.seconds, done: false };
   if (variant.mode === 'bodyweight') {
     const target = feel ? bodyweightTarget(best, feel) : undefined;
@@ -71,7 +76,7 @@ export function workSet(variant: Variant, best: Best, feel?: Feel, weight?: numb
   }
   return {
     type: 'work',
-    planWeight: weight ?? (best.weight != null ? todayWeight(best.weight, feel, variant.kind) : undefined),
+    planWeight: weight ?? (best.weight != null ? todayWeight(best.weight, feel, variant.kind, units) : undefined),
     planReps: variant.plan.reps,
     planRepsMax: variant.plan.repsMax,
     done: false,
@@ -79,9 +84,9 @@ export function workSet(variant: Variant, best: Best, feel?: Feel, weight?: numb
 }
 
 // Пересчитать план всех рабочих подходов (факт не трогаем).
-function replanWork(log: ExerciseLog, variant: Variant): ExerciseLog {
+function replanWork(log: ExerciseLog, variant: Variant, units: Units): ExerciseLog {
   const best = log.record ?? startBest(variant);
-  const plan = workSet(variant, best, log.feel, log.todayWeight);
+  const plan = workSet(variant, best, log.feel, log.todayWeight, units);
   return {
     ...log,
     sets: log.sets.map((s) =>
@@ -92,20 +97,20 @@ function replanWork(log: ExerciseLog, variant: Variant): ExerciseLog {
   };
 }
 
-export function applyFeel(log: ExerciseLog, variant: Variant, feel: Feel): ExerciseLog {
+export function applyFeel(log: ExerciseLog, variant: Variant, feel: Feel, units: Units = 'imperial'): ExerciseLog {
   const record = log.record?.weight;
-  const today = variant.mode === 'weight' && record != null ? todayWeight(record, feel, variant.kind) : undefined;
-  return replanWork({ ...log, feel, todayWeight: today }, variant);
+  const today = variant.mode === 'weight' && record != null ? todayWeight(record, feel, variant.kind, units) : undefined;
+  return replanWork({ ...log, feel, todayWeight: today }, variant, units);
 }
 
 // Ручная правка веса «сегодня» — меняет план всех рабочих подходов.
-export function setTodayWeight(log: ExerciseLog, variant: Variant, weight: number): ExerciseLog {
-  return replanWork({ ...log, todayWeight: weight }, variant);
+export function setTodayWeight(log: ExerciseLog, variant: Variant, weight: number, units: Units = 'imperial'): ExerciseLog {
+  return replanWork({ ...log, todayWeight: weight }, variant, units);
 }
 
 // Рост рекорда после тренировки (SPEC §5.4) — только при оценке «Легко» или «Нормально».
 // Автоматически рекорд никогда не снижается.
-export function grow(best: Best, log: ExerciseLog, variant: Variant): Best {
+export function grow(best: Best, log: ExerciseLog, variant: Variant, units: Units = 'imperial'): Best {
   const work = log.sets.filter((s) => s.type === 'work');
   if (work.length === 0 || (log.rating !== 'easy' && log.rating !== 'normal')) return best;
   if (variant.mode === 'time') {
@@ -118,8 +123,9 @@ export function grow(best: Best, log: ExerciseLog, variant: Variant): Best {
     return { ...best, reps: best.reps != null ? best.reps + 1 : best.reps, repsMax: best.repsMax != null ? best.repsMax + 1 : best.repsMax };
   }
   const record = best.weight;
-  if (record == null || !work.every((s) => (s.factWeight ?? 0) >= record)) return best;
-  return { ...best, weight: record + weightStep(record, variant.kind) };
+  const tol = weightTolerance(units);
+  if (record == null || !work.every((s) => (s.factWeight ?? 0) >= record - tol)) return best;
+  return { ...best, weight: addWeight(record, variant.kind, unitStep(record, variant.kind, units), units) };
 }
 
 // Ручная правка рекорда. Для своего веса диапазон сдвигается целиком.

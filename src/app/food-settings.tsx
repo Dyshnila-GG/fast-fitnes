@@ -7,16 +7,18 @@ import { Text, TextInput } from '../components/Text';
 import { TimeField } from '../components/TimeField';
 import { Button } from '../components/ui';
 import type { MealSlot } from '../data/food';
-import { SHORT_WEEKDAYS, WEEKDAYS } from '../logic/format';
-import { addSlot, copyDay, dishOf, formatNum, moveSlot, removeSlot, scheduleTotals, slotsOf, updateSlot } from '../logic/food';
+import { shortWeekdayOf, weekdayOf } from '../logic/format';
+import { addSlot, copyDay, dishTitle, formatNum, moveSlot, removeSlot, scheduleTotals, slotsOf, updateSlot } from '../logic/food';
 import { fromMinutes, toMinutes } from '../logic/time';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
+import { useT } from '../i18n/useT';
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0]; // Пн … Вс
 
 // «Настройки» еды (SPEC_v3_3 §C3): расписание по дням — время, название, блюда, порядок, копирование дня.
 export default function FoodSettingsScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const [weekday, setWeekday] = useState(new Date().getDay());
   const [copying, setCopying] = useState(false);
@@ -26,7 +28,7 @@ export default function FoodSettingsScreen() {
   const add = () => {
     const last = slots[slots.length - 1];
     const time = last ? fromMinutes(Math.min(toMinutes(last.time) + 180, 23 * 60 + 30)) : '08:00';
-    update((d) => addSlot(d, weekday, { title: 'Приём', time, dishes: [] }));
+    update((d) => addSlot(d, weekday, { title: t('meal.default'), time, dishes: [] }));
   };
 
   return (
@@ -40,32 +42,32 @@ export default function FoodSettingsScreen() {
               onPress={() => setWeekday(w)}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={WEEKDAYS[w]}
+              accessibilityLabel={weekdayOf(w)}
               style={[styles.tab, active && styles.tabActive]}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{SHORT_WEEKDAYS[w]}</Text>
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{shortWeekdayOf(w)}</Text>
             </Pressable>
           );
         })}
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.summary}>
-          <Text style={styles.day}>{WEEKDAYS[weekday]}</Text>
+          <Text style={styles.day}>{weekdayOf(weekday)}</Text>
           <View style={styles.totals}>
             <Text style={styles.total}>{formatNum(totals.kcal)}</Text>
-            <Text style={styles.totalUnit}>ккал</Text>
+            <Text style={styles.totalUnit}>{t('unit.kcal')}</Text>
             <Text style={styles.total}>{totals.protein}</Text>
-            <Text style={styles.totalUnit}>г белка</Text>
+            <Text style={styles.totalUnit}>{t('settings.proteinUnit')}</Text>
           </View>
         </View>
 
-        {slots.length === 0 && <Text style={styles.muted}>В этот день приёмов нет.</Text>}
+        {slots.length === 0 && <Text style={styles.muted}>{t('settings.noMeals')}</Text>}
         {slots.map((slot, i) => (
           <SlotCard key={slot.id} weekday={weekday} slot={slot} first={i === 0} last={i === slots.length - 1} />
         ))}
 
-        <Button title="Добавить приём" variant="secondary" onPress={add} />
-        <Button title="Скопировать день на…" variant="secondary" onPress={() => setCopying(true)} />
+        <Button title={t('settings.addMeal')} variant="secondary" onPress={add} />
+        <Button title={t('settings.copyDay')} variant="secondary" onPress={() => setCopying(true)} />
       </ScrollView>
       <CopyDayModal
         visible={copying}
@@ -81,15 +83,16 @@ export default function FoodSettingsScreen() {
 }
 
 function SlotCard({ weekday, slot, first, last }: { weekday: number; slot: MealSlot; first: boolean; last: boolean }) {
+  const t = useT();
   const { data, update } = useStore();
   const [title, setTitle] = useState(slot.title);
   const commitTitle = () => title.trim() !== slot.title && update((d) => updateSlot(d, weekday, slot.id, { title: title.trim() }));
-  const names = slot.dishes.map((id) => dishOf(data.food, id)?.name).filter(Boolean);
+  const names = slot.dishes.map((id) => dishTitle(data.food, id)).filter(Boolean);
 
   const remove = () =>
-    Alert.alert(`Удалить приём «${slot.title || 'Приём'}»?`, WEEKDAYS[weekday], [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: () => update((d) => removeSlot(d, weekday, slot.id)) },
+    Alert.alert(t('settings.deleteMeal', { name: slot.title || t('meal.default') }), weekdayOf(weekday), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => update((d) => removeSlot(d, weekday, slot.id)) },
     ]);
 
   return (
@@ -100,7 +103,7 @@ function SlotCard({ weekday, slot, first, last }: { weekday: number; slot: MealS
           value={title}
           onChangeText={setTitle}
           onEndEditing={commitTitle}
-          placeholder="Название приёма"
+          placeholder={t('settings.mealName')}
           placeholderTextColor={colors.muted}
           style={styles.title}
           returnKeyType="done"
@@ -112,15 +115,15 @@ function SlotCard({ weekday, slot, first, last }: { weekday: number; slot: MealS
       >
         <Icon name="silverware-fork-knife" size={18} color={colors.muted} />
         <Text style={[styles.dishText, names.length === 0 && styles.mutedText]} numberOfLines={2}>
-          {names.length > 0 ? names.join(' + ') : 'Выбрать блюдо'}
+          {names.length > 0 ? names.join(' + ') : t('settings.pickDish')}
         </Text>
         <Icon name="chevron-right" size={20} color={colors.muted} />
       </Pressable>
       <View style={styles.tools}>
-        <Tool icon="arrow-up" label="Выше" disabled={first} onPress={() => update((d) => moveSlot(d, weekday, slot.id, -1))} />
-        <Tool icon="arrow-down" label="Ниже" disabled={last} onPress={() => update((d) => moveSlot(d, weekday, slot.id, 1))} />
+        <Tool icon="arrow-up" label={t('settings.up')} disabled={first} onPress={() => update((d) => moveSlot(d, weekday, slot.id, -1))} />
+        <Tool icon="arrow-down" label={t('settings.down')} disabled={last} onPress={() => update((d) => moveSlot(d, weekday, slot.id, 1))} />
         <View style={styles.flex} />
-        <Tool icon="trash-can-outline" label="Удалить приём" danger onPress={remove} />
+        <Tool icon="trash-can-outline" label={t('settings.deleteMealShort')} danger onPress={remove} />
       </View>
     </View>
   );
@@ -165,6 +168,7 @@ function CopyDayModal({
   onCopy: (to: number[]) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const t = useT();
   const [picked, setPicked] = useState<number[]>([]);
   const toggle = (w: number) => setPicked((p) => (p.includes(w) ? p.filter((x) => x !== w) : [...p, w]));
   const close = () => {
@@ -172,11 +176,11 @@ function CopyDayModal({
     onClose();
   };
   const copy = () => {
-    const days = ORDER.filter((w) => picked.includes(w)).map((w) => SHORT_WEEKDAYS[w]).join(', ');
-    Alert.alert('Скопировать расписание?', `${WEEKDAYS[from]} → ${days}. Приёмы этих дней будут заменены.`, [
-      { text: 'Отмена', style: 'cancel' },
+    const days = ORDER.filter((w) => picked.includes(w)).map((w) => shortWeekdayOf(w)).join(', ');
+    Alert.alert(t('settings.copyTitle'), t('settings.copyText', { from: weekdayOf(from), days }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Скопировать',
+        text: t('settings.copy'),
         onPress: () => {
           onCopy(picked);
           setPicked([]);
@@ -189,7 +193,7 @@ function CopyDayModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close}>
         <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]} onPress={() => {}}>
-          <Text style={styles.sheetTitle}>Скопировать {WEEKDAYS[from].toLowerCase()} на…</Text>
+          <Text style={styles.sheetTitle}>{t('settings.copyFrom', { day: weekdayOf(from) })}</Text>
           {ORDER.filter((w) => w !== from).map((w) => {
             const on = picked.includes(w);
             return (
@@ -200,13 +204,13 @@ function CopyDayModal({
                 accessibilityState={{ checked: on }}
                 style={styles.dayRow}
               >
-                <Text style={styles.dayRowText}>{WEEKDAYS[w]}</Text>
+                <Text style={styles.dayRowText}>{weekdayOf(w)}</Text>
                 <View style={[styles.box, on && styles.boxOn]}>{on && <Icon name="check" size={16} color={colors.onPrimary} />}</View>
               </Pressable>
             );
           })}
-          <Button title="Скопировать" onPress={copy} disabled={picked.length === 0} />
-          <Button title="Отмена" variant="secondary" onPress={close} />
+          <Button title={t('settings.copy')} onPress={copy} disabled={picked.length === 0} />
+          <Button title={t('common.cancel')} variant="secondary" onPress={close} />
         </Pressable>
       </Pressable>
     </Modal>
@@ -239,6 +243,7 @@ const styles = StyleSheet.create({
   slotHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: {
     flex: 1,
+    minWidth: 0,
     height: 44,
     paddingHorizontal: 12,
     borderRadius: 12,

@@ -11,9 +11,11 @@ import { MAX_SLEEP_MIN, minutesBetween, removeSleep, setSleep } from '../logic/s
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import type { SleepEntry } from '../types';
+import { useT } from '../i18n/useT';
 
 // Модалка сна (под Garmin): длительность и оценка 0–100; «лёг / встал» — необязательно.
 export default function SleepEditScreen() {
+  const t = useT();
   const params = useLocalSearchParams<{ day?: string }>();
   const day = params.day ?? dayKey();
   const { data, update } = useStore();
@@ -38,11 +40,11 @@ export default function SleepEditScreen() {
     const m = parseNum(mins) ?? 0;
     const minutes = Math.round(h * 60 + m);
     if (h < 0 || m < 0 || m >= 60 || minutes <= 0 || minutes > MAX_SLEEP_MIN) {
-      return Alert.alert('Проверьте длительность', 'Часы и минуты (0–59), всего от 1 минуты до 24 часов.');
+      return Alert.alert(t('sleepEdit.checkTitle'), t('sleepEdit.checkText'));
     }
     const score = parseNum(garmin);
     if (score != null && (!Number.isInteger(score) || score < 0 || score > 100)) {
-      return Alert.alert('Оценка Garmin — целое число от 0 до 100');
+      return Alert.alert(t('sleepEdit.garminRange'));
     }
     const entry: SleepEntry = { minutes };
     if (score != null) entry.garmin = score;
@@ -53,10 +55,10 @@ export default function SleepEditScreen() {
   };
 
   const remove = () =>
-    Alert.alert('Удалить запись сна?', formatDay(day), [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('sleepEdit.deleteTitle'), formatDay(day), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           update((d) => removeSleep(d, day));
@@ -69,37 +71,37 @@ export default function SleepEditScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.muted}>
-          Ночь с {formatDay(shiftDay(day, -1))} на {formatDay(day)}
+          {t('sleepEdit.night', { from: formatDay(shiftDay(day, -1)), to: formatDay(day) })}
         </Text>
         <Card style={styles.card}>
-          <Text style={styles.label}>Длительность</Text>
+          <Text style={styles.label}>{t('report.duration')}</Text>
           <View style={styles.row}>
-            <NumInput label="Часы" value={hours} onChangeText={setHours} keyboardType="number-pad" placeholder="7" />
-            <NumInput label="Минуты" value={mins} onChangeText={setMins} keyboardType="number-pad" placeholder="30" />
+            <NumInput label={t('sleepEdit.hours')} value={hours} onChangeText={setHours} keyboardType="number-pad" placeholder="7" />
+            <NumInput label={t('sleepEdit.minutes')} value={mins} onChangeText={setMins} keyboardType="number-pad" placeholder="30" />
           </View>
           <NumInput
-            label="Оценка сна Garmin, 0–100 (необязательно)"
+            label={t('sleepEdit.garmin')}
             value={garmin}
             onChangeText={setGarmin}
             keyboardType="number-pad"
             placeholder="—"
           />
-          {existing?.quality != null && <Text style={styles.muted}>Старая оценка: качество {existing.quality}/5</Text>}
+          {existing?.quality != null && <Text style={styles.muted}>{t('sleepEdit.oldQuality', { q: existing.quality })}</Text>}
         </Card>
         <Card style={styles.card}>
-          <Text style={styles.label}>Лёг / встал (необязательно)</Text>
+          <Text style={styles.label}>{t('sleepEdit.bedWake')}</Text>
           {times ? (
             <>
-              <TimeField label="Лёг" value={times.bed} onChange={(bed) => changeTimes({ ...times, bed })} />
-              <TimeField label="Встал" value={times.wake} onChange={(wake) => changeTimes({ ...times, wake })} />
-              <Button title="Убрать время" variant="secondary" small onPress={() => setTimes(null)} />
+              <TimeField label={t('sleepEdit.bed')} value={times.bed} onChange={(bed) => changeTimes({ ...times, bed })} />
+              <TimeField label={t('sleepEdit.wake')} value={times.wake} onChange={(wake) => changeTimes({ ...times, wake })} />
+              <Button title={t('sleepEdit.removeTime')} variant="secondary" small onPress={() => setTimes(null)} />
             </>
           ) : (
-            <Button title="Указать время" variant="secondary" small onPress={() => changeTimes({ bed: '22:00', wake: '05:00' })} />
+            <Button title={t('sleepEdit.setTime')} variant="secondary" small onPress={() => changeTimes({ bed: '22:00', wake: '05:00' })} />
           )}
         </Card>
-        <Button title="Сохранить" onPress={save} />
-        {existing && <Button title="Удалить запись" variant="danger" onPress={remove} />}
+        <Button title={t('common.save')} onPress={save} />
+        {existing && <Button title={t('sleepEdit.delete')} variant="danger" onPress={remove} />}
       </ScrollView>
     </KeyboardAvoidingView>
   );

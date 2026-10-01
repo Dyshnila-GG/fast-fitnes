@@ -10,9 +10,12 @@ import { Button, Card } from '../ui';
 import { DishImage } from './DishImage';
 import { choosePhoto, removePhotoFile } from './dishPhoto';
 import { Ingredients } from './MealCard';
+import { dishName, dishNote } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 // Карточка блюда: фото (тап — своё фото), название с «Изменить», ккал и белок, подсказка, ингредиенты, рецепт.
 export function DishDetails({ id, from }: { id: DishId; from?: 'dish' }) {
+  const t = useT();
   const { data, update } = useStore();
   const dish = dishOf(data.food, id);
   if (!dish) return null;
@@ -20,7 +23,7 @@ export function DishDetails({ id, from }: { id: DishId; from?: 'dish' }) {
   const own = data.food.photos[id];
 
   const photo = () =>
-    choosePhoto(dish.name, (uri) => {
+    choosePhoto(dishName(dish), (uri) => {
       update((d) => setPhoto(d, id, uri));
       removePhotoFile(own);
     });
@@ -31,13 +34,13 @@ export function DishDetails({ id, from }: { id: DishId; from?: 'dish' }) {
 
   return (
     <Card style={styles.card}>
-      <Pressable onPress={photo} accessibilityRole="button" accessibilityLabel="Своё фото">
+      <Pressable onPress={photo} accessibilityRole="button" accessibilityLabel={t('photo.title')}>
         <DishImage key={id} dish={id} style={styles.image} iconSize={64} />
-        <Text style={styles.photoHint}>Нажмите на картинку — «Своё фото»</Text>
+        <Text style={styles.photoHint}>{t('photo.hint')}</Text>
       </Pressable>
-      {own && <Button title="Вернуть стандартную картинку" variant="secondary" small onPress={resetPhoto} />}
+      {own && <Button title={t('photo.reset')} variant="secondary" small onPress={resetPhoto} />}
       <View style={styles.row}>
-        <Text style={[styles.name, styles.flex]}>{dish.name}</Text>
+        <Text style={[styles.name, styles.flex]}>{dishName(dish)}</Text>
         <Pressable
           onPress={() => router.push({ pathname: '/dish-edit', params: from ? { id, from } : { id } })}
           accessibilityRole="button"
@@ -45,25 +48,25 @@ export function DishDetails({ id, from }: { id: DishId; from?: 'dish' }) {
           style={({ pressed }) => [styles.edit, pressed && styles.pressed]}
         >
           <Icon name="pencil-outline" size={16} />
-          <Text style={styles.editText}>Изменить</Text>
+          <Text style={styles.editText}>{t('common.change')}</Text>
         </Pressable>
       </View>
       <Text style={styles.muted}>
-        ~{formatNum(dish.kcal)} ккал · {dish.protein} г белка
+        ~{t('food.kcalProtein', { kcal: formatNum(dish.kcal), protein: dish.protein })}
       </Text>
       {dish.note && (
         <View style={styles.noteRow}>
           <Icon name="alert-outline" size={18} />
-          <Text style={styles.note}>{dish.note}</Text>
+          <Text style={styles.note}>{dishNote(dish)}</Text>
         </View>
       )}
-      <Text style={styles.section}>Ингредиенты</Text>
-      {dish.items.length > 0 || dish.ingredients ? <Ingredients dish={id} /> : <Text style={styles.muted}>Не указаны</Text>}
+      <Text style={styles.section}>{t('dish.ingredients')}</Text>
+      {dish.items.length > 0 || dish.ingredients ? <Ingredients dish={id} /> : <Text style={styles.muted}>{t('dish.noIngredients')}</Text>}
       <View style={styles.row}>
-        <Text style={[styles.section, styles.flex]}>Как готовить</Text>
-        {recipe.custom && dish.steps && <Text style={styles.ownTag}>Свой рецепт</Text>}
+        <Text style={[styles.section, styles.flex]}>{t('dish.howTo')}</Text>
+        {recipe.custom && dish.steps && <Text style={styles.ownTag}>{t('recipe.own')}</Text>}
       </View>
-      <Text style={[styles.step, !recipe.text && styles.muted]}>{recipe.text || 'Рецепт не указан'}</Text>
+      <Text style={[styles.step, !recipe.text && styles.muted]}>{recipe.text || t('recipe.none')}</Text>
     </Card>
   );
 }

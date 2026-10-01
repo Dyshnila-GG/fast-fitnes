@@ -5,7 +5,7 @@ import { sanitizeActiveRun } from '../logic/run';
 import { sanitizeRuns, sanitizeSleep } from '../logic/sleep';
 import { sanitizeTrash } from '../logic/trash';
 import { isObj } from '../logic/validate';
-import type { AppData, BackupState, Best, Plan, Reminder, Reminders } from '../types';
+import type { AppData, BackupState, Best, Plan, Reminder, Reminders, Settings } from '../types';
 import { isTime } from '../logic/time';
 import { defaultData, defaultReminders } from './defaults';
 
@@ -51,6 +51,15 @@ export function migrateData(raw: Record<string, unknown>): AppData {
     trash: sanitizeTrash(raw.trash),
     backup: sanitizeBackup(raw.backup),
     reminders: sanitizeReminders(raw.reminders),
+    settings: sanitizeSettings(raw.settings),
+  };
+}
+
+function sanitizeSettings(raw: unknown): Settings {
+  const s = isObj(raw) ? raw : {};
+  return {
+    lang: s.lang === 'en' || s.lang === 'uk' ? s.lang : 'ru',
+    units: s.units === 'metric' ? 'metric' : 'imperial',
   };
 }
 

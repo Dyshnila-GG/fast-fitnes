@@ -4,9 +4,12 @@ import { getExercise, getVariant } from '../../data/program';
 import { exerciseMeta, formatFact } from '../../logic/format';
 import { colors } from '../../theme';
 import type { ExerciseLog } from '../../types';
+import { variantName } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 // Упражнение в итоге: факт по подходам, ответ после разминки, заметка.
 export function ExerciseResult({ log }: { log: ExerciseLog }) {
+  const t = useT();
   const variant = getVariant(getExercise(log.exerciseId), log.variant);
   const warmup = log.sets.filter((s) => s.type === 'warmup');
   const work = log.sets.filter((s) => s.type === 'work');
@@ -14,11 +17,11 @@ export function ExerciseResult({ log }: { log: ExerciseLog }) {
 
   return (
     <View style={styles.box}>
-      <Text style={styles.name}>{variant.name}</Text>
+      <Text style={styles.name}>{variantName(variant)}</Text>
       {warmup.length > 0 && (
-        <Text style={styles.sets}>Разминка: {warmup.map((s) => formatFact(s, variant)).join(' · ')}</Text>
+        <Text style={styles.sets}>{t('result.warmup', { sets: warmup.map((s) => formatFact(s, variant)).join(' · ') })}</Text>
       )}
-      <Text style={styles.sets}>Рабочие: {work.length > 0 ? work.map((s) => formatFact(s, variant)).join(' · ') : '—'}</Text>
+      <Text style={styles.sets}>{t('result.work', { sets: work.length > 0 ? work.map((s) => formatFact(s, variant)).join(' · ') : '—' })}</Text>
       {meta ? <Text style={styles.meta}>{meta}</Text> : null}
       {log.comment ? <Text style={styles.comment}>«{log.comment}»</Text> : null}
     </View>

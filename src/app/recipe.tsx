@@ -8,9 +8,12 @@ import type { DishId } from '../data/food';
 import { dishOf, recipeOf, setRecipe } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, radius } from '../theme';
+import { dishName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 // Рецепт блюда (SPEC_v3_2 §5.3): свой текст хранится по блюду и виден во всех приёмах и днях.
 export default function RecipeScreen() {
+  const t = useT();
   const { dish } = useLocalSearchParams<{ dish: DishId }>();
   const { data, update } = useStore();
   const [draft, setDraft] = useState<string | null>(null); // null — просмотр
@@ -23,43 +26,43 @@ export default function RecipeScreen() {
     setDraft(null);
   };
   const restore = () =>
-    Alert.alert('Вернуть стандартный рецепт?', 'Ваш текст будет удалён.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Вернуть', style: 'destructive', onPress: () => update((d) => setRecipe(d, dish, null)) },
+    Alert.alert(t('recipe.restoreTitle'), t('recipe.restoreText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('recipe.restoreConfirm'), style: 'destructive', onPress: () => update((d) => setRecipe(d, dish, null)) },
     ]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Stack.Screen options={{ title: d.name }} />
+      <Stack.Screen options={{ title: dishName(d) }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {draft == null ? (
           <>
             <View style={styles.tag}>
               <Icon name={recipe.custom ? 'pencil-outline' : 'book-open-variant-outline'} size={16} color={colors.muted} />
-              <Text style={styles.tagText}>{recipe.custom || !d.steps ? 'Свой рецепт' : 'Стандартный рецепт'}</Text>
+              <Text style={styles.tagText}>{t(recipe.custom || !d.steps ? 'recipe.own' : 'recipe.standard')}</Text>
             </View>
             <Text style={[styles.text, !recipe.text && styles.hint]} selectable>
-              {recipe.text || 'Рецепт не указан'}
+              {recipe.text || t('recipe.none')}
             </Text>
-            <Button title={recipe.text ? 'Изменить' : 'Добавить рецепт'} onPress={() => setDraft(recipe.text)} />
-            {recipe.custom && d.steps && <Button title="Вернуть стандартный" variant="danger" onPress={restore} />}
+            <Button title={t(recipe.text ? 'common.change' : 'recipe.add')} onPress={() => setDraft(recipeOf(data.food, dish, false).text)} />
+            {recipe.custom && d.steps && <Button title={t('recipe.restore')} variant="danger" onPress={restore} />}
           </>
         ) : (
           <>
-            <Text style={styles.hint}>Продукты, количества, процесс — свободным текстом.</Text>
+            <Text style={styles.hint}>{t('recipe.hint')}</Text>
             <TextInput
               value={draft}
               onChangeText={setDraft}
               multiline
               autoFocus
               textAlignVertical="top"
-              placeholder="Рецепт"
+              placeholder={t('recipe.placeholder')}
               placeholderTextColor={colors.muted}
               style={styles.input}
             />
             <View style={styles.row}>
-              <Button title="Отмена" variant="secondary" onPress={() => setDraft(null)} style={styles.flex} />
-              <Button title="Сохранить" onPress={save} style={styles.flex} />
+              <Button title={t('common.cancel')} variant="secondary" onPress={() => setDraft(null)} style={styles.flex} />
+              <Button title={t('common.save')} onPress={save} style={styles.flex} />
             </View>
           </>
         )}

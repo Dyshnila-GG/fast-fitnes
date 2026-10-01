@@ -6,6 +6,7 @@ import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { colors, radius } from '../../theme';
 import { Button } from '../ui';
+import { useT } from '../../i18n/useT';
 
 const BEEP = require('../../../assets/beep.wav');
 const LATE_MS = 10_000; // если опоздали сильнее (приложение было закрыто) — без сигнала
@@ -19,6 +20,7 @@ type Props = {
 
 // Таймер отдыха поверх списка, над нижней панелью; по окончании — вибрация и звук.
 export function RestTimer({ endsAt, totalSec, onShift, onStop }: Props) {
+  const t = useT();
   const now = useNow(250);
   const player = useAudioPlayer(BEEP);
   const fired = useRef<string | null>(null);
@@ -39,16 +41,16 @@ export function RestTimer({ endsAt, totalSec, onShift, onStop }: Props) {
   return (
     <View style={styles.box}>
       <View style={styles.row}>
-        <Text style={styles.label}>Отдых</Text>
+        <Text style={styles.label}>{t('rest.title')}</Text>
         <Text style={styles.time}>{formatDuration(Math.max(0, left) + 999)}</Text>
       </View>
       <View style={styles.track}>
         <View style={[styles.bar, { width: `${progress * 100}%` }]} />
       </View>
       <View style={styles.row}>
-        <Button title="−15 с" variant="secondary" small onPress={() => onShift(-15)} style={styles.flex} />
-        <Button title="+15 с" variant="secondary" small onPress={() => onShift(15)} style={styles.flex} />
-        <Button title="Пропустить" small onPress={onStop} style={styles.flex} />
+        <Button title={`−15 ${t('unit.s')}`} variant="secondary" small onPress={() => onShift(-15)} style={styles.flex} />
+        <Button title={`+15 ${t('unit.s')}`} variant="secondary" small onPress={() => onShift(15)} style={styles.flex} />
+        <Button title={t('rest.skip')} small onPress={onStop} style={styles.flex} />
       </View>
     </View>
   );

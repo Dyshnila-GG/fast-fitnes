@@ -8,11 +8,16 @@ import { progressItems, progressSeries } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import type { Mode } from '../types';
+import { formatNumber, t as tr } from '../i18n';
+import { variantNameByKey } from '../i18n/content';
+import { weightUnit, weightValue } from '../logic/units';
+import { useT } from '../i18n/useT';
 
-const UNIT: Record<Mode, string> = { weight: 'lb', bodyweight: 'повт', time: 'сек' };
-const AXIS: Record<Mode, string> = { weight: 'Рабочий вес (макс. за тренировку), lb', bodyweight: 'Повторы (макс. за тренировку)', time: 'Время (макс. за тренировку), сек' };
+const unitOf = (mode: Mode) => (mode === 'weight' ? weightUnit() : mode === 'time' ? tr('unit.sec') : tr('unit.reps'));
+const axisOf = (mode: Mode) => tr(`progress.axis.${mode}`, { u: weightUnit() });
 
 export default function ProgressScreen() {
+  const t = useT();
   const { data } = useStore();
   const items = progressItems(data.sessions);
   const [key, setKey] = useState<string | null>(null);
@@ -22,38 +27,39 @@ export default function ProgressScreen() {
     return (
       <View style={styles.content}>
         <Card>
-          <Text style={styles.muted}>Появится после первой тренировки с заполненными подходами.</Text>
+          <Text style={styles.muted}>{t('progress.empty')}</Text>
         </Card>
       </View>
     );
   }
 
-  const points = progressSeries(data.sessions, selected.key);
+  // Вес — в выбранных единицах.
+  const points = progressSeries(data.sessions, selected.key).map((p) => (selected.mode === 'weight' ? { ...p, y: weightValue(p.y) } : p));
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Card style={styles.card}>
-        <Text style={styles.name}>{selected.key}</Text>
-        <Text style={styles.muted}>{AXIS[selected.mode]}</Text>
-        <LineChart key={selected.key} points={points} unit={UNIT[selected.mode]} formatDate={formatDate} />
+        <Text style={styles.name}>{variantNameByKey(selected.key)}</Text>
+        <Text style={styles.muted}>{axisOf(selected.mode)}</Text>
+        <LineChart key={selected.key} points={points} unit={unitOf(selected.mode)} formatDate={formatDate} />
       </Card>
       <Card style={styles.list}>
-        <Text style={styles.section}>ПО ДАТАМ</Text>
+        <Text style={styles.section}>{t('progress.byDate')}</Text>
         {[...points].reverse().map((p, i) => (
           <View key={i} style={styles.row}>
             <Text style={styles.cell}>{formatDate(p.date)}</Text>
             <Text style={[styles.cell, styles.value]}>
-              {p.y} {UNIT[selected.mode]}
+              {formatNumber(p.y)} {unitOf(selected.mode)}
             </Text>
           </View>
         ))}
       </Card>
       <Card style={styles.list}>
-        <Text style={styles.section}>УПРАЖНЕНИЕ</Text>
+        <Text style={styles.section}>{t('progress.exercise')}</Text>
         {items.map((i) => (
           <Pressable key={i.key} onPress={() => setKey(i.key)} style={styles.row}>
             <Text style={[styles.cell, i.key === selected.key && styles.active]}>
-              {i.key}
+              {variantNameByKey(i.key)}
             </Text>
             <Text style={styles.muted}>{i.count}</Text>
           </Pressable>

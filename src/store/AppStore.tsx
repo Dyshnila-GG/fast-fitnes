@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { AppData } from '../types';
+import { setLang } from '../i18n';
+import { setUnits } from '../logic/units';
+import type { AppData, Settings } from '../types';
 import { purgeTrash } from '../logic/trash';
 import { defaultData } from './defaults';
 import { migrateData } from './migrate';
@@ -13,6 +15,8 @@ type Store = {
 };
 
 const Ctx = createContext<Store | null>(null);
+// Язык и единицы отдельно: компоненты с текстами перерисовываются только при смене настроек.
+const SettingsCtx = createContext<Settings>({ lang: 'ru', units: 'imperial' });
 
 export function AppStoreProvider({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
   const [data, setData] = useState<AppData | null>(null);
@@ -32,11 +36,22 @@ export function AppStoreProvider({ children, fallback }: { children: ReactNode; 
   }, []);
 
   if (!data) return <>{fallback}</>;
-  return <Ctx.Provider value={{ data, update }}>{children}</Ctx.Provider>;
+  // Язык и единицы для t() и форматирования — до рендера детей, смена применяется сразу.
+  setLang(data.settings.lang);
+  setUnits(data.settings.units);
+  return (
+    <Ctx.Provider value={{ data, update }}>
+      <SettingsCtx.Provider value={data.settings}>{children}</SettingsCtx.Provider>
+    </Ctx.Provider>
+  );
 }
 
 export function useStore(): Store {
   const s = useContext(Ctx);
   if (!s) throw new Error('useStore outside AppStoreProvider');
   return s;
+}
+
+export function useSettings(): Settings {
+  return useContext(SettingsCtx);
 }

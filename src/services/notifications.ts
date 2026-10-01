@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { plannedReminders } from '../logic/reminders';
@@ -40,7 +41,7 @@ export async function syncReminders(r: Reminders): Promise<void> {
     if (planned.length === 0 || !(await notificationsGranted())) return;
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(CHANNEL, {
-        name: 'Напоминания',
+        name: t('reminders.channel'),
         importance: Notifications.AndroidImportance.HIGH,
       });
     }

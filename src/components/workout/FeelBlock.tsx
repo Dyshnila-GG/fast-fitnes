@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../Text';
-import { FEEL_LABEL } from '../../logic/format';
+import { feelLabel, formatWeight } from '../../logic/format';
+import { weightToLb, weightUnit, weightValue } from '../../logic/units';
 import { parseNum } from '../../logic/metrics';
 import { colors } from '../../theme';
 import type { ExerciseLog, Feel, Variant } from '../../types';
+import { useT } from '../../i18n/useT';
 
-const FEELS = (Object.keys(FEEL_LABEL) as Feel[]).map((value) => ({ value, label: FEEL_LABEL[value] }));
+const FEELS: Feel[] = ['easy', 'normal', 'hard'];
 
 type Props = {
   log: ExerciseLog;
@@ -17,18 +19,19 @@ type Props = {
 
 // «Как пошла разминка?» (SPEC_v2 §2.2) и вес «сегодня» для всех рабочих подходов.
 export function FeelBlock({ log, variant, onFeel, onToday }: Props) {
+  const t = useT();
   const record = log.record?.weight;
   const today = log.todayWeight ?? record;
 
   return (
     <View style={[styles.block, !log.feel && styles.pending]}>
-      <Text style={styles.title}>КАК ПОШЛА РАЗМИНКА?</Text>
+      <Text style={styles.title}>{t('feel.title')}</Text>
       <View style={styles.row}>
         {FEELS.map((f) => {
-          const active = log.feel === f.value;
+          const active = log.feel === f;
           return (
-            <Pressable key={f.value} onPress={() => onFeel(f.value)} style={[styles.chip, active && styles.chipActive]}>
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+            <Pressable key={f} onPress={() => onFeel(f)} style={[styles.chip, active && styles.chipActive]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{feelLabel(f)}</Text>
             </Pressable>
           );
         })}
@@ -36,24 +39,26 @@ export function FeelBlock({ log, variant, onFeel, onToday }: Props) {
       {variant.mode === 'weight' && (
         <View style={styles.row}>
           <View style={styles.flex}>
-            <Text style={styles.label}>Вес сегодня, lb</Text>
-            <Text style={styles.meta}>{record != null ? `Рекорд ${record} lb` : 'Рекорда пока нет'}</Text>
+            <Text style={styles.label}>{t('feel.todayWeight', { u: weightUnit() })}</Text>
+            <Text style={styles.meta}>{record != null ? t('feel.record', { w: formatWeight(record) }) : t('feel.noRecord')}</Text>
           </View>
           <WeightField value={today} onChange={onToday} />
         </View>
       )}
       {variant.mode === 'bodyweight' && (
-        <Text style={styles.meta}>Легко — верх диапазона, Нормально — середина, Тяжело — низ.</Text>
+        <Text style={styles.meta}>{t('feel.bodyweightHint')}</Text>
       )}
     </View>
   );
 }
 
+// Ввод в выбранных единицах (lb / kg), хранение — lb.
 function WeightField({ value, onChange }: { value?: number; onChange: (v: number) => void }) {
-  const [text, setText] = useState(value == null ? '' : String(value));
+  const shown = value == null ? undefined : weightValue(value);
+  const [text, setText] = useState(shown == null ? '' : String(shown));
   useEffect(() => {
-    setText((prev) => (parseNum(prev) === value ? prev : value == null ? '' : String(value)));
-  }, [value]);
+    setText((prev) => (parseNum(prev) === shown ? prev : shown == null ? '' : String(shown)));
+  }, [shown]);
 
   return (
     <TextInput
@@ -64,10 +69,10 @@ function WeightField({ value, onChange }: { value?: number; onChange: (v: number
         const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
         setText(clean);
         const n = parseNum(clean);
-        if (n != null && n > 0) onChange(n);
+        if (n != null && n > 0) onChange(weightToLb(n));
       }}
       // Пустое или нулевое значение не сохраняется — возвращаем текущее.
-      onEndEditing={() => setText(value == null ? '' : String(value))}
+      onEndEditing={() => setText(shown == null ? '' : String(shown))}
       style={styles.input}
     />
   );

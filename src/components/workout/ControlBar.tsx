@@ -6,6 +6,7 @@ import { elapsedMs, pausedTotalMs } from '../../logic/session';
 import { colors } from '../../theme';
 import type { Session } from '../../types';
 import { Button } from '../ui';
+import { useT } from '../../i18n/useT';
 
 type Props = {
   session: Session;
@@ -18,6 +19,7 @@ type Props = {
 
 // Закреплённая панель внизу экрана тренировки (SPEC §3.1).
 export function ControlBar({ session, current, total, bottom, onPause, onFinish }: Props) {
+  const t = useT();
   const now = useNow();
   const paused = !!session.pausedAt;
   return (
@@ -26,11 +28,11 @@ export function ControlBar({ session, current, total, bottom, onPause, onFinish 
         <View>
           <Text style={[styles.timer, paused && styles.timerPaused]}>{formatDuration(elapsedMs(session, now))}</Text>
           <Text style={styles.progress}>
-            {paused ? 'На паузе · ' : ''}Упражнение {current} из {total}
+            {paused ? `${t('control.paused')} · ` : ''}{t('control.exercise', { current, total })}
           </Text>
         </View>
         <View style={styles.pauseBox}>
-          <Text style={styles.pauseLabel}>общая пауза</Text>
+          <Text style={styles.pauseLabel}>{t('control.totalPause')}</Text>
           <Text style={[styles.pauseValue, paused && styles.pauseActive]}>
             {formatDuration(pausedTotalMs(session, now))}
           </Text>
@@ -38,12 +40,12 @@ export function ControlBar({ session, current, total, bottom, onPause, onFinish 
       </View>
       <View style={styles.row}>
         <Button
-          title={paused ? 'Продолжить' : 'Пауза'}
+          title={t(paused ? 'control.resume' : 'control.pause')}
           variant={paused ? 'primary' : 'secondary'}
           onPress={onPause}
           style={styles.flex}
         />
-        <Button title="Завершить" variant="danger" onPress={onFinish} style={styles.flex} />
+        <Button title={t('control.finish')} variant="danger" onPress={onFinish} style={styles.flex} />
       </View>
     </View>
   );

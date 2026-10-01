@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { Text, TextInput } from '../Text';
 import { colors } from '../../theme';
+import { useT } from '../../i18n/useT';
 
 // «Заметка» — необязательная, свёрнута до тапа.
 export function NoteField({ value, onChange }: { value?: string; onChange: (text: string | undefined) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(!!value);
   if (!open) {
     return (
       <Pressable onPress={() => setOpen(true)} hitSlop={6}>
-        <Text style={styles.toggle}>+ Заметка</Text>
+        <Text style={styles.toggle}>+ {t('note.title')}</Text>
       </Pressable>
     );
   }
@@ -17,7 +19,7 @@ export function NoteField({ value, onChange }: { value?: string; onChange: (text
     <TextInput
       value={value ?? ''}
       onChangeText={(t) => onChange(t || undefined)}
-      placeholder="Заметка"
+      placeholder={t('note.title')}
       placeholderTextColor={colors.muted}
       multiline
       autoFocus={!value}

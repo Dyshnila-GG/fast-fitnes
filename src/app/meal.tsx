@@ -7,9 +7,11 @@ import { Button, Card } from '../components/ui';
 import { formatMealTime, formatNum, isEaten, mealsFor, toggleEaten } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { useT } from '../i18n/useT';
 
 // Приём пищи на дату: блюда, итог, «Съел», «Заменить», «Рецепт».
 export default function MealScreen() {
+  const t = useT();
   const { day, slot } = useLocalSearchParams<{ day: string; slot: string }>();
   const { data, update } = useStore();
   const meal = mealsFor(data.food, day).find((m) => m.slot === slot);
@@ -21,31 +23,31 @@ export default function MealScreen() {
       <Stack.Screen options={{ title: `${meal.title} · ${formatMealTime(meal.time)}` }} />
       {meal.dishes.length === 0 && (
         <Card>
-          <Text style={styles.muted}>Блюдо не выбрано. Выберите его в «Еда» → «Настройки» или замените на этот день.</Text>
+          <Text style={styles.muted}>{t('meal.emptyHint')}</Text>
         </Card>
       )}
       {meal.dishes.map((id) => (
         <DishDetails key={id} id={id} />
       ))}
       <View style={styles.footer}>
-        <Text style={styles.kcal}>~{formatNum(meal.kcal)} ккал</Text>
-        <Text style={styles.protein}>{meal.protein} г белка</Text>
+        <Text style={styles.kcal}>~{formatNum(meal.kcal)} {t('unit.kcal')}</Text>
+        <Text style={styles.protein}>{t('food.protein', { n: meal.protein })}</Text>
       </View>
       <View style={styles.actions}>
         <Button
-          title={eaten ? 'Съедено' : 'Съел'}
+          title={t(eaten ? 'meal.eaten' : 'meal.eat')}
           variant={eaten ? 'secondary' : 'primary'}
           onPress={() => update((d) => toggleEaten(d, day, meal.slot))}
           style={styles.action}
         />
         <Button
-          title="Заменить"
+          title={t('common.replace')}
           variant="secondary"
           onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
           style={styles.action}
         />
         <Button
-          title="Рецепт"
+          title={t('meal.recipe')}
           variant="secondary"
           disabled={meal.dishes.length === 0}
           onPress={() => openRecipe(data.food, meal.dishes)}

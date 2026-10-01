@@ -206,7 +206,7 @@ describe('форматирование', () => {
 
   it('разминка в итоге и истории', () => {
     const s = { warmup: { run: { ms: 372_000, distanceMi: 0.52 }, joints: { ms: 185_000 } } };
-    expect(formatWarmup(s as never)).toBe('Пробежка 6:12 · 0.52 mi · Суставная 3:05');
+    expect(formatWarmup(s as never)).toBe('Пробежка 6:12 · 0,52 mi · Суставная 3:05');
     expect(formatWarmup({} as never)).toBeNull();
   });
 

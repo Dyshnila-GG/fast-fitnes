@@ -7,29 +7,41 @@ import { GYM_TIME, setReminder, WAKE_TIME } from '../logic/reminders';
 import { requestNotifications } from '../services/notifications';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { PROGRAM } from '../data/program';
+import { t as tr, weekdayShort } from '../i18n';
+import { templateName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 type Key = 'sleep' | 'workout';
 
-const ITEMS: { key: Key; title: string; icon: IconName; text: string; when: string }[] = [
-  { key: 'sleep', title: 'Сон', icon: 'weather-night', text: `«Через 30 минут спать. Подъём в ${WAKE_TIME}»`, when: 'Ежедневно' },
+// Тексты — на текущем языке; пример тренировки — по первой тренировке программы.
+const items = (): { key: Key; title: string; icon: IconName; text: string; when: string }[] => [
+  {
+    key: 'sleep',
+    title: tr('reminder.sleep.title'),
+    icon: 'weather-night',
+    text: tr('reminders.quote', { text: tr('reminder.sleep.body', { wake: WAKE_TIME }) }),
+    when: tr('reminders.daily'),
+  },
   {
     key: 'workout',
-    title: 'Тренировка',
+    title: tr('reminder.workout.title'),
     icon: 'dumbbell',
-    text: `«Сегодня: Грудь и плечи. Зал в ${GYM_TIME}» — название по дню`,
-    when: 'Вт, Чт, Сб',
+    text: tr('reminders.workoutExample', { text: tr('reminder.workout.body', { name: templateName(PROGRAM[0]), gym: GYM_TIME }) }),
+    when: PROGRAM.map((p) => weekdayShort(p.weekday)).join(', '),
   },
 ];
 
 // «Напоминания» (SPEC_v3_3 §B4): переключатель и время у каждого.
 export default function RemindersScreen() {
+  const t = useT();
   const { data, update } = useStore();
 
   const toggle = async (key: Key, on: boolean) => {
     if (on && !(await requestNotifications())) {
-      Alert.alert('Уведомления выключены', 'Разрешите уведомления для TOCHKA Fitness в настройках телефона.', [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Настройки', onPress: () => Linking.openSettings() },
+      Alert.alert(t('reminders.offTitle'), t('reminders.offText'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.settings'), onPress: () => Linking.openSettings() },
       ]);
       return;
     }
@@ -38,7 +50,7 @@ export default function RemindersScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      {ITEMS.map((item) => {
+      {items().map((item) => {
         const r = data.reminders[item.key];
         return (
           <Card key={item.key} style={styles.card}>
@@ -59,7 +71,7 @@ export default function RemindersScreen() {
               />
             </View>
             <View style={[styles.time, !r.on && styles.off]} pointerEvents={r.on ? 'auto' : 'none'}>
-              <TimeField label="Время" value={r.time} onChange={(time) => update((d) => setReminder(d, item.key, { time }))} />
+              <TimeField label={t('report.time')} value={r.time} onChange={(time) => update((d) => setReminder(d, item.key, { time }))} />
             </View>
             <Text style={styles.muted}>{item.text}</Text>
           </Card>

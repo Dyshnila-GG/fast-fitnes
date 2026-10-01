@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { AppData, RunEntry, SleepEntry } from '../types';
 import { shiftDay } from './dates';
 import { isTime, toMinutes } from './time';
@@ -15,8 +16,8 @@ export function minutesBetween(bed: string, wake: string): number {
 export function formatSleep(min: number): string {
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
-  if (h === 0) return `${m} мин`;
-  return m === 0 ? `${h} ч` : `${h} ч ${m} мин`;
+  if (h === 0) return t('duration.min', { m });
+  return m === 0 ? t('duration.h', { h }) : t('duration.hMin', { h, m });
 }
 
 // 390 → «6:30»
@@ -47,7 +48,7 @@ export function garminAverage(sleep: Record<string, SleepEntry>, today: string, 
 // «Garmin 82» / «качество 4/5» (старые записи) / «».
 export function sleepScore(e: SleepEntry): string {
   if (e.garmin != null) return `Garmin ${e.garmin}`;
-  if (e.quality != null) return `качество ${e.quality}/5`;
+  if (e.quality != null) return t('sleep.quality', { q: e.quality });
   return '';
 }
 

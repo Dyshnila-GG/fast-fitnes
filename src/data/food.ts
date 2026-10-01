@@ -225,8 +225,6 @@ export function defaultDishes(): Record<DishId, Dish> {
 
 export type DayType = 'gym' | 'rest';
 
-export const DAY_TYPE_LABEL: Record<DayType, string> = { gym: 'День зала', rest: 'Обычный день' };
-
 export const GYM_WEEKDAYS = [2, 4, 6]; // Вт, Чт, Сб (0 = Вс)
 
 // Приём пищи в расписании дня; id уникален в пределах дня (по нему — отметки «Съел» и замены).

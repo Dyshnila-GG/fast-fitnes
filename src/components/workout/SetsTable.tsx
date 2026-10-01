@@ -5,16 +5,14 @@ import { colors } from '../../theme';
 import type { SetLog, Variant } from '../../types';
 import { Button } from '../ui';
 import { Icon } from '../Icon';
+import { t as tr, type Key } from '../../i18n';
+import { formatWeightNum } from '../../logic/format';
+import { weightToLb, weightUnit, weightValue } from '../../logic/units';
+import { useT } from '../../i18n/useT';
 
-const HELP: Record<SetLog['type'], [string, string]> = {
-  warmup: [
-    'Разминочные подходы',
-    'От рекорда: 50% × 10, для базовых затем 75% × 5. Свой вес и планка — один лёгкий подход. Не до отказа, отдых короткий. По ощущениям ответьте «Как пошла разминка?».',
-  ],
-  work: [
-    'Рабочие подходы',
-    'Вес «сегодня» × диапазон повторов. Оставляйте 1–2 повтора в запасе. Запишите фактический вес и повторы. Галочка копирует вес «сегодня» и верх диапазона.',
-  ],
+const HELP: Record<SetLog['type'], [Key, Key]> = {
+  warmup: ['sets.warmup.title', 'sets.warmup.help'],
+  work: ['sets.work.title', 'sets.work.help'],
 };
 
 type Props = {
@@ -28,9 +26,11 @@ type Props = {
 };
 
 export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onAdd }: Props) {
+  const t = useT();
   const rows = sets.map((s, i) => ({ s, i })).filter((r) => r.s.type === type);
   if (type === 'warmup' && rows.length === 0) return null;
-  const [title, help] = HELP[type];
+  const title = t(HELP[type][0]);
+  const help = t(HELP[type][1]);
   const time = variant.mode === 'time';
 
   return (
@@ -43,8 +43,8 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
       </View>
       <View style={styles.headRow}>
         <Text style={[styles.head, styles.num]}>№</Text>
-        <Text style={[styles.head, styles.plan]}>План</Text>
-        <Text style={[styles.head, styles.fact]}>Факт</Text>
+        <Text style={[styles.head, styles.plan]}>{t('report.plan')}</Text>
+        <Text style={[styles.head, styles.fact]}>{t('report.fact')}</Text>
       </View>
       {rows.map(({ s, i }, n) => (
         <View key={i} style={[styles.row, s.done ? styles.rowDone : styles.rowPending]}>
@@ -52,16 +52,17 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
           <Text style={[styles.cell, styles.plan]}>{planText(s, variant)}</Text>
           <View style={[styles.fact, styles.inputs]}>
             {time ? (
-              <NumField value={s.factSeconds} placeholder="сек" onChange={(v) => onChange(i, { factSeconds: v })} />
+              <NumField value={s.factSeconds} placeholder={t('unit.sec')} onChange={(v) => onChange(i, { factSeconds: v })} />
             ) : (
               <>
                 <NumField
                   decimal
+                  weight
                   value={s.factWeight}
-                  placeholder={variant.mode === 'bodyweight' ? 'свой' : 'lb'}
+                  placeholder={variant.mode === 'bodyweight' ? t('set.own') : weightUnit()}
                   onChange={(v) => onChange(i, { factWeight: v })}
                 />
-                <NumField value={s.factReps} placeholder="повт" onChange={(v) => onChange(i, { factReps: v })} />
+                <NumField value={s.factReps} placeholder={t('unit.reps')} onChange={(v) => onChange(i, { factReps: v })} />
               </>
             )}
           </View>
@@ -73,15 +74,15 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
           </Pressable>
         </View>
       ))}
-      <Button title="Добавить подход" variant="secondary" small onPress={onAdd} />
+      <Button title={t('sets.add')} variant="secondary" small onPress={onAdd} />
     </View>
   );
 }
 
 function planText(s: SetLog, variant: Variant): string {
-  if (s.planSeconds != null) return `${s.planSeconds} сек`;
+  if (s.planSeconds != null) return `${s.planSeconds} ${tr('unit.sec')}`;
   const reps = s.planRepsMax ? `${s.planReps}–${s.planRepsMax}` : `${s.planReps ?? '—'}`;
-  const weight = variant.mode === 'bodyweight' ? 'свой' : s.planWeight != null ? `${s.planWeight}` : '—';
+  const weight = variant.mode === 'bodyweight' ? tr('set.own') : s.planWeight != null ? formatWeightNum(s.planWeight) : '—';
   return `${weight} × ${reps}`;
 }
 
@@ -96,17 +97,20 @@ function NumField({
   onChange,
   placeholder,
   decimal,
+  weight,
 }: {
   value?: number;
   onChange: (v: number | undefined) => void;
   placeholder: string;
   decimal?: boolean;
+  weight?: boolean; // вес: показ и ввод в выбранных единицах, хранение — lb
 }) {
-  const [text, setText] = useState(value == null ? '' : String(value));
+  const shown = value == null ? undefined : weight ? weightValue(value) : value;
+  const [text, setText] = useState(shown == null ? '' : String(shown));
   // Синхронизация, если значение поменялось извне (кнопка ✓, удаление подхода).
   useEffect(() => {
-    setText((prev) => (parse(prev) === value ? prev : value == null ? '' : String(value)));
-  }, [value]);
+    setText((prev) => (parse(prev) === shown ? prev : shown == null ? '' : String(shown)));
+  }, [shown]);
 
   return (
     <TextInput
@@ -118,7 +122,8 @@ function NumField({
       onChangeText={(t) => {
         const clean = t.replace(',', '.').replace(/[^0-9.]/g, '');
         setText(clean);
-        onChange(parse(clean));
+        const n = parse(clean);
+        onChange(n != null && weight ? weightToLb(n) : n);
       }}
       style={styles.input}
     />

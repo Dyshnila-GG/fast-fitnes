@@ -9,10 +9,13 @@ import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import type { Length, TemplateId } from '../../types';
 import { Button, Card, Segmented } from '../ui';
-import { LENGTHS, WorkoutPreview } from './WorkoutPreview';
+import { lengths, WorkoutPreview } from './WorkoutPreview';
+import { templateTitle } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 // «Силовые»: тренировки Вт/Чт/Сб — длина, предпросмотр, «Начать».
 export function StrengthList() {
+  const t = useT();
   const { data, update } = useStore();
   const highlight = highlightedTemplate();
   const [open, setOpen] = useState<TemplateId | null>(null);
@@ -22,35 +25,35 @@ export function StrengthList() {
 
   return (
     <View style={styles.list}>
-      {PROGRAM.map((t) => {
-        const length = data.lengthChoice[t.id] ?? 'long';
-        const last = lastFinished(data, t.id);
-        const isHighlighted = highlight.id === t.id;
+      {PROGRAM.map((tpl) => {
+        const length = data.lengthChoice[tpl.id] ?? 'long';
+        const last = lastFinished(data, tpl.id);
+        const isHighlighted = highlight.id === tpl.id;
         return (
-          <Card key={t.id} style={[styles.card, isHighlighted && styles.cardHighlighted]}>
+          <Card key={tpl.id} style={[styles.card, isHighlighted && styles.cardHighlighted]}>
             <View style={styles.row}>
-              <Text style={styles.title}>{t.title}</Text>
+              <Text style={styles.title}>{templateTitle(tpl)}</Text>
               {isHighlighted && (
-                <Text style={styles.badge}>{highlight.isToday ? 'Сегодня' : 'Ближайшая'}</Text>
+                <Text style={styles.badge}>{t(highlight.isToday ? 'common.today' : 'strength.nearest')}</Text>
               )}
             </View>
             <Text style={styles.meta}>
-              {last ? `Последняя: ${formatDate(last.finishedAt!)}` : 'Ещё не выполнялась'}
+              {last ? t('strength.last', { date: formatDate(last.finishedAt!) }) : t('strength.never')}
             </Text>
-            <Segmented options={LENGTHS} value={length} onChange={(l) => setLength(t.id, l)} />
+            <Segmented options={lengths()} value={length} onChange={(l) => setLength(tpl.id, l)} />
             <Text style={styles.meta}>
               {length === 'long'
-                ? `${t.exercises.length} упражнений · все подходы по плану · бег 5–8 мин`
-                : `${SHORT_EXERCISES} упражнения · до ${SHORT_MAX_WORK_SETS} рабочих подходов · бег 5 мин`}
+                ? t('strength.longInfo', { n: tpl.exercises.length })
+                : t('strength.shortInfo', { n: SHORT_EXERCISES, sets: SHORT_MAX_WORK_SETS })}
             </Text>
             <Button
-              title={open === t.id ? 'Скрыть упражнения' : 'Упражнения'}
+              title={t(open === tpl.id ? 'strength.hideExercises' : 'strength.exercises')}
               variant="secondary"
               small
-              onPress={() => setOpen(open === t.id ? null : t.id)}
+              onPress={() => setOpen(open === tpl.id ? null : tpl.id)}
             />
-            {open === t.id && <WorkoutPreview data={data} id={t.id} length={length} />}
-            <Button title="Начать" onPress={() => start(t.id)} />
+            {open === tpl.id && <WorkoutPreview data={data} id={tpl.id} length={length} />}
+            <Button title={t('common.start')} onPress={() => start(tpl.id)} />
           </Card>
         );
       })}

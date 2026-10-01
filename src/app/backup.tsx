@@ -8,12 +8,14 @@ import { formatDate, formatTime } from '../logic/format';
 import { backupSupported, pickBackupDir, readBackupFile, runBackup } from '../services/backup';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { useT } from '../i18n/useT';
 
 // «primary:Documents/Backup» → «Documents/Backup»
 const folderLabel = (uri: string) => decodeURIComponent(uri).split(':').pop() || uri;
 
 // «Бэкап» (SPEC_v3_3 §B3): папка на телефоне, автобэкап раз в неделю, восстановление из файла.
 export default function BackupScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const { backup } = data;
 
@@ -21,12 +23,12 @@ export default function BackupScreen() {
     const dirUri = await pickBackupDir();
     if (!dirUri) return;
     update((d) => withBackup(d, { dirUri, error: undefined }));
-    if (runBackup({ ...data, backup: { dirUri } }, update)) Alert.alert('Папка выбрана', 'Первый бэкап сохранён.');
+    if (runBackup({ ...data, backup: { dirUri } }, update)) Alert.alert(t('backup.picked'), t('backup.firstSaved'));
   };
 
   const now = () => {
-    if (runBackup(data, update)) Alert.alert('Бэкап сохранён');
-    else Alert.alert('Не удалось сохранить бэкап', 'Папка недоступна. Выберите папку заново.');
+    if (runBackup(data, update)) Alert.alert(t('backup.saved'));
+    else Alert.alert(t('backup.failed'), t('backup.failedText'));
   };
 
   const restore = async () => {
@@ -34,7 +36,7 @@ export default function BackupScreen() {
       const text = await readBackupFile();
       if (text != null) confirmImport(text, data, update);
     } catch {
-      Alert.alert('Не удалось прочитать файл');
+      Alert.alert(t('backup.readFailed'));
     }
   };
 
@@ -42,40 +44,39 @@ export default function BackupScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       {backupSupported ? (
         <Card style={styles.card}>
-          <Text style={styles.label}>Папка на телефоне</Text>
+          <Text style={styles.label}>{t('backup.folder')}</Text>
           <View style={styles.folder}>
             <Icon name="folder-outline" size={24} color={backup.dirUri ? colors.text : colors.muted} />
             <Text style={[styles.folderText, !backup.dirUri && styles.mutedText]} numberOfLines={2}>
-              {backup.dirUri ? folderLabel(backup.dirUri) : 'Не выбрана'}
+              {backup.dirUri ? folderLabel(backup.dirUri) : t('backup.notPicked')}
             </Text>
           </View>
           {backup.error ? (
             <View style={styles.warning}>
               <Icon name="alert-circle-outline" size={20} color={colors.danger} />
-              <Text style={styles.warningText}>{backup.error}</Text>
+              <Text style={styles.warningText}>{t('backup.dirError')}</Text>
             </View>
           ) : null}
-          <Button title={backup.dirUri ? 'Сменить папку' : 'Выбрать папку'} variant="secondary" onPress={choose} />
+          <Button title={t(backup.dirUri ? 'backup.changeFolder' : 'backup.pickFolder')} variant="secondary" onPress={choose} />
           <View style={styles.divider} />
-          <Text style={styles.label}>Последний бэкап</Text>
+          <Text style={styles.label}>{t('backup.last')}</Text>
           <Text style={styles.big}>
-            {backup.lastAt ? `${formatDate(backup.lastAt)}, ${formatTime(backup.lastAt)}` : 'Ещё не было'}
+            {backup.lastAt ? `${formatDate(backup.lastAt)}, ${formatTime(backup.lastAt)}` : t('backup.never')}
           </Text>
-          <Button title="Сделать бэкап сейчас" onPress={now} disabled={!backup.dirUri} />
+          <Button title={t('backup.now')} onPress={now} disabled={!backup.dirUri} />
           <Text style={styles.hint}>
-            Автоматически раз в {BACKUP_EVERY_DAYS} дней при открытии приложения — файл TOCHKA-Fitness-backup_ГГГГ-ММ-ДД.json. Хранятся
-            последние {BACKUP_KEEP}, старые удаляются.
+            {t('backup.hint', { days: BACKUP_EVERY_DAYS, keep: BACKUP_KEEP })}
           </Text>
         </Card>
       ) : (
         <Card>
-          <Text style={styles.hint}>Автобэкап в папку доступен только на Android. Восстановить данные из файла можно и здесь.</Text>
+          <Text style={styles.hint}>{t('backup.androidOnly')}</Text>
         </Card>
       )}
       <Card style={styles.card}>
-        <Text style={styles.title}>Восстановить из файла</Text>
-        <Text style={styles.hint}>Выберите файл бэкапа. Перед заменой данных будет подтверждение.</Text>
-        <Button title="Выбрать файл" variant="secondary" onPress={restore} />
+        <Text style={styles.title}>{t('backup.restore')}</Text>
+        <Text style={styles.hint}>{t('backup.restoreHint')}</Text>
+        <Button title={t('backup.pickFile')} variant="secondary" onPress={restore} />
       </Card>
     </ScrollView>
   );

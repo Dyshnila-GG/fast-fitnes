@@ -42,7 +42,8 @@ export async function readBackupFile(): Promise<string | null> {
   return new File(res.assets[0].uri).text();
 }
 
-export const BACKUP_DIR_ERROR = 'Папка бэкапа недоступна. Выберите папку заново в «Профиль» → «Бэкап».';
+// Ошибка хранится кодом; текст — t('backup.dirError') на языке приложения.
+export const BACKUP_DIR_ERROR = 'unavailable';
 
 // Бэкап в выбранную папку; результат — в состоянии бэкапа (время или ошибка). Данные не трогаются.
 export function runBackup(data: AppData, update: (fn: (d: AppData) => AppData) => void, now = new Date()): boolean {

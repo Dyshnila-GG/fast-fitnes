@@ -4,12 +4,12 @@ import { Text } from '../../components/Text';
 import { MealCard } from '../../components/food/MealCard';
 import { Card } from '../../components/ui';
 import { Icon } from '../../components/Icon';
-import { DAY_TYPE_LABEL } from '../../data/food';
 import { useNow } from '../../hooks/useNow';
-import { formatDay, WEEKDAYS } from '../../logic/format';
+import { formatDay, weekdayOf } from '../../logic/format';
 import {
   dayTotals,
   dayType,
+  dayTypeLabel,
   formatNum,
   isEaten,
   mealsFor,
@@ -20,8 +20,10 @@ import {
 import { dayDate, dayKey, shiftDay } from '../../logic/metrics';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
+import { useT } from '../../i18n/useT';
 
 export default function FoodScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const now = useNow(60_000);
   const today = dayKey(new Date(now));
@@ -35,7 +37,7 @@ export default function FoodScreen() {
   const nowDate = new Date(now);
   const next = day === today ? nextMeal(food, day, nowDate.getHours() * 60 + nowDate.getMinutes()) : undefined;
   const offset = Math.round((dayDate(day).getTime() - dayDate(today).getTime()) / 86_400_000);
-  const near: Record<number, string> = { [-1]: 'Вчера', 0: 'Сегодня', 1: 'Завтра' };
+  const near: Record<number, string> = { [-1]: t('common.yesterday'), 0: t('common.today'), 1: t('common.tomorrow') };
   const dateText = near[offset] ? `${near[offset]}, ${formatDay(day)}` : formatDay(day);
 
   return (
@@ -46,9 +48,9 @@ export default function FoodScreen() {
             <Text style={styles.arrowText}>‹</Text>
           </Pressable>
           <View style={styles.flex}>
-            <Text style={styles.weekday}>{WEEKDAYS[dayDate(day).getDay()]}</Text>
+            <Text style={styles.weekday}>{weekdayOf(dayDate(day).getDay())}</Text>
             <Text style={styles.sub}>
-              {dateText} · {DAY_TYPE_LABEL[dayType(day)]}
+              {dateText} · {dayTypeLabel(dayType(day))}
             </Text>
           </View>
           <Pressable onPress={() => setDay(shiftDay(day, 1))} hitSlop={8} style={styles.arrow}>
@@ -56,20 +58,20 @@ export default function FoodScreen() {
           </Pressable>
         </View>
         <Text style={styles.progress}>
-          Съедено {totals.eaten} из {totals.total}
+          {t('food.eatenOf', { eaten: totals.eaten, total: totals.total })}
         </Text>
         <Text style={styles.stat}>
-          {formatNum(totals.kcalEaten)} / ~{formatNum(totals.kcalTotal)} ккал
+          {formatNum(totals.kcalEaten)} / ~{formatNum(totals.kcalTotal)} {t('unit.kcal')}
         </Text>
         <Text style={styles.stat}>
-          {totals.proteinEaten} / ~{totals.proteinTotal} г белка
+          {t('food.proteinOf', { eaten: totals.proteinEaten, total: totals.proteinTotal })}
         </Text>
       </Card>
 
       {salmonTomorrow(food, day) && (
         <Card style={styles.reminder}>
           <Icon name="fish" size={20} color={colors.muted} />
-          <Text style={[styles.muted, styles.flex]}>Переложить лосось из морозилки в холодильник — завтра в меню лосось.</Text>
+          <Text style={[styles.muted, styles.flex]}>{t('food.salmon')}</Text>
         </Card>
       )}
 

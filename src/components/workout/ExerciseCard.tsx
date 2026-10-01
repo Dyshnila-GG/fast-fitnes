@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
 import { getExercise, getVariant } from '../../data/program';
-import { formatPlan, formatRest, RATING_LABEL } from '../../logic/format';
+import { formatPlan, formatRest, ratingLabel } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';
 import { colors } from '../../theme';
 import { needsFeel } from '../../logic/records';
@@ -14,10 +14,13 @@ import { FeelBlock } from './FeelBlock';
 import { NoteField } from './NoteField';
 import { RatingBlock } from './RatingBlock';
 import { SetsTable } from './SetsTable';
+import { t as tr } from '../../i18n';
+import { exerciseMuscles, exerciseTitle, variantCue, variantEquipment, variantName } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
-const KINDS: { value: Kind; label: string }[] = [
-  { value: 'machine', label: 'ТРЕНАЖЁР' },
-  { value: 'free', label: 'СВОБОДНЫЙ ВЕС' },
+const kinds = (): { value: Kind; label: string }[] => [
+  { value: 'machine', label: tr('kind.machine') },
+  { value: 'free', label: tr('kind.free') },
 ];
 
 type Props = {
@@ -38,6 +41,7 @@ type Props = {
 };
 
 export function ExerciseCard(props: Props) {
+  const t = useT();
   const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating } = props;
   const ex = getExercise(log.exerciseId);
   const variant = getVariant(ex, log.variant);
@@ -49,14 +53,14 @@ export function ExerciseCard(props: Props) {
   return (
     <Card style={styles.card}>
       <Text style={styles.index}>
-        {number}. {ex.title}
-        {complete ? ' · готово' : ''}
+        {number}. {exerciseTitle(ex)}
+        {complete ? ` · ${t('exercise.done')}` : ''}
       </Text>
-      <Text style={styles.name}>{variant.name}</Text>
-      {prevRating ? <Text style={styles.prevNote}>В прошлый раз: {RATING_LABEL[prevRating]}</Text> : null}
-      {prevNote ? <Text style={styles.prevNote}>Прошлая заметка: {prevNote}</Text> : null}
+      <Text style={styles.name}>{variantName(variant)}</Text>
+      {prevRating ? <Text style={styles.prevNote}>{t('exercise.prevRating', { rating: ratingLabel(prevRating) })}</Text> : null}
+      {prevNote ? <Text style={styles.prevNote}>{t('exercise.prevNote', { note: prevNote })}</Text> : null}
       <Text style={styles.meta}>
-        {variant.equipment} ·{' '}
+        {variantEquipment(variant)} ·{' '}
         {formatPlan(variant, {
           sets: work.length,
           reps: first?.planReps,
@@ -66,24 +70,24 @@ export function ExerciseCard(props: Props) {
         })}
       </Text>
       {ex.variants.length > 1 && (
-        <Segmented options={KINDS} value={log.variant} onChange={(k) => k !== log.variant && onVariant(k)} />
+        <Segmented options={kinds()} value={log.variant} onChange={(k) => k !== log.variant && onVariant(k)} />
       )}
       <Pressable onPress={() => setDemo(true)}>
         <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={!demo} />
       </Pressable>
-      <Text style={styles.meta}>Мышцы: {ex.muscles}</Text>
+      <Text style={styles.meta}>{t('exercise.muscles', { muscles: exerciseMuscles(ex) })}</Text>
       <View style={styles.cue}>
-        <Text style={styles.cueText}>{variant.cue}</Text>
+        <Text style={styles.cueText}>{variantCue(ex, variant)}</Text>
         <Text style={styles.meta}>
-          Темп {ex.tempo} · отдых {formatRest(ex.restSec)}
+          {t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) })}
         </Text>
       </View>
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
       {needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
       <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} />
-      <Text style={styles.meta}>Оставляйте 1–2 повтора в запасе, не до отказа.</Text>
-      <Button title={`Отдых ${formatRest(ex.restSec)}`} onPress={onRest} />
+      <Text style={styles.meta}>{t('exercise.reserve')}</Text>
+      <Button title={t('exercise.rest', { rest: formatRest(ex.restSec) })} onPress={onRest} />
       <RatingBlock rating={log.rating} onChange={onRate} />
       <NoteField value={log.comment} onChange={onNote} />
       <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} />

@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+import { distanceUnit, paceValue } from './units';
 import type { ActiveRun, AppData, RunEntry, Stopwatch } from '../types';
 import { stopwatchMs, stopwatchState, type StopwatchState } from './session';
 import { setRun } from './sleep';
@@ -79,7 +81,7 @@ export function formatRunTime(minutes: number): string {
   const sec = Math.round(minutes * 60);
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return s === 0 ? `${m} мин` : `${m} мин ${s} с`;
+  return s === 0 ? t('duration.min', { m }) : t('duration.minSec', { m, s });
 }
 
 // Темп, мин/mi; без дистанции — нет темпа.
@@ -87,8 +89,8 @@ export function paceMinPerMi(minutes: number, distanceMi?: number): number | und
   return distanceMi != null && distanceMi > 0 && minutes > 0 ? minutes / distanceMi : undefined;
 }
 
-// «9:30 мин/mi»
-export const formatPace = (pace: number) => `${formatClock(pace)} мин/mi`;
+// Темп хранится в мин/mi: «9:30 мин/mi» / «5:54 мин/km».
+export const formatPace = (pace: number) => `${formatClock(paceValue(pace))} ${t('unit.pacePer', { u: distanceUnit() })}`;
 
 // ---- Импорт / восстановление ----
 

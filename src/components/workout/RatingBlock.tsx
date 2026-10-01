@@ -1,24 +1,26 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
-import { RATING_LABEL } from '../../logic/format';
+import { ratingLabel } from '../../logic/format';
 import { colors } from '../../theme';
 import type { Rating } from '../../types';
+import { useT } from '../../i18n/useT';
 
-const RATINGS = (Object.keys(RATING_LABEL) as Rating[]).map((value) => ({ value, label: RATING_LABEL[value] }));
+const RATINGS: Rating[] = ['easy', 'normal', 'hard', 'fail'];
 
 type Props = { rating?: Rating; onChange: (rating: Rating) => void };
 
 // Оценка после рабочих подходов — только вручную (SPEC §3.5).
 export function RatingBlock({ rating, onChange }: Props) {
+  const t = useT();
   return (
     <View style={[styles.block, !rating && styles.pending]}>
-      <Text style={styles.title}>ОЦЕНКА УПРАЖНЕНИЯ</Text>
+      <Text style={styles.title}>{t('rating.title')}</Text>
       <View style={styles.row}>
         {RATINGS.map((r) => {
-          const active = rating === r.value;
+          const active = rating === r;
           return (
-            <Pressable key={r.value} onPress={() => onChange(r.value)} style={[styles.chip, active && styles.chipActive]}>
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{r.label}</Text>
+            <Pressable key={r} onPress={() => onChange(r)} style={[styles.chip, active && styles.chipActive]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{ratingLabel(r)}</Text>
             </Pressable>
           );
         })}

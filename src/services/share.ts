@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Alert } from 'react-native';
@@ -7,7 +8,7 @@ import type { Report } from '../logic/report';
 export async function shareReport(report: Report): Promise<void> {
   try {
     if (!(await Sharing.isAvailableAsync())) {
-      Alert.alert('«Поделиться» недоступно на этом устройстве');
+      Alert.alert(t('share.unavailable'));
       return;
     }
     const file = new File(Paths.cache, report.fileName);
@@ -17,9 +18,9 @@ export async function shareReport(report: Report): Promise<void> {
     await Sharing.shareAsync(file.uri, {
       mimeType: 'text/markdown',
       UTI: 'net.daringfireball.markdown',
-      dialogTitle: 'Отчёт по тренировке',
+      dialogTitle: t('share.reportTitle'),
     });
   } catch {
-    Alert.alert('Не удалось создать отчёт');
+    Alert.alert(t('share.reportFailed'));
   }
 }

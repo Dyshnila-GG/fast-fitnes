@@ -9,7 +9,7 @@ import { Ring } from '../../components/home/Ring';
 import { Tile, TILE_GAP, TileRow } from '../../components/home/Tile';
 import { Icon } from '../../components/Icon';
 import { useNow } from '../../hooks/useNow';
-import { dayTotals, dishOf, formatMealTime, formatNum, nextMeal, toggleEaten } from '../../logic/food';
+import { dayTotals, dishTitle, formatMealTime, formatNum, nextMeal, toggleEaten } from '../../logic/food';
 import {
   dayLabel,
   daysAgo,
@@ -29,9 +29,14 @@ import { formatSleepClock, sleepScore } from '../../logic/sleep';
 import { useStore } from '../../store/AppStore';
 import { colors } from '../../theme';
 import type { AppData } from '../../types';
+import { formatNumber } from '../../i18n';
+import { templateName } from '../../i18n/content';
+import { weightUnit, weightValue } from '../../logic/units';
+import { useT } from '../../i18n/useT';
 
 // «Главная» (SPEC_v3_1 §6): сетка плиток, крупные цифры, ввод — только в модалках.
 export default function HomeScreen() {
+  const t = useT();
   const { data } = useStore();
   const insets = useSafeAreaInsets();
   const now = new Date(useNow(60_000));
@@ -41,7 +46,7 @@ export default function HomeScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
-        <Text style={styles.h1}>Главная</Text>
+        <Text style={styles.h1}>{t('tabs.home')}</Text>
         <Pressable onPress={() => router.navigate('/profile')} hitSlop={8} style={({ pressed }) => [styles.round, pressed && styles.pressed]}>
           <Icon name="tune-variant" size={22} />
         </Pressable>
@@ -66,6 +71,7 @@ export default function HomeScreen() {
 type TileProps = { data: AppData; today: string };
 
 function WorkoutTile({ data, today }: TileProps) {
+  const t = useT();
   const { update } = useStore();
   const { workouts } = weekCounts(data, today);
   const next = nextWorkout(data, today);
@@ -80,7 +86,7 @@ function WorkoutTile({ data, today }: TileProps) {
         <Text style={styles.ringNum}>{workouts}</Text>
       </Ring>
       <Text style={styles.name} numberOfLines={2}>
-        {next.template.title.split(' — ')[1] ?? next.template.title}
+        {templateName(next.template)}
       </Text>
       <Text style={styles.muted}>{dayLabel(next.day, today)}</Text>
       {isToday && (
@@ -89,7 +95,7 @@ function WorkoutTile({ data, today }: TileProps) {
           onLongPress={openStart}
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryText}>Начать</Text>
+          <Text style={styles.primaryText}>{t('common.start')}</Text>
         </Pressable>
       )}
     </Tile>
@@ -97,22 +103,24 @@ function WorkoutTile({ data, today }: TileProps) {
 }
 
 function WeightTile({ data, today }: TileProps) {
+  const t = useT();
   const last = latestFirst(data.bodyWeight).find((e) => e.date <= today);
   return (
     <Tile onPress={() => router.push('/weight-add')}>
       <View style={styles.grow} />
       <Text style={styles.bigLine} numberOfLines={1} adjustsFontSizeToFit>
-        <Text style={styles.big}>{last ? last.value : '—'}</Text>
-        {last && <Text style={styles.unit}> lb</Text>}
+        <Text style={styles.big}>{last ? formatNumber(weightValue(last.value)) : '—'}</Text>
+        {last && <Text style={styles.unit}> {weightUnit()}</Text>}
       </Text>
-      <Text style={styles.name}>Вес тела</Text>
-      <Text style={styles.muted}>{last ? daysAgo(last.date, today) : 'Нет записей'}</Text>
+      <Text style={styles.name}>{t('home.weight')}</Text>
+      <Text style={styles.muted}>{last ? daysAgo(last.date, today) : t('common.noRecords')}</Text>
     </Tile>
   );
 }
 
 // «Активность»: календарь месяца, листается назад, но не дальше текущего месяца.
 function ActivityTile({ data, today }: TileProps) {
+  const t = useT();
   const counts = weekCounts(data, today);
   const current = monthOf(today);
   const [picked, setPicked] = useState(current);
@@ -123,25 +131,26 @@ function ActivityTile({ data, today }: TileProps) {
   const next = useCallback(() => setPicked((m) => (m < current ? shiftMonth(m, 1) : current)), [current]);
   return (
     <Tile onPress={() => router.push('/history')} style={styles.full}>
-      <Text style={styles.muted}>Активность</Text>
+      <Text style={styles.muted}>{t('home.activity')}</Text>
       <MonthCalendar grid={grid} canNext={month < current} onPrev={prev} onNext={next} />
       <Text style={styles.muted}>
-        Неделя: тренировок {counts.workouts} из {WORKOUTS_PER_WEEK} · пробежек {counts.runs} из {RUNS_PER_WEEK}
+        {t('home.week', { w: counts.workouts, wt: WORKOUTS_PER_WEEK, r: counts.runs, rt: RUNS_PER_WEEK })}
       </Text>
     </Tile>
   );
 }
 
 function MealTile({ data, today, nowMin }: TileProps & { nowMin: number }) {
+  const t = useT();
   const { update } = useStore();
   const meal = nextMeal(data.food, today, nowMin);
   if (!meal) {
     return (
       <Tile onPress={() => router.navigate('/food')}>
-        <Text style={styles.muted}>Следующая еда</Text>
+        <Text style={styles.muted}>{t('home.nextMeal')}</Text>
         <View style={styles.grow} />
         <Icon name="check" size={32} color={colors.muted} />
-        <Text style={styles.name}>Всё отмечено</Text>
+        <Text style={styles.name}>{t('home.allEaten')}</Text>
       </Tile>
     );
   }
@@ -150,40 +159,42 @@ function MealTile({ data, today, nowMin }: TileProps & { nowMin: number }) {
       <Text style={styles.muted}>{formatMealTime(meal.time)}</Text>
       <DishImage dish={meal.dishes[0]} style={styles.thumb} iconSize={24} />
       <Text style={styles.name} numberOfLines={2}>
-        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishOf(data.food, id)?.name).join(' + ') : 'Блюдо не выбрано'}
+        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishTitle(data.food, id)).join(' + ') : t('meal.noDish')}
       </Text>
-      <Text style={styles.muted}>~{formatNum(meal.kcal)} ккал</Text>
+      <Text style={styles.muted}>~{formatNum(meal.kcal)} {t('unit.kcal')}</Text>
       <Pressable
         onPress={() => update((d) => toggleEaten(d, today, meal.slot))}
         style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
       >
-        <Text style={styles.primaryText}>Съел</Text>
+        <Text style={styles.primaryText}>{t('meal.eat')}</Text>
       </Pressable>
     </Tile>
   );
 }
 
 function CaloriesTile({ data, today }: TileProps) {
-  const t = dayTotals(data.food, today);
+  const t = useT();
+  const totals = dayTotals(data.food, today);
   return (
     <Tile onPress={() => router.navigate('/food')}>
-      <Text style={styles.muted}>Калории</Text>
+      <Text style={styles.muted}>{t('home.calories')}</Text>
       <View style={styles.center}>
-        <Ring size={112} stroke={10} progress={t.kcalTotal > 0 ? t.kcalEaten / t.kcalTotal : 0}>
+        <Ring size={112} stroke={10} progress={totals.kcalTotal > 0 ? totals.kcalEaten / totals.kcalTotal : 0}>
           <Text style={styles.ringNum} numberOfLines={1} adjustsFontSizeToFit>
-            {formatNum(t.kcalEaten)}
+            {formatNum(totals.kcalEaten)}
           </Text>
         </Ring>
       </View>
-      <Text style={styles.muted}>/ {formatNum(t.kcalTotal)} ккал</Text>
+      <Text style={styles.muted}>/ {formatNum(totals.kcalTotal)} {t('unit.kcal')}</Text>
       <Text style={styles.muted}>
-        белок {t.proteinEaten} / {t.proteinTotal} г
+        {t('home.protein', { eaten: totals.proteinEaten, total: totals.proteinTotal })}
       </Text>
     </Tile>
   );
 }
 
 function SleepTile({ data, today }: TileProps) {
+  const t = useT();
   const e = data.sleep[today];
   return (
     <Tile onPress={() => router.push({ pathname: '/sleep-edit', params: { day: today } })}>
@@ -191,13 +202,14 @@ function SleepTile({ data, today }: TileProps) {
       <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
         {e ? formatSleepClock(e.minutes) : '—'}
       </Text>
-      <Text style={styles.name}>Сон</Text>
-      <Text style={styles.muted}>{e ? sleepScore(e) || 'без оценки' : 'Записать'}</Text>
+      <Text style={styles.name}>{t('reminder.sleep.title')}</Text>
+      <Text style={styles.muted}>{e ? sleepScore(e) || t('meta.noRating') : t('home.record')}</Text>
     </Tile>
   );
 }
 
 function RunTile({ data, today }: TileProps) {
+  const t = useT();
   const { runs } = weekCounts(data, today);
   const runDay = homeDayType(today) === 'run';
   const run = data.runs[today];
@@ -207,8 +219,8 @@ function RunTile({ data, today }: TileProps) {
       <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
         {runs}/{RUNS_PER_WEEK}
       </Text>
-      <Text style={styles.name}>Пробежки за неделю</Text>
-      {runDay && <Text style={styles.muted}>{run ? `Сегодня: ${formatRunTime(run.minutes)}` : 'Сегодня пробежка'}</Text>}
+      <Text style={styles.name}>{t('home.runsWeek')}</Text>
+      {runDay && <Text style={styles.muted}>{run ? t('home.runToday', { time: formatRunTime(run.minutes) }) : t('home.runDay')}</Text>}
     </Tile>
   );
 }

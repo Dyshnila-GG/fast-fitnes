@@ -1,44 +1,72 @@
+import { formatNumber, monthShort, t, tp, weekdayName, weekdayShort } from '../i18n';
 import type { Best, ExerciseLog, Feel, Plan, Rating, Session, SetLog, Variant } from '../types';
+import {
+  distanceUnit,
+  distanceValue,
+  feetInches,
+  getUnits,
+  heightCm,
+  lengthUnit,
+  lengthValue,
+  weightUnit,
+  weightValue,
+} from './units';
 
-export const WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-export const SHORT_WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+// Форматирование для показа: язык — из словаря (SPEC_v3_3 §D2), единицы — по настройке (§D3).
 
-const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+export const weekdayOf = (w: number) => weekdayName(w);
+export const shortWeekdayOf = (w: number) => weekdayShort(w);
 
+// «28 сен 2026» / «Sep 28, 2026»
 export function formatDate(iso: string): string {
   const d = new Date(iso);
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return t('date.full', { d: d.getDate(), m: monthShort(d.getMonth()), y: d.getFullYear() });
 }
 
 // «28 сен» — без года.
 export function formatShortDate(iso: string): string {
   const d = new Date(iso);
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return t('date.short', { d: d.getDate(), m: monthShort(d.getMonth()) });
 }
 
 // Локальный день «YYYY-MM-DD» → «28 сен».
 export function formatShortDay(day: string): string {
   const [, m, d] = day.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]}`;
+  return t('date.short', { d, m: monthShort(m - 1) });
 }
 
 // Локальный день «YYYY-MM-DD» → «28 сен 2026».
 export function formatDay(day: string): string {
   const [y, m, d] = day.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} ${y}`;
+  return t('date.full', { d, m: monthShort(m - 1), y });
 }
 
-// 21 год, 22 года, 25 лет
-export function formatAge(age: number): string {
-  const n = Math.abs(Math.trunc(age));
-  const word = n % 10 === 1 && n % 100 !== 11 ? 'год' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'года' : 'лет';
-  return `${age} ${word}`;
-}
+// 21 год, 22 года, 25 лет / 21 years
+export const formatAge = (age: number) => tp('years', Math.trunc(age));
 
-// Рост в дюймах → 6'0"
+// ---- Числа в единицах ----
+
+export const formatValue = (n: number, digits = 1) => formatNumber(n, digits);
+
+// 80 → «80 lb» / «36,5 kg»
+export const formatWeight = (lb: number) => `${formatNumber(weightValue(lb))} ${weightUnit()}`;
+// Тоннаж: «11 150 lb» / «5 057 kg».
+export const formatTonnage = (lb: number) => `${formatNumber(Math.round(weightValue(lb)), 0)} ${weightUnit()}`;
+// Только число веса в выбранных единицах (таблицы подходов).
+export const formatWeightNum = (lb: number) => formatNumber(weightValue(lb));
+
+// Рост: 72 → 6'0" / 183 cm
 export function formatHeight(inches: number): string {
-  return `${Math.floor(inches / 12)}'${Math.round((inches % 12) * 10) / 10}"`;
+  if (getUnits() === 'metric') return `${heightCm(inches)} ${t('unit.cm')}`;
+  const { ft, inch } = feetInches(inches);
+  return `${ft}'${inch}"`;
 }
+
+// Замер: «32 in» / «81,5 cm»
+export const formatLength = (inches: number) => `${formatNumber(lengthValue(inches))} ${lengthUnit()}`;
+
+// Дистанция: «2.5 mi» / «4,02 km»
+export const formatDistance = (mi: number) => `${formatNumber(distanceValue(mi), 2)} ${distanceUnit()}`;
 
 export function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -59,26 +87,28 @@ export function formatRest(sec: number): string {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
+const secText = (n: number) => `${n} ${t('unit.sec')}`;
+
 export function formatReps(variant: Variant, plan: Best): string {
-  if (variant.mode === 'time') return `${plan.seconds ?? 0} сек`;
+  if (variant.mode === 'time') return secText(plan.seconds ?? 0);
   const reps = plan.repsMax ? `${plan.reps}–${plan.repsMax}` : `${plan.reps ?? 0}`;
-  return variant.perLeg ? `${reps} на ногу` : reps;
+  return variant.perLeg ? t('reps.perLeg', { reps }) : reps;
 }
 
 // «4 × 8 · 75 lb», «3 × 8–10 · свой вес», «3 × 40 сек»
 export function formatPlan(variant: Variant, plan: Plan): string {
   const base = `${plan.sets} × ${formatReps(variant, plan)}`;
-  if (variant.mode === 'bodyweight') return `${base} · свой вес`;
-  if (variant.mode === 'weight') return plan.weight != null ? `${base} · ${plan.weight} lb` : base;
+  if (variant.mode === 'bodyweight') return `${base} · ${t('plan.bodyweight')}`;
+  if (variant.mode === 'weight') return plan.weight != null ? `${base} · ${formatWeight(plan.weight)}` : base;
   return base;
 }
 
 // Предпросмотр: «4 × 6–10 × 75 lb», «4 × 6–10 · свой вес», «3 × 40 сек».
 export function formatPreview(variant: Variant, best: Best, sets: number): string {
-  if (variant.mode === 'time') return `${sets} × ${best.seconds ?? 0} сек`;
-  if (variant.mode === 'bodyweight') return `${sets} × ${formatReps(variant, best)} · свой вес`;
+  if (variant.mode === 'time') return `${sets} × ${secText(best.seconds ?? 0)}`;
+  if (variant.mode === 'bodyweight') return `${sets} × ${formatReps(variant, best)} · ${t('plan.bodyweight')}`;
   const reps = formatReps(variant, variant.plan);
-  return best.weight != null ? `${sets} × ${reps} × ${best.weight} lb` : `${sets} × ${reps}`;
+  return best.weight != null ? `${sets} × ${reps} × ${formatWeight(best.weight)}` : `${sets} × ${reps}`;
 }
 
 // 372 000 мс → «6:12»
@@ -91,58 +121,54 @@ export function formatClock(ms: number): string {
 export function formatWarmup(s: Session): string | null {
   if (!s.warmup) return null;
   const { run, joints } = s.warmup;
-  const parts = [`Пробежка ${formatClock(run.ms)}`];
-  if (run.distanceMi != null) parts.push(`${run.distanceMi} mi`);
-  parts.push(`Суставная ${formatClock(joints.ms)}`);
+  const parts = [`${t('warmup.runShort')} ${formatClock(run.ms)}`];
+  if (run.distanceMi != null) parts.push(formatDistance(run.distanceMi));
+  parts.push(`${t('warmup.jointsShort')} ${formatClock(joints.ms)}`);
   return parts.join(' · ');
 }
 
-export const FEEL_LABEL: Record<Feel, string> = {
-  easy: 'Легко',
-  normal: 'Нормально',
-  hard: 'Тяжело',
-};
-
-export const RATING_LABEL: Record<Rating, string> = {
-  easy: 'Легко',
-  normal: 'Нормально',
-  hard: 'Еле-еле',
-  fail: 'Не смог',
-};
+export const feelLabel = (f: Feel) => t(`feel.${f}`);
+export const ratingLabel = (r: Rating) => t(`rating.${r}`);
 
 // Рекорд: «80 lb», «7–11», «45 сек».
 export function formatBest(variant: Variant, plan: Best): string {
-  if (variant.mode === 'weight') return plan.weight != null ? `${plan.weight} lb` : '—';
+  if (variant.mode === 'weight') return plan.weight != null ? formatWeight(plan.weight) : '—';
   return formatReps(variant, plan);
 }
 
 // Факт подхода: «80 × 8», «свой × 10», «свой +10 × 8», «45 сек».
 export function formatFact(set: SetLog, variant: Variant): string {
-  if (set.factSeconds != null) return `${set.factSeconds} сек`;
+  if (set.factSeconds != null) return secText(set.factSeconds);
   if (set.factReps == null) return '—';
-  if (variant.mode === 'bodyweight') return `${set.factWeight ? `свой +${set.factWeight}` : 'свой'} × ${set.factReps}`;
-  return `${set.factWeight ?? '—'} × ${set.factReps}`;
+  if (variant.mode === 'bodyweight') {
+    const own = set.factWeight ? `${t('set.own')} +${formatWeightNum(set.factWeight)}` : t('set.own');
+    return `${own} × ${set.factReps}`;
+  }
+  return `${set.factWeight != null ? formatWeightNum(set.factWeight) : '—'} × ${set.factReps}`;
 }
 
 // План подхода без номера: «40 × 12», «свой × 5».
 export function formatSetPlan(set: SetLog): string {
-  if (set.planSeconds != null) return `${set.planSeconds} сек`;
+  if (set.planSeconds != null) return secText(set.planSeconds);
   const reps = set.planRepsMax ? `${set.planReps}–${set.planRepsMax}` : `${set.planReps ?? '—'}`;
-  return `${set.planWeight ?? 'свой'} × ${reps}`;
+  return `${set.planWeight != null ? formatWeightNum(set.planWeight) : t('set.own')} × ${reps}`;
 }
 
 // Строка под упражнением: v2 — «Разминка: Легко · сегодня 80 lb · Оценка: Нормально», v1 — «Легко · сложность 7/10».
 export function exerciseMeta(log: ExerciseLog, variant: Variant): string {
   if (!log.record) {
-    return [log.rating ? RATING_LABEL[log.rating] : 'без оценки', log.difficulty != null ? `сложность ${log.difficulty}/10` : null]
+    return [
+      log.rating ? ratingLabel(log.rating) : t('meta.noRating'),
+      log.difficulty != null ? t('meta.difficulty', { n: log.difficulty }) : null,
+    ]
       .filter(Boolean)
       .join(' · ');
   }
   const parts: string[] = [];
   if (variant.mode !== 'time') {
-    const today = variant.mode === 'weight' && log.todayWeight != null ? ` · сегодня ${log.todayWeight} lb` : '';
-    parts.push(log.feel ? `Разминка: ${FEEL_LABEL[log.feel]}${today}` : 'нет ответа после разминки');
+    const today = variant.mode === 'weight' && log.todayWeight != null ? ` · ${t('meta.today', { w: formatWeight(log.todayWeight) })}` : '';
+    parts.push(log.feel ? `${t('meta.warmup', { feel: feelLabel(log.feel) })}${today}` : t('meta.noFeel'));
   }
-  parts.push(log.rating ? `Оценка: ${RATING_LABEL[log.rating]}` : 'без оценки');
+  parts.push(log.rating ? t('meta.rating', { rating: ratingLabel(log.rating) }) : t('meta.noRating'));
   return parts.join(' · ');
 }

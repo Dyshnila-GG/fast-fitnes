@@ -7,9 +7,12 @@ import { Button } from '../components/ui';
 import { deleteDish, dishOf } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
+import { dishName } from '../i18n/content';
+import { useT } from '../i18n/useT';
 
 // Экран блюда из «Меню»: как в приёме, плюс «Удалить».
 export default function DishScreen() {
+  const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, update } = useStore();
   const dish = id ? dishOf(data.food, id) : undefined;
@@ -25,9 +28,9 @@ export default function DishScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: dish.name }} />
+      <Stack.Screen options={{ title: dishName(dish) }} />
       <DishDetails id={id} from="dish" />
-      <Button title="Удалить блюдо" variant="danger" onPress={remove} />
+      <Button title={t('dish.delete')} variant="danger" onPress={remove} />
     </ScrollView>
   );
 }

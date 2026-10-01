@@ -1,9 +1,10 @@
 import { PROGRAM } from '../data/program';
 import type { AppData, Reminder, Reminders } from '../types';
-import { workoutName } from './report';
+import { t } from '../i18n';
+import { templateName } from '../i18n/content';
 import { toMinutes } from './time';
 
-// Локальные напоминания (SPEC_v3_3 §B4): сон — ежедневно, тренировка — в дни зала (Вт, Чт, Сб).
+// Локальные напоминания (SPEC_v3_3 §B4): сон — ежедневно, тренировка — в дни зала (Вт, Чт, Сб). Тексты — на языке приложения.
 
 export const GYM_TIME = '6:00';
 export const WAKE_TIME = '5:00';
@@ -16,15 +17,15 @@ const at = (time: string) => ({ hour: Math.floor(toMinutes(time) / 60), minute: 
 export function plannedReminders(r: Reminders): PlannedReminder[] {
   const out: PlannedReminder[] = [];
   if (r.sleep.on) {
-    out.push({ id: 'sleep', title: 'Сон', body: `Через 30 минут спать. Подъём в ${WAKE_TIME}`, ...at(r.sleep.time) });
+    out.push({ id: 'sleep', title: t('reminder.sleep.title'), body: t('reminder.sleep.body', { wake: WAKE_TIME }), ...at(r.sleep.time) });
   }
   if (r.workout.on) {
-    for (const t of PROGRAM) {
+    for (const tpl of PROGRAM) {
       out.push({
-        id: `workout-${t.id}`,
-        title: 'Тренировка',
-        body: `Сегодня: ${workoutName(t.title)}. Зал в ${GYM_TIME}`,
-        weekday: t.weekday + 1,
+        id: `workout-${tpl.id}`,
+        title: t('reminder.workout.title'),
+        body: t('reminder.workout.body', { name: templateName(tpl), gym: GYM_TIME }),
+        weekday: tpl.weekday + 1,
         ...at(r.workout.time),
       });
     }

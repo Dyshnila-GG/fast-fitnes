@@ -3,23 +3,26 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
 import type { CalendarDay, MonthGrid } from '../../logic/home';
 import { colors } from '../../theme';
+import { weekdayShort } from '../../i18n';
+import { useT } from '../../i18n/useT';
 
 const DOT = 10;
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const ORDER = [1, 2, 3, 4, 5, 6, 0]; // Пн … Вс
 
 type Props = { grid: MonthGrid; canNext: boolean; onPrev: () => void; onNext: () => void };
 
 // Календарь месяца (SPEC_v3_2 §2): столбцы пн–вс, строки — недели; каждый день — точка.
 export const MonthCalendar = memo(function MonthCalendar({ grid, canNext, onPrev, onNext }: Props) {
+  const t = useT();
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text style={styles.title}>{grid.title}</Text>
-        <Arrow label="‹" onPress={onPrev} accessibilityLabel="Предыдущий месяц" />
-        <Arrow label="›" onPress={onNext} disabled={!canNext} accessibilityLabel="Следующий месяц" />
+        <Arrow label="‹" onPress={onPrev} accessibilityLabel={t('calendar.prev')} />
+        <Arrow label="›" onPress={onNext} disabled={!canNext} accessibilityLabel={t('calendar.next')} />
       </View>
       <View style={styles.row}>
-        {WEEKDAYS.map((w) => (
+        {ORDER.map(weekdayShort).map((w) => (
           <Text key={w} style={styles.weekday}>
             {w}
           </Text>

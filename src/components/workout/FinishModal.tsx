@@ -2,6 +2,7 @@ import { Alert, Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
 import { colors, radius } from '../../theme';
 import { Button } from '../ui';
+import { useT } from '../../i18n/useT';
 
 type Props = {
   visible: boolean;
@@ -13,20 +14,21 @@ type Props = {
 
 // Окно «Завершить»: сводка пропусков, завершение или отмена без сохранения.
 export function FinishModal({ visible, skipped, onBack, onFinish, onDiscard }: Props) {
+  const t = useT();
   const discard = () =>
-    Alert.alert('Отменить без сохранения?', 'Все данные этой тренировки будут удалены.', [
-      { text: 'Нет', style: 'cancel' },
-      { text: 'Отменить тренировку', style: 'destructive', onPress: onDiscard },
+    Alert.alert(t('finish.discardTitle'), t('finish.discardText'), [
+      { text: t('common.no'), style: 'cancel' },
+      { text: t('finish.discardConfirm'), style: 'destructive', onPress: onDiscard },
     ]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onBack}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Завершить тренировку?</Text>
+          <Text style={styles.title}>{t('finish.title')}</Text>
           {skipped.length > 0 ? (
             <>
-              <Text style={styles.warning}>Пропущено — {skipped.length}:</Text>
+              <Text style={styles.warning}>{t('finish.skipped', { n: skipped.length })}</Text>
               <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
                 {skipped.map((s, i) => (
                   <Text key={i} style={styles.item}>
@@ -36,11 +38,11 @@ export function FinishModal({ visible, skipped, onBack, onFinish, onDiscard }: P
               </ScrollView>
             </>
           ) : (
-            <Text style={styles.ok}>Всё заполнено.</Text>
+            <Text style={styles.ok}>{t('finish.allFilled')}</Text>
           )}
-          <Button title="Вернуться" variant="secondary" onPress={onBack} />
-          <Button title={skipped.length > 0 ? 'Всё равно завершить' : 'Завершить'} onPress={onFinish} />
-          <Button title="Отменить без сохранения" variant="danger" onPress={discard} />
+          <Button title={t('finish.back')} variant="secondary" onPress={onBack} />
+          <Button title={t(skipped.length > 0 ? 'finish.anyway' : 'control.finish')} onPress={onFinish} />
+          <Button title={t('finish.discardTitleShort')} variant="danger" onPress={discard} />
         </View>
       </View>
     </Modal>

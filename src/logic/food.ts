@@ -15,11 +15,14 @@ import {
   type Product,
   type ProductSection,
 } from '../data/food';
+import { formatNumber, getLang, t } from '../i18n';
+import { dishIngredientTexts, dishName, dishSteps, pieceUnit, productName, sectionTitle } from '../i18n/content';
 import { defaultFood } from '../store/defaults';
 import type { AppData, FoodData } from '../types';
 import { dayDate, shiftDay, weekStart } from './dates';
 import { newId } from './id';
 import { isTime, toMinutes } from './time';
+import { convertTemps } from './units';
 
 // Приём пищи на конкретную дату (расписание дня недели + замены).
 export type Meal = {
@@ -35,6 +38,8 @@ export type Meal = {
 export function dayType(day: string): DayType {
   return GYM_WEEKDAYS.includes(dayDate(day).getDay()) ? 'gym' : 'rest';
 }
+
+export const dayTypeLabel = (type: DayType) => t(`dayType.${type}`);
 
 export const dishOf = (food: FoodData, id: DishId): Dish | undefined => food.dishes[id];
 export const productOf = (food: FoodData, id: string): Product | undefined => (isStdProduct(id) ? PRODUCTS[id] : food.products[id]);
@@ -135,38 +140,48 @@ export const swapDishes = (food: FoodData): Dish[] => Object.values(food.dishes)
 // «Мюсли — 80 г», «Бананы — 1 шт. (~120 г)»
 export function itemText(food: FoodData, item: DishItem): string {
   const p = productOf(food, item.product);
-  const name = p?.name ?? item.product;
+  const name = productName(item.product, p);
   const count = item.count ?? (p?.piece ? Math.round((item.g / p.piece.g) * 10) / 10 : undefined);
-  if (count != null && p?.piece) return `${name} — ${String(count).replace('.', ',')} ${p.piece.unit} (~${formatNum(item.g)} г)`;
-  if (count != null) return `${name} — ${String(count).replace('.', ',')} шт. (~${formatNum(item.g)} г)`;
-  return `${name} — ${formatNum(item.g)} г`;
+  const grams = `${formatNum(item.g)} ${t('unit.g')}`;
+  if (count != null) return `${name} — ${formatNumber(count)} ${p?.piece ? pieceUnit(p.piece.unit) : t('unit.pcs')} (~${grams})`;
+  return `${name} — ${grams}`;
 }
 
 export function ingredientLines(food: FoodData, dish: Dish): string[] {
-  return dish.ingredients ?? dish.items.map((i) => itemText(food, i));
+  return dishIngredientTexts(dish) ?? dish.items.map((i) => itemText(food, i));
 }
 
 // Строка салата у блюд «с салатом» (если салат есть в «Меню»).
 export function saladLine(food: FoodData): string | undefined {
   const salad = food.dishes[SALAD];
-  return salad ? `Салат: ${ingredientLines(food, salad).join(', ')}` : undefined;
+  return salad ? t('food.saladLine', { items: ingredientLines(food, salad).join(', ') }) : undefined;
 }
+
+// Название блюда для показа (стандартное — на языке приложения).
+export const dishTitle = (food: FoodData, id: DishId) => {
+  const d = food.dishes[id];
+  return d ? dishName(d) : '';
+};
 
 // ---- Рецепт блюда: свой текст по dishId, во всех приёмах и днях ----
 
 // Стандартный рецепт — шаги блюда (у блюд с салатом — и салат). У своего блюда без шагов — пусто.
 export function standardRecipe(food: FoodData, id: DishId): string {
   const d = food.dishes[id];
-  if (!d?.steps) return '';
-  const steps = d.steps.map((step, i) => `${i + 1}. ${step}`);
+  const own = d && dishSteps(d);
+  if (!own) return '';
+  const steps = own.map((step, i) => `${i + 1}. ${step}`);
   const salad = food.dishes[SALAD];
-  if (d.salad && salad?.steps) steps.push(`Салат: ${salad.steps.join(', ').toLowerCase()}`);
+  const saladSteps = salad && dishSteps(salad);
+  if (d.salad && saladSteps) steps.push(t('food.saladLine', { items: saladSteps.join(', ').toLowerCase() }));
   return steps.join('\n');
 }
 
-export function recipeOf(food: FoodData, dish: DishId): { text: string; custom: boolean } {
+// display — для показа: температура духовки в выбранных единицах (°F ↔ °C). Для правки — как хранится.
+export function recipeOf(food: FoodData, dish: DishId, display = true): { text: string; custom: boolean } {
   const own = food.recipes[dish];
-  return own ? { text: own, custom: true } : { text: standardRecipe(food, dish), custom: false };
+  const r = own ? { text: own, custom: true } : { text: standardRecipe(food, dish), custom: false };
+  return display ? { ...r, text: convertTemps(r.text) } : r;
 }
 
 // Пустой текст или null — вернуть стандартный.
@@ -250,7 +265,7 @@ export function addProduct(d: AppData, name: string, section: ProductSection, ne
 export function knownProducts(food: FoodData): { id: string; product: Product }[] {
   return [...Object.entries(PRODUCTS), ...Object.entries(food.products)]
     .map(([id, product]) => ({ id, product }))
-    .sort((a, b) => a.product.name.localeCompare(b.product.name, 'ru'));
+    .sort((a, b) => productName(a.id, a.product).localeCompare(productName(b.id, b.product), getLang()));
 }
 
 // ---- «Настройки» — расписание по дням (SPEC_v3_3 §C3) ----
@@ -298,10 +313,10 @@ export type ProductGroup = { section: ProductSection; title: string; rows: Produ
 // «Рис (сухой) — 880 г», «Бананы — 8 шт. (~960 г)»
 export function formatProductRow(food: FoodData, product: string, g: number): ProductRow {
   const p = productOf(food, product);
-  const name = p?.name ?? product;
-  const grams = `${formatNum(g)} г`;
+  const name = productName(product, p);
+  const grams = `${formatNum(g)} ${t('unit.g')}`;
   const count = p?.piece ? Math.round((g / p.piece.g) * 10) / 10 : undefined;
-  const amount = p?.piece ? `${String(count).replace('.', ',')} ${p.piece.unit} (~${grams})` : grams;
+  const amount = p?.piece && count != null ? `${formatNumber(count)} ${pieceUnit(p.piece.unit)} (~${grams})` : grams;
   return { product, name, g, count, amount, text: `${name} — ${amount}` };
 }
 
@@ -324,13 +339,13 @@ export function productTotals(food: FoodData, from: string, days = 7): Record<st
 // Сгруппировано по разделам (порядок разделов фиксирован), внутри — по алфавиту; пустых разделов нет.
 export function weekProducts(food: FoodData, day: string): ProductGroup[] {
   const totals = productTotals(food, weekStart(day));
-  return PRODUCT_SECTIONS.map(({ id, title }) => ({
+  return PRODUCT_SECTIONS.map(({ id }) => ({
     section: id,
-    title,
+    title: sectionTitle(id),
     rows: Object.keys(totals)
       .filter((p) => (productOf(food, p)?.section ?? 'other') === id)
       .map((p) => formatProductRow(food, p, totals[p]))
-      .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+      .sort((a, b) => a.name.localeCompare(b.name, getLang())),
   })).filter((g) => g.rows.length > 0);
 }
 
@@ -371,8 +386,8 @@ export function foodStats(food: FoodData, today: string, days = 7): FoodStats {
   return { eaten: s.eaten, total: s.total, avgKcal: Math.round(s.kcal / days), avgProtein: Math.round(s.protein / days) };
 }
 
-// 3320 → «3 320»
-export const formatNum = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+// 3320 → «3 320» (ru/uk) / «3,320» (en)
+export const formatNum = (n: number) => formatNumber(Math.round(n), 0);
 
 // ---- Импорт и перенос старых данных: берём только корректные записи ----
 

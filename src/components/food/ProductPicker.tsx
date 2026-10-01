@@ -8,17 +8,21 @@ import { colors, gap, radius } from '../../theme';
 import { Icon } from '../Icon';
 import { Text, TextInput } from '../Text';
 import { Button } from '../ui';
+import { productName, sectionTitle } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
 // Выбор продукта для строки ингредиента: из известных (поиск) или новый с разделом.
 export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; onPick: (id: string) => void; onClose: () => void }) {
+  const t = useT();
   const { data, update } = useStore();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [section, setSection] = useState<ProductSection | null>(null);
   const all = useMemo(() => knownProducts(data.food), [data.food]);
   const q = query.trim().toLowerCase();
-  const list = q ? all.filter((p) => p.product.name.toLowerCase().includes(q)) : all;
-  const exact = all.some((p) => p.product.name.toLowerCase() === q);
+  const nameOf = (p: (typeof all)[number]) => productName(p.id, p.product);
+  const list = q ? all.filter((p) => nameOf(p).toLowerCase().includes(q)) : all;
+  const exact = all.some((p) => nameOf(p).toLowerCase() === q);
 
   const close = () => {
     setQuery('');
@@ -40,8 +44,8 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <View style={[styles.sheet, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.head}>
-          <Text style={styles.title}>Продукт</Text>
-          <Pressable onPress={close} hitSlop={10} accessibilityRole="button" accessibilityLabel="Закрыть" style={styles.close}>
+          <Text style={styles.title}>{t('product.title')}</Text>
+          <Pressable onPress={close} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close')} style={styles.close}>
             <Icon name="close" size={22} />
           </Pressable>
         </View>
@@ -50,7 +54,7 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Найти или ввести новый"
+            placeholder={t('product.search')}
             placeholderTextColor={colors.muted}
             style={styles.input}
             autoCorrect={false}
@@ -58,8 +62,8 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
         </View>
         {q && !exact ? (
           <View style={styles.newCard}>
-            <Text style={styles.newTitle}>Новый продукт «{query.trim()}»</Text>
-            <Text style={styles.muted}>Раздел для списка «Продукты на неделю»:</Text>
+            <Text style={styles.newTitle}>{t('product.new', { name: query.trim() })}</Text>
+            <Text style={styles.muted}>{t('product.section')}</Text>
             <View style={styles.chips}>
               {PRODUCT_SECTIONS.map((s) => (
                 <Pressable
@@ -68,11 +72,11 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
                   style={[styles.chip, section === s.id && styles.chipActive]}
                   accessibilityState={{ selected: section === s.id }}
                 >
-                  <Text style={[styles.chipText, section === s.id && styles.chipTextActive]}>{s.title}</Text>
+                  <Text style={[styles.chipText, section === s.id && styles.chipTextActive]}>{sectionTitle(s.id)}</Text>
                 </Pressable>
               ))}
             </View>
-            <Button title="Добавить продукт" onPress={create} disabled={!section} />
+            <Button title={t('product.add')} onPress={create} disabled={!section} />
           </View>
         ) : null}
         <FlatList
@@ -82,8 +86,8 @@ export function ProductPicker({ visible, onPick, onClose }: { visible: boolean; 
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <Pressable onPress={() => pick(item.id)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-              <Text style={styles.name}>{item.product.name}</Text>
-              <Text style={styles.muted}>{PRODUCT_SECTIONS.find((s) => s.id === item.product.section)?.title}</Text>
+              <Text style={styles.name}>{nameOf(item)}</Text>
+              <Text style={styles.muted}>{sectionTitle(item.product.section)}</Text>
             </Pressable>
           )}
         />

@@ -6,14 +6,19 @@ import { getBest } from '../../logic/records';
 import { chosenKind, sessionExercises, workSetCount } from '../../logic/session';
 import { colors } from '../../theme';
 import type { AppData, Length, TemplateId } from '../../types';
+import { t } from '../../i18n';
+import { variantName } from '../../i18n/content';
+import { useT } from '../../i18n/useT';
 
-export const LENGTHS: { value: Length; label: string }[] = [
-  { value: 'long', label: 'Длинная' },
-  { value: 'short', label: 'Короткая' },
+// Варианты длины — функция: подписи на текущем языке.
+export const lengths = (): { value: Length; label: string }[] => [
+  { value: 'long', label: t('length.long') },
+  { value: 'short', label: t('length.short') },
 ];
 
 // Предпросмотр: упражнения выбранной версии — вариант, подходы × диапазон × рекорд.
 export function WorkoutPreview({ data, id, length }: { data: AppData; id: TemplateId; length: Length }) {
+  useT();
   return (
     <View>
       {sessionExercises(id, length).map((e, i) => {
@@ -21,7 +26,7 @@ export function WorkoutPreview({ data, id, length }: { data: AppData; id: Templa
         return (
           <View key={e.id} style={styles.row}>
             <Text style={styles.name}>
-              {i + 1}. {variant.name}
+              {i + 1}. {variantName(variant)}
             </Text>
             <Text style={styles.plan}>{formatPreview(variant, getBest(data, variant), workSetCount(variant, length))}</Text>
           </View>

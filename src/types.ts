@@ -86,6 +86,7 @@ export type SessionWarmup = {
 
 export type Session = {
   id: string;
+  units?: Units; // единицы на момент тренировки: в них считались округления и рост рекорда
   templateId: TemplateId;
   length: Length;
   startedAt: string;
@@ -140,6 +141,11 @@ export type BackupState = { dirUri?: string; lastAt?: string; error?: string };
 export type Reminder = { on: boolean; time: string };
 export type Reminders = { sleep: Reminder; workout: Reminder; asked?: boolean };
 
+// Настройки приложения (SPEC_v3_3 §D1): язык и единицы показа/ввода. Хранение — всегда lb, дюймы, мили.
+export type Lang = 'ru' | 'en' | 'uk';
+export type Units = 'imperial' | 'metric';
+export type Settings = { lang: Lang; units: Units };
+
 export type AppData = {
   version: 2;
   profile: Profile;
@@ -159,4 +165,5 @@ export type AppData = {
   trash: TrashItem[];
   backup: BackupState;
   reminders: Reminders;
+  settings: Settings;
 };

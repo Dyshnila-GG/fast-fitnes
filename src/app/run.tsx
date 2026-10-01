@@ -24,11 +24,13 @@ import {
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import type { ActiveRun } from '../types';
+import { distanceToMi, distanceUnit } from '../logic/units';
+import { useT } from '../i18n/useT';
 
-const STATE_LABEL = { idle: 'Готов к старту', running: 'Идёт', paused: 'Пауза', done: 'Завершено' } as const;
 
 // Активная пробежка (SPEC_v3_2 §4): вкладки скрыты, выйти можно только через итог (см. _layout).
 export default function RunScreen() {
+  const t = useT();
   useKeepAwake();
   const { data, update } = useStore();
   const insets = useSafeAreaInsets();
@@ -37,7 +39,7 @@ export default function RunScreen() {
   // Системная кнопка «назад» на Android заблокирована.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (Platform.OS === 'android') ToastAndroid.show('Завершите пробежку', ToastAndroid.SHORT);
+      if (Platform.OS === 'android') ToastAndroid.show(t('run.backBlocked'), ToastAndroid.SHORT);
       return true;
     });
     return () => sub.remove();
@@ -53,7 +55,7 @@ export default function RunScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <Text style={styles.kicker}>Пробежка</Text>
+        <Text style={styles.kicker}>{t('report.run')}</Text>
         {done ? (
           <RunSummary
             run={run}
@@ -81,12 +83,13 @@ type StopwatchProps = { run: ActiveRun; onStart: () => void; onPause: () => void
 
 // Большой секундомер; кнопки по состояниям, как у секундомеров разминки.
 function RunStopwatch({ run, onStart, onPause, onFinish, onReset }: StopwatchProps) {
+  const t = useT();
   const state = runState(run);
   const now = useNow(state === 'running' ? 250 : 60_000);
   const reset = () =>
-    Alert.alert('Сбросить?', 'Время будет обнулено.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Сбросить', style: 'destructive', onPress: onReset },
+    Alert.alert(t('warmup.resetTitle'), t('warmup.resetJoints'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('warmup.reset'), style: 'destructive', onPress: onReset },
     ]);
 
   return (
@@ -97,17 +100,17 @@ function RunStopwatch({ run, onStart, onPause, onFinish, onReset }: StopwatchPro
         </Text>
         <View style={styles.stateRow}>
           <View style={[styles.stateDot, state === 'running' && styles.stateDotOn]} />
-          <Text style={styles.stateText}>{STATE_LABEL[state]}</Text>
+          <Text style={styles.stateText}>{t(`run.state.${state}`)}</Text>
         </View>
       </View>
       <View style={styles.actions}>
-        {state === 'idle' && <Button title="Старт" onPress={onStart} style={styles.big} />}
-        {state === 'running' && <Button title="Пауза" variant="secondary" onPress={onPause} style={styles.big} />}
-        {state === 'paused' && <Button title="Продолжить" onPress={onStart} style={styles.big} />}
+        {state === 'idle' && <Button title={t('warmup.start')} onPress={onStart} style={styles.big} />}
+        {state === 'running' && <Button title={t('control.pause')} variant="secondary" onPress={onPause} style={styles.big} />}
+        {state === 'paused' && <Button title={t('control.resume')} onPress={onStart} style={styles.big} />}
         {state !== 'idle' && (
           <View style={styles.row}>
-            <Button title="Завершить" variant="secondary" onPress={onFinish} style={styles.flex} />
-            <Button title="Сброс" variant="danger" onPress={reset} style={styles.flex} />
+            <Button title={t('control.finish')} variant="secondary" onPress={onFinish} style={styles.flex} />
+            <Button title={t('warmup.resetShort')} variant="danger" onPress={reset} style={styles.flex} />
           </View>
         )}
       </View>
@@ -124,44 +127,47 @@ type SummaryProps = {
 
 // Итог: время из секундомера (можно поправить), дистанция — необязательно, темп считается сам.
 function RunSummary({ run, hasRunToday, onSave, onCancel }: SummaryProps) {
+  const t = useT();
   const [time, setTime] = useState(() => formatDuration(runMs(run)));
   const [distance, setDistance] = useState('');
   const minutes = parseRunTime(time);
-  const mi = parseNum(distance);
+  // Дистанция вводится в выбранных единицах, хранится в милях.
+  const entered = parseNum(distance);
+  const mi = entered != null && entered > 0 ? distanceToMi(entered) : entered;
   const pace = useMemo(() => (minutes != null ? paceMinPerMi(minutes, mi) : undefined), [minutes, mi]);
 
   const save = () => {
-    if (minutes == null) return Alert.alert('Введите время пробежки', 'Например, 23:20');
-    if (distance.trim() !== '' && (mi == null || mi <= 0)) return Alert.alert('Дистанция должна быть больше нуля');
+    if (minutes == null) return Alert.alert(t('run.enterTime'), t('run.timeExample'));
+    if (distance.trim() !== '' && (mi == null || mi <= 0)) return Alert.alert(t('run.distancePositive'));
     if (!hasRunToday) return onSave(minutes, mi);
-    Alert.alert('Заменить пробежку за сегодня?', 'Сегодня пробежка уже отмечена — она будет заменена этой.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Заменить', style: 'destructive', onPress: () => onSave(minutes, mi) },
+    Alert.alert(t('run.replaceTitle'), t('run.replaceText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.replace'), style: 'destructive', onPress: () => onSave(minutes, mi) },
     ]);
   };
 
   const cancel = () =>
-    Alert.alert('Отменить без сохранения?', 'Пробежка не будет записана.', [
-      { text: 'Назад', style: 'cancel' },
-      { text: 'Не сохранять', style: 'destructive', onPress: onCancel },
+    Alert.alert(t('finish.discardTitle'), t('run.discardText'), [
+      { text: t('common.back'), style: 'cancel' },
+      { text: t('run.dontSave'), style: 'destructive', onPress: onCancel },
     ]);
 
   return (
     <View style={styles.summary}>
-      <Text style={styles.title}>Итог пробежки</Text>
-      <Text style={styles.muted}>Сегодня, {formatDay(dayKey())}</Text>
+      <Text style={styles.title}>{t('run.summary')}</Text>
+      <Text style={styles.muted}>{t('run.todayDate', { date: formatDay(dayKey()) })}</Text>
       <Card style={styles.card}>
         <View style={styles.row}>
-          <NumInput label="Время, мм:сс" value={time} onChangeText={setTime} keyboardType="numbers-and-punctuation" />
-          <NumInput label="Дистанция, mi" value={distance} onChangeText={setDistance} placeholder="—" />
+          <NumInput label={t('run.timeMmSs')} value={time} onChangeText={setTime} keyboardType="numbers-and-punctuation" />
+          <NumInput label={t('run.distanceLabel', { u: distanceUnit() })} value={distance} onChangeText={setDistance} placeholder="—" />
         </View>
         <View style={styles.paceRow}>
-          <Text style={styles.paceLabel}>Темп</Text>
-          <Text style={[styles.pace, pace == null && styles.paceEmpty]}>{pace != null ? formatPace(pace) : 'укажите дистанцию'}</Text>
+          <Text style={styles.paceLabel}>{t('report.pace')}</Text>
+          <Text style={[styles.pace, pace == null && styles.paceEmpty]}>{pace != null ? formatPace(pace) : t('run.enterDistance')}</Text>
         </View>
       </Card>
-      <Button title="Сохранить" onPress={save} />
-      <Button title="Отменить без сохранения" variant="danger" onPress={cancel} />
+      <Button title={t('common.save')} onPress={save} />
+      <Button title={t('finish.discardTitleShort')} variant="danger" onPress={cancel} />
     </View>
   );
 }

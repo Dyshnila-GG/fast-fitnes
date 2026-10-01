@@ -47,7 +47,7 @@ describe('отчёт по тренировке (SPEC_v3_3 §B2)', () => {
     expect(md).toContain('- Версия: длинная');
     expect(md).toContain('- Длительность: 1:05:00');
     expect(md).toContain('- Общая пауза: 00:00');
-    expect(md).toContain('- Разминка: Пробежка 6:12 · 0.52 mi · Суставная 3:05');
+    expect(md).toContain('- Разминка: Пробежка 6:12 · 0,52 mi · Суставная 3:05');
     expect(md).toMatch(/- Тоннаж: [\d\s]+ lb/);
   });
 

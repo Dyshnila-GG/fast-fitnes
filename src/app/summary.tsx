@@ -11,9 +11,14 @@ import { tonnage } from '../logic/tonnage';
 import { elapsedMs } from '../logic/session';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
+import { formatNumber } from '../i18n';
+import { templateTitle } from '../i18n/content';
+import { weightUnit, weightValue } from '../logic/units';
+import { useT } from '../i18n/useT';
 
 // Итог тренировки (SPEC §3.7). Открыт, пока не нажата «Готово» (см. _layout).
 export default function SummaryScreen() {
+  const t = useT();
   const { data, update } = useStore();
   const insets = useSafeAreaInsets();
   const session = data.sessions.find((s) => s.id === data.summaryId);
@@ -22,7 +27,7 @@ export default function SummaryScreen() {
   if (!session) {
     return (
       <View style={[styles.screen, styles.content, { paddingTop: insets.top + 16 }]}>
-        <Button title="Готово" onPress={close} />
+        <Button title={t('common.done')} onPress={close} />
       </View>
     );
   }
@@ -39,28 +44,28 @@ export default function SummaryScreen() {
         keyboardDismissMode="on-drag"
       >
         <View>
-          <Text style={styles.title}>Тренировка завершена</Text>
+          <Text style={styles.title}>{t('summary.title')}</Text>
           <Text style={styles.sub}>
-            {getTemplate(session.templateId).title} · {session.length === 'short' ? 'короткая' : 'длинная'} ·{' '}
+            {templateTitle(getTemplate(session.templateId))} · {t(session.length === 'short' ? 'length.shortLower' : 'length.longLower')} ·{' '}
             {formatDate(session.finishedAt ?? session.startedAt)}
           </Text>
         </View>
 
         <Card style={styles.stats}>
-          <Stat label="Длительность" value={formatDuration(elapsedMs(session, end))} />
-          <Stat label="Общая пауза" value={formatDuration(session.pausedMs)} />
-          <Stat label="Тоннаж, lb" value={String(Math.round(tonnage(session)))} />
+          <Stat label={t('report.duration')} value={formatDuration(elapsedMs(session, end))} />
+          <Stat label={t('report.pause')} value={formatDuration(session.pausedMs)} />
+          <Stat label={t('summary.tonnage', { u: weightUnit() })} value={formatNumber(Math.round(weightValue(tonnage(session))), 0)} />
         </Card>
 
         {warmup && (
           <Card style={styles.card}>
-            <Text style={styles.section}>РАЗМИНКА</Text>
+            <Text style={styles.section}>{t('summary.warmup')}</Text>
             <Text style={styles.warmup}>{warmup}</Text>
           </Card>
         )}
 
         <Card style={styles.card}>
-          <Text style={styles.section}>УПРАЖНЕНИЯ</Text>
+          <Text style={styles.section}>{t('summary.exercises')}</Text>
           {session.exercises.map((log) => (
             <ExerciseResult key={log.exerciseId} log={log} />
           ))}
@@ -68,9 +73,9 @@ export default function SummaryScreen() {
 
         {!isLegacyTemplate(session.templateId) && (
           <Card style={styles.card}>
-            <Text style={styles.section}>РЕКОРДЫ</Text>
+            <Text style={styles.section}>{t('summary.records')}</Text>
             <Text style={styles.hint}>
-              Растут, если во всех рабочих подходах — верх диапазона с весом не ниже рекорда и оценка «Легко» или «Нормально». Можно поправить вручную.
+              {t('summary.recordsHint')}
             </Text>
             {session.exercises.map((log) => (
               <RecordRow
@@ -83,7 +88,7 @@ export default function SummaryScreen() {
           </Card>
         )}
 
-        <Button title="Готово" onPress={close} />
+        <Button title={t('common.done')} onPress={close} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

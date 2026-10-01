@@ -3,14 +3,17 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
 import { Text } from '../../components/Text';
 import { colors, gap } from '../../theme';
+import type { Key } from '../../i18n';
+import { useT } from '../../i18n/useT';
 
-const KINDS: { title: string; icon: IconName; href: Href }[] = [
-  { title: 'Силовые', icon: 'dumbbell', href: '/strength' },
-  { title: 'Пробежка', icon: 'run', href: '/run-start' },
+const KINDS: { title: Key; icon: IconName; href: Href }[] = [
+  { title: 'nav.strength', icon: 'dumbbell', href: '/strength' },
+  { title: 'nav.run_start', icon: 'run', href: '/run-start' },
 ];
 
 // «Тренировки» (SPEC_v3_3 §A5): только две большие плитки; списки — на следующем уровне.
 export default function WorkoutsScreen() {
+  const t = useT();
   return (
     <View style={styles.content}>
       {KINDS.map((k) => (
@@ -18,14 +21,14 @@ export default function WorkoutsScreen() {
           key={k.title}
           onPress={() => router.push(k.href)}
           accessibilityRole="button"
-          accessibilityLabel={k.title}
+          accessibilityLabel={t(k.title)}
           style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
         >
           <View style={styles.badge}>
             <Icon name={k.icon} size={40} />
           </View>
           <View style={styles.bottom}>
-            <Text style={styles.title}>{k.title}</Text>
+            <Text style={styles.title}>{t(k.title)}</Text>
             <Icon name="arrow-right" size={28} color={colors.muted} />
           </View>
         </Pressable>
