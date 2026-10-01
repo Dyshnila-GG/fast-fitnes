@@ -3,16 +3,17 @@ import { defaultData } from '../../store/defaults';
 import type { AppData, TemplateId } from '../../types';
 import { setSwap, toggleEaten } from '../food';
 import {
-  activityGrid,
   dayLabel,
   daysAgo,
   finishedOn,
   homeDayType,
   lastSession,
+  monthGrid,
+  monthTitle,
+  shiftMonth,
   nextWorkout,
   recordGains,
   templateForDay,
-  volume7,
   weekCounts,
   weekStart,
   weightTrend,
@@ -223,33 +224,31 @@ describe('плитки «Главной»', () => {
     expect(daysAgo('2026-09-09', WED)).toBe('21 день назад');
   });
 
-  it('объём за 7 дней — сумма тоннажа тренировок, старше 7 дней не входят', () => {
-    let d = withWorkout(defaultData(), 'tue', TUE);
-    d = withWorkout(d, 'thu', '2026-09-17'); // 13 дней назад
-    const s = d.sessions.find((x) => x.templateId === 'tue')!;
-    const withFacts = {
-      ...d,
-      sessions: d.sessions.map((x) =>
-        x.id === s.id
-          ? { ...x, exercises: x.exercises.map((l, i) => (i === 0 ? { ...l, sets: [{ type: 'work' as const, factWeight: 100, factReps: 10, done: true }] } : { ...l, sets: [] })) }
-          : { ...x, exercises: x.exercises.map((l) => ({ ...l, sets: [{ type: 'work' as const, factWeight: 50, factReps: 10, done: true }] })) },
-      ),
-    };
-    expect(volume7(withFacts, WED)).toBe(1000);
-    expect(volume7(withFacts, '2026-10-07')).toBe(0);
-  });
-
-  it('точечный календарь: 13 недель пн–вс, тренировки и пробежки отмечены, будущие дни скрыты', () => {
+  it('календарь месяца: недели пн–вс, тренировка или пробежка — активный день, сегодня и будущие', () => {
     let d = withWorkout(defaultData(), 'tue', TUE);
     d = setRun(d, WED, { minutes: 30 });
-    const grid = activityGrid(d, WED);
-    expect(grid.columns).toHaveLength(13);
-    expect(grid.columns.every((c) => c.length === 7)).toBe(true);
-    const last = grid.columns[12];
-    expect(last[0].day).toBe(MON);
-    expect(last[1]).toMatchObject({ day: TUE, workout: true });
-    expect(last[2]).toMatchObject({ day: WED, run: true, future: false });
-    expect(last[3].future).toBe(true);
-    expect(grid.months.filter(Boolean)).toEqual(['июл', 'авг', 'сен', 'окт']);
+    const grid = monthGrid(d, '2026-09', THU);
+    expect(grid.title).toBe('Сентябрь 2026');
+    expect(grid.weeks).toHaveLength(5);
+    expect(grid.weeks.every((w) => w.length === 7)).toBe(true);
+    expect(grid.weeks[0][0]).toBeNull(); // 1 сентября 2026 — вторник
+    expect(grid.weeks[0][1]).toMatchObject({ day: '2026-09-01', date: 1 });
+    const cells = grid.weeks.flat().filter((c) => c != null);
+    expect(cells).toHaveLength(30);
+    const byDay = Object.fromEntries(cells.map((c) => [c!.day, c!]));
+    expect(byDay[TUE]).toMatchObject({ active: true, today: false, future: false });
+    expect(byDay[WED]).toMatchObject({ active: true });
+    expect(byDay[MON].active).toBe(false);
+
+    const oct = monthGrid(d, '2026-10', THU);
+    const first = oct.weeks[0].filter((c) => c != null);
+    expect(oct.weeks[0][3]).toMatchObject({ day: THU, today: true, future: false, active: false });
+    expect(first.find((c) => c!.day === FRI)?.future).toBe(true);
+  });
+
+  it('переключение месяцев и заголовок', () => {
+    expect(shiftMonth('2026-01', -1)).toBe('2025-12');
+    expect(shiftMonth('2026-12', 1)).toBe('2027-01');
+    expect(monthTitle('2026-10')).toBe('Октябрь 2026');
   });
 });

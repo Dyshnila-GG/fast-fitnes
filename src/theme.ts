@@ -5,6 +5,7 @@ export const colors = {
   button: '#2C2C2E',
   text: '#FFFFFF',
   muted: '#8E8E93',
+  dim: '#3A3A3C', // неактивная точка календаря
   highlight: '#8E8E93', // тонкая светлая рамка — незаполненное
   danger: '#FF453A', // только цвет текста
   primary: '#FFFFFF', // главная кнопка — белая

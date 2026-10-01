@@ -4,7 +4,6 @@ import { dayDate, dayKey, shiftDay } from './dates';
 import { formatBest } from './format';
 import { finishedSessions } from './metrics';
 import { getBest, startBest } from './records';
-import { tonnage } from './tonnage';
 
 // Тип дня на «Главной»: Вт/Чт/Сб — зал, Ср/Пт — пробежка, Пн/Вс — отдых.
 export type HomeDayType = 'gym' | 'run' | 'rest';
@@ -117,42 +116,48 @@ export function daysAgo(day: string, today: string): string {
   return `${n} ${plural(n, 'день', 'дня', 'дней')} назад`;
 }
 
-// Суммарный тоннаж тренировок за последние 7 дней (включая сегодня), lb.
-export function volume7(data: AppData, today: string): number {
-  const from = shiftDay(today, -6);
-  const total = finishedSessions(data.sessions)
-    .filter((s) => {
-      const day = sessionDay(s);
-      return day >= from && day <= today;
-    })
-    .reduce((n, s) => n + tonnage(s), 0);
-  return Math.round(total);
+// ---- Календарь активности: месяц, строки — недели пн–вс ----
+
+// Месяц — «YYYY-MM».
+export type Month = string;
+export type CalendarDay = { day: string; date: number; active: boolean; today: boolean; future: boolean };
+export type MonthGrid = { month: Month; title: string; weeks: (CalendarDay | null)[][] };
+
+const MONTHS_FULL = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+export const monthOf = (day: string): Month => day.slice(0, 7);
+
+export function shiftMonth(month: Month, delta: number): Month {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Точечный календарь активности: столбцы — недели (пн–вс), последние `weeks` недель до текущей.
-export type ActivityDay = { day: string; workout: boolean; run: boolean; future: boolean };
-export type ActivityGrid = { columns: ActivityDay[][]; months: (string | null)[] };
+// «Октябрь 2026»
+export function monthTitle(month: Month): string {
+  const [y, m] = month.split('-').map(Number);
+  return `${MONTHS_FULL[m - 1]} ${y}`;
+}
 
-const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+// Дни с завершённой тренировкой или пробежкой.
+export function activeDays(data: Pick<AppData, 'sessions' | 'runs'>): Set<string> {
+  const days = new Set(finishedSessions(data.sessions).map(sessionDay));
+  for (const day of Object.keys(data.runs)) days.add(day);
+  return days;
+}
 
-export function activityGrid(data: AppData, today: string, weeks = 13): ActivityGrid {
-  const workoutDays = new Set(finishedSessions(data.sessions).map(sessionDay));
-  const start = shiftDay(weekStart(today), -7 * (weeks - 1));
-  const columns: ActivityDay[][] = [];
-  const months: (string | null)[] = [];
-  let lastMonth = -1;
-  for (let w = 0; w < weeks; w++) {
-    const col: ActivityDay[] = [];
-    for (let i = 0; i < 7; i++) {
-      const day = shiftDay(start, w * 7 + i);
-      col.push({ day, workout: workoutDays.has(day), run: data.runs[day] != null, future: day > today });
-    }
-    // Подпись месяца — над неделей, где он начинается (и над первой неделей).
-    const first = col.find((c) => c.day.endsWith('-01'));
-    const label = first ? dayDate(first.day).getMonth() : w === 0 ? dayDate(col[0].day).getMonth() : -1;
-    months.push(label >= 0 && label !== lastMonth ? MONTHS_SHORT[label] : null);
-    if (label >= 0) lastMonth = label;
-    columns.push(col);
+export function monthGrid(data: Pick<AppData, 'sessions' | 'runs'>, month: Month, today: string): MonthGrid {
+  const active = activeDays(data);
+  const first = `${month}-01`;
+  const days = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
+  const lead = (dayDate(first).getDay() + 6) % 7; // пустые ячейки до 1-го числа (неделя с пн)
+  const cells: (CalendarDay | null)[] = Array.from({ length: lead }, () => null);
+  for (let i = 0; i < days; i++) {
+    const day = shiftDay(first, i);
+    cells.push({ day, date: i + 1, active: active.has(day), today: day === today, future: day > today });
   }
-  return { columns, months };
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks: (CalendarDay | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return { month, title: monthTitle(month), weeks };
 }

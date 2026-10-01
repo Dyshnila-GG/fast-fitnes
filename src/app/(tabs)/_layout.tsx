@@ -1,15 +1,26 @@
 import { router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
-import { Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '../../components/Icon';
 import { colors } from '../../theme';
 
-// Активная вкладка — белая иконка, неактивная — серая; подписей нет (SPEC_v3_1 §5).
+const BAR_HEIGHT = 72;
+const ICON = 28;
+const DOT = 4;
+
+// Активная вкладка — белая иконка и белая точка под ней, неактивная — серая; подписей нет (SPEC_v3_2 §1).
 const icon =
   (name: IconName) =>
-  ({ focused }: { focused: boolean }) => <Icon name={name} size={26} color={focused ? colors.text : colors.muted} />;
+  ({ focused }: { focused: boolean }) => (
+    <View style={styles.icon}>
+      <Icon name={name} size={ICON} color={focused ? colors.text : colors.muted} />
+      <View style={[styles.dot, focused && styles.dotActive]} />
+    </View>
+  );
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -19,7 +30,15 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.bg },
         headerTintColor: colors.text,
         headerTitleStyle: { color: colors.text, fontWeight: '700' },
-        tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.border },
+        tabBarStyle: {
+          height: BAR_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.bg,
+          borderTopColor: colors.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
+        },
+        tabBarItemStyle: { minHeight: 56, justifyContent: 'center' },
+        tabBarIconStyle: { width: 56, height: 56 },
         headerShadowVisible: false,
         sceneStyle: { backgroundColor: colors.bg },
       }}
@@ -42,3 +61,9 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  icon: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', gap: 5 },
+  dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
+  dotActive: { backgroundColor: colors.text },
+});

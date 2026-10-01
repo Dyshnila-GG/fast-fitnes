@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DishImage } from '../../components/food/DishImage';
-import { DotCalendar } from '../../components/home/DotCalendar';
+import { MonthCalendar } from '../../components/home/MonthCalendar';
 import { Ring } from '../../components/home/Ring';
 import { Tile, TILE_GAP, TileRow } from '../../components/home/Tile';
 import { Icon } from '../../components/Icon';
@@ -10,13 +11,14 @@ import { DISHES } from '../../data/food';
 import { useNow } from '../../hooks/useNow';
 import { dayTotals, formatMealTime, formatNum, nextMeal, toggleEaten } from '../../logic/food';
 import {
-  activityGrid,
   dayLabel,
   daysAgo,
   homeDayType,
+  monthGrid,
+  monthOf,
   nextWorkout,
   RUNS_PER_WEEK,
-  volume7,
+  shiftMonth,
   weekCounts,
   WORKOUTS_PER_WEEK,
 } from '../../logic/home';
@@ -56,7 +58,6 @@ export default function HomeScreen() {
         <SleepTile data={data} today={today} />
         <RunTile data={data} today={today} />
       </TileRow>
-      <VolumeTile data={data} today={today} />
     </ScrollView>
   );
 }
@@ -109,12 +110,20 @@ function WeightTile({ data, today }: TileProps) {
   );
 }
 
+// «Активность»: календарь месяца, листается назад, но не дальше текущего месяца.
 function ActivityTile({ data, today }: TileProps) {
   const counts = weekCounts(data, today);
+  const current = monthOf(today);
+  const [picked, setPicked] = useState(current);
+  const month = picked > current ? current : picked;
+  const { sessions, runs } = data;
+  const grid = useMemo(() => monthGrid({ sessions, runs }, month, today), [sessions, runs, month, today]);
+  const prev = useCallback(() => setPicked((m) => shiftMonth(m > current ? current : m, -1)), [current]);
+  const next = useCallback(() => setPicked((m) => (m < current ? shiftMonth(m, 1) : current)), [current]);
   return (
     <Tile onPress={() => router.push('/history')} style={styles.full}>
-      <Text style={styles.name}>Активность</Text>
-      <DotCalendar grid={activityGrid(data, today)} />
+      <Text style={styles.muted}>Активность</Text>
+      <MonthCalendar grid={grid} canNext={month < current} onPrev={prev} onNext={next} />
       <Text style={styles.muted}>
         Неделя: тренировок {counts.workouts} из {WORKOUTS_PER_WEEK} · пробежек {counts.runs} из {RUNS_PER_WEEK}
       </Text>
@@ -203,21 +212,6 @@ function RunTile({ data, today }: TileProps) {
   );
 }
 
-function VolumeTile({ data, today }: TileProps) {
-  return (
-    <Tile onPress={() => router.push('/history')} style={[styles.full, styles.volume]}>
-      <View style={styles.grow}>
-        <Text style={styles.name}>Объём</Text>
-        <Text style={styles.muted}>Последние 7 дней</Text>
-      </View>
-      <Text style={styles.bigLine} numberOfLines={1} adjustsFontSizeToFit>
-        <Text style={styles.big}>{formatNum(volume7(data, today))}</Text>
-        <Text style={styles.unit}> lb</Text>
-      </Text>
-    </Tile>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingBottom: 32, gap: TILE_GAP, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
@@ -227,7 +221,6 @@ const styles = StyleSheet.create({
   full: { flex: 0 },
   grow: { flex: 1 },
   center: { alignItems: 'center', paddingVertical: 4 },
-  volume: { flexDirection: 'row', alignItems: 'center' },
   ringNum: { fontSize: 30, fontWeight: '700', color: colors.text },
   bigLine: { color: colors.text },
   big: { fontSize: 48, fontWeight: '700', color: colors.text, letterSpacing: -1 },
