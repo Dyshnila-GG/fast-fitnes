@@ -9,6 +9,12 @@ export function formatDate(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// «28 сен» — без года.
+export function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
 // Локальный день «YYYY-MM-DD» → «28 сен 2026».
 export function formatDay(day: string): string {
   const [y, m, d] = day.split('-').map(Number);

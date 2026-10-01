@@ -1,7 +1,7 @@
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
 import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, Variant } from '../types';
 import { newId } from './id';
-import { getBest, grow, needsFeel, warmupSets, workSet } from './records';
+import { getBest, grow, needsFeel, startBest, warmupSets, workSet } from './records';
 
 export const SHORT_EXERCISES = 4;
 export const SHORT_MAX_WORK_SETS = 3;
@@ -279,6 +279,51 @@ export function applyRecords(d: AppData, s: Session): AppData {
     records[variant.name] = grow(best, log, variant);
   }
   return { ...d, records };
+}
+
+// ---- Удаление тренировки (SPEC_v3_2 §3) ----
+
+const BEST_FIELDS = ['weight', 'reps', 'repsMax', 'seconds'] as const;
+const sameBest = (a: Best, b: Best) => BEST_FIELDS.every((f) => a[f] === b[f]);
+
+// Рекорд «было» и «стало» по логу упражнения.
+function recordStep(log: ExerciseLog): { variant: Variant; before: Best; after: Best } {
+  const variant = variantOf(log);
+  const before = log.record ?? startBest(variant);
+  return { variant, before, after: grow(before, log, variant) };
+}
+
+// Удаляет тренировку из истории (а значит из статистики, календаря и счётчиков недели).
+// Рекорд откатывается к «было», только если эта тренировка его подняла и после неё он не менялся:
+// текущий рекорд равен её «стало» и ни одна более поздняя тренировка этот вариант не подняла.
+export function deleteSession(d: AppData, id: string): AppData {
+  const s = d.sessions.find((x) => x.id === id);
+  if (!s) return d;
+  const records = { ...d.records };
+  if (s.finishedAt && !isLegacyTemplate(s.templateId)) {
+    const later = d.sessions.filter(
+      (x) => x.id !== id && x.finishedAt && x.finishedAt > s.finishedAt! && !isLegacyTemplate(x.templateId),
+    );
+    for (const log of s.exercises) {
+      const { variant, before, after } = recordStep(log);
+      if (sameBest(before, after)) continue;
+      if (!sameBest(getBest({ ...d, records }, variant), after)) continue;
+      const changedLater = later.some((x) =>
+        x.exercises.some((l) => {
+          if (variantOf(l).name !== variant.name) return false;
+          const step = recordStep(l);
+          return !sameBest(step.before, step.after);
+        }),
+      );
+      if (!changedLater) records[variant.name] = { ...records[variant.name], ...before };
+    }
+  }
+  return {
+    ...d,
+    records,
+    sessions: d.sessions.filter((x) => x.id !== id),
+    summaryId: d.summaryId === id ? null : d.summaryId,
+  };
 }
 
 // «Прошлая заметка» — последняя непустая заметка к этому варианту.

@@ -5,6 +5,7 @@ import type { AppData, Feel, Rating, Session, TemplateId } from '../../types';
 import { applyFeel } from '../records';
 import {
   buildSession,
+  deleteSession,
   finishActive,
   finishStopwatch,
   lastNote,
@@ -225,5 +226,56 @@ describe('завершение тренировки', () => {
     expect(lastNote([s1, s2], 'Жим лёжа в Смите')).toBe('локти уже');
     expect(lastNote([s1, s2], 'Жим лёжа в Смите', s1.id)).toBeUndefined();
     expect(lastNote([s1, s2], 'Жим гантелей на наклонной')).toBeUndefined();
+  });
+});
+
+describe('удаление тренировки (SPEC_v3_2 §3)', () => {
+  const SMITH = 'Жим лёжа в Смите';
+  // Тренировка Вт, завершённая через `days` дней от T0; feel 'hard' — рекорд не растёт.
+  function workout(d: AppData, days: number, feel: Feel = 'normal'): AppData {
+    const start = at(days * 24 * 60);
+    const s = completeAll(buildSession(d, 'tue', 'long', start), feel);
+    return { ...finishActive({ ...d, activeSession: s }, new Date(start.getTime() + 60 * 60_000)), summaryId: null };
+  }
+
+  it('тренировка убирается из истории; итог закрывается', () => {
+    const d = { ...workout(defaultData(), 0), summaryId: null };
+    const id = d.sessions[0].id;
+    const out = deleteSession({ ...d, summaryId: id }, id);
+    expect(out.sessions).toHaveLength(0);
+    expect(out.summaryId).toBeNull();
+    expect(deleteSession(out, 'нет такой')).toBe(out);
+  });
+
+  it('рекорд, поднятый этой тренировкой и не менявшийся после, откатывается к «было»', () => {
+    const d = workout(defaultData(), 0);
+    expect(d.records[SMITH]).toEqual({ weight: 80 });
+    const out = deleteSession(d, d.sessions[0].id);
+    expect(out.records[SMITH]).toEqual({ weight: 75 });
+  });
+
+  it('после была тренировка без изменения рекорда — откат есть', () => {
+    let d = workout(defaultData(), 0);
+    d = workout(d, 7, 'hard');
+    expect(d.records[SMITH]).toEqual({ weight: 80 });
+    const out = deleteSession(d, d.sessions[0].id);
+    expect(out.records[SMITH]).toEqual({ weight: 75 });
+    expect(out.sessions).toHaveLength(1);
+  });
+
+  it('после была тренировка, изменившая рекорд, — рекорд не трогаем', () => {
+    let d = workout(defaultData(), 0);
+    d = workout(d, 7);
+    expect(d.records[SMITH]).toEqual({ weight: 85 });
+    const out = deleteSession(d, d.sessions[0].id);
+    expect(out.records[SMITH]).toEqual({ weight: 85 });
+  });
+
+  it('рекорд изменён вручную после тренировки — не трогаем; тренировка без роста — не трогаем', () => {
+    const d = workout(defaultData(), 0);
+    const manual = { ...d, records: { ...d.records, [SMITH]: { weight: 90 } } };
+    expect(deleteSession(manual, d.sessions[0].id).records[SMITH]).toEqual({ weight: 90 });
+    const hard = workout(defaultData(), 0, 'hard');
+    expect(deleteSession(hard, hard.sessions[0].id).records).toEqual(hard.records);
   });
 });

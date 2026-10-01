@@ -1,10 +1,12 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { confirmDeleteSession } from '../../components/history/confirmDelete';
+import { Icon } from '../../components/Icon';
 import { Card } from '../../components/ui';
 import { getExercise, getTemplate, getVariant } from '../../data/program';
 import { exerciseMeta, formatDate, formatDuration, formatFact, formatSetPlan, formatTime, formatWarmup } from '../../logic/format';
 import { tonnage } from '../../logic/tonnage';
-import { elapsedMs, WARMUP_ITEMS } from '../../logic/session';
+import { deleteSession, elapsedMs, WARMUP_ITEMS } from '../../logic/session';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import type { ExerciseLog } from '../../types';
@@ -12,7 +14,7 @@ import type { ExerciseLog } from '../../types';
 // Детали тренировки: все подходы план/факт, ответ после разминки (v1 — оценки), заметки.
 export default function SessionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useStore();
+  const { data, update } = useStore();
   const s = data.sessions.find((x) => x.id === id);
 
   if (!s || !s.finishedAt) {
@@ -45,6 +47,19 @@ export default function SessionDetailsScreen() {
       {s.exercises.map((log) => (
         <ExerciseDetails key={log.exerciseId} log={log} />
       ))}
+      <Pressable
+        onPress={() =>
+          confirmDeleteSession(s, () => {
+            router.back();
+            update((d) => deleteSession(d, s.id));
+          })
+        }
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+      >
+        <Icon name="trash-can-outline" size={20} color={colors.danger} />
+        <Text style={styles.deleteText}>Удалить</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -79,7 +94,7 @@ function ExerciseDetails({ log }: { log: ExerciseLog }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16, gap },
+  content: { padding: 16, gap, paddingBottom: 40 },
   card: { gap: 6 },
   title: { fontSize: 17, fontWeight: '700', color: colors.text },
   name: { fontSize: 20, fontWeight: '800', color: colors.text },
@@ -94,4 +109,16 @@ const styles = StyleSheet.create({
   fact: { fontWeight: '700' },
   meta: { fontSize: 14, color: colors.text, marginTop: 4 },
   comment: { fontSize: 14, color: colors.muted, fontStyle: 'italic' },
+  delete: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: colors.button,
+    marginTop: 4,
+  },
+  deleteText: { fontSize: 17, fontWeight: '600', color: colors.danger },
+  pressed: { opacity: 0.7 },
 });
