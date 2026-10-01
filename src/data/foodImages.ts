@@ -1,9 +1,9 @@
-import type { DishId } from './food';
+import type { StdDishId } from './food';
 
 // Фото блюд по ссылке (как GIF упражнений): загружаются и кэшируются на телефоне.
 // Фото — Flickr, лицензии Creative Commons (авторство — в README). Пустая строка — заглушка.
 // Своё фото пользователя важнее ссылки.
-export const FOOD_IMAGES: Record<Exclude<DishId, 'salad'>, string> = {
+export const FOOD_IMAGES: Record<Exclude<StdDishId, 'salad'>, string> = {
   granola: 'https://live.staticflickr.com/3553/3566981596_ed20c44717_b.jpg',
   shake: 'https://live.staticflickr.com/8073/8420414521_924123a1ff_b.jpg',
   yogurt: 'https://live.staticflickr.com/5256/5537372504_df5b0d436d_b.jpg',

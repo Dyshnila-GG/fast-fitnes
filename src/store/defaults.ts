@@ -1,7 +1,8 @@
+import { defaultDishes, defaultSchedule } from '../data/food';
 import type { AppData, FoodData, Reminders } from '../types';
 
 export function defaultFood(): FoodData {
-  return { eaten: {}, swaps: {}, photos: {}, recipes: {}, times: { gym: {}, rest: {} } };
+  return { eaten: {}, swaps: {}, photos: {}, recipes: {}, dishes: defaultDishes(), products: {}, schedule: defaultSchedule() };
 }
 
 export function defaultReminders(): Reminders {

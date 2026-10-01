@@ -4,8 +4,8 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } f
 import { Text, TextInput } from '../components/Text';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/ui';
-import { DISHES, type DishId } from '../data/food';
-import { recipeOf, setRecipe } from '../logic/food';
+import type { DishId } from '../data/food';
+import { dishOf, recipeOf, setRecipe } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, radius } from '../theme';
 
@@ -14,7 +14,8 @@ export default function RecipeScreen() {
   const { dish } = useLocalSearchParams<{ dish: DishId }>();
   const { data, update } = useStore();
   const [draft, setDraft] = useState<string | null>(null); // null — просмотр
-  if (!dish || !(dish in DISHES)) return null;
+  const d = dish ? dishOf(data.food, dish) : undefined;
+  if (!dish || !d) return null;
   const recipe = recipeOf(data.food, dish);
 
   const save = () => {
@@ -29,19 +30,19 @@ export default function RecipeScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Stack.Screen options={{ title: DISHES[dish].name }} />
+      <Stack.Screen options={{ title: d.name }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {draft == null ? (
           <>
             <View style={styles.tag}>
               <Icon name={recipe.custom ? 'pencil-outline' : 'book-open-variant-outline'} size={16} color={colors.muted} />
-              <Text style={styles.tagText}>{recipe.custom ? 'Свой рецепт' : 'Стандартный рецепт'}</Text>
+              <Text style={styles.tagText}>{recipe.custom || !d.steps ? 'Свой рецепт' : 'Стандартный рецепт'}</Text>
             </View>
-            <Text style={styles.text} selectable>
-              {recipe.text}
+            <Text style={[styles.text, !recipe.text && styles.hint]} selectable>
+              {recipe.text || 'Рецепт не указан'}
             </Text>
-            <Button title="Изменить" onPress={() => setDraft(recipe.text)} />
-            {recipe.custom && <Button title="Вернуть стандартный" variant="danger" onPress={restore} />}
+            <Button title={recipe.text ? 'Изменить' : 'Добавить рецепт'} onPress={() => setDraft(recipe.text)} />
+            {recipe.custom && d.steps && <Button title="Вернуть стандартный" variant="danger" onPress={restore} />}
           </>
         ) : (
           <>

@@ -60,7 +60,11 @@ function RootStack() {
         <Stack.Screen name="reminders" options={{ title: 'Напоминания' }} />
         <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
         <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
-        <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />
+        <Stack.Screen name="food-settings" options={{ title: 'Расписание еды' }} />
+        <Stack.Screen name="menu" options={{ title: 'Меню' }} />
+        <Stack.Screen name="dish" options={{ title: 'Блюдо' }} />
+        <Stack.Screen name="dish-edit" options={{ title: 'Блюдо' }} />
+        <Stack.Screen name="slot-dishes" options={{ title: 'Блюда приёма' }} />
         <Stack.Screen name="products" options={{ title: 'Продукты на неделю' }} />
         <Stack.Screen name="recipe" options={{ title: 'Рецепт' }} />
         <Stack.Screen name="sleep" options={{ title: 'Сон' }} />

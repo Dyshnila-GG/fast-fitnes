@@ -1,4 +1,4 @@
-import type { DishId } from './data/food';
+import type { Dish, DishId, MealSlot, Product } from './data/food';
 
 export type Kind = 'machine' | 'free';
 export type Mode = 'weight' | 'bodyweight' | 'time';
@@ -111,13 +111,15 @@ export type MeasurementEntry = {
   calf?: number;
 };
 
-// Еда (SPEC_v3): ключи — локальный день «YYYY-MM-DD» и id приёма из SCHEDULE.
+// Еда (SPEC_v3_3 §C): ключи — локальный день «YYYY-MM-DD» и id приёма из расписания дня.
 export type FoodData = {
   eaten: Record<string, string[]>; // отмеченные приёмы
   swaps: Record<string, Record<string, DishId>>; // замена блюда приёма на эту дату
-  photos: Partial<Record<DishId, string>>; // своё фото блюда — путь к файлу
-  recipes: Partial<Record<DishId, string>>; // свой рецепт блюда — свободный текст
-  times: { gym: Record<string, string>; rest: Record<string, string> }; // своё время приёмов «HH:MM»
+  photos: Record<DishId, string>; // своё фото блюда — путь к файлу
+  recipes: Record<DishId, string>; // свой рецепт блюда — свободный текст
+  dishes: Record<DishId, Dish>; // меню: стандартные и свои блюда
+  products: Record<string, Product>; // свои продукты (стандартные — в справочнике)
+  schedule: MealSlot[][]; // расписание по дням недели, индекс 0 = Вс
 };
 
 // Сон (SPEC_v3_1 §7, под Garmin): ключ — день пробуждения «YYYY-MM-DD».

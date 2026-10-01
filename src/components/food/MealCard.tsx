@@ -1,27 +1,30 @@
 import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../Text';
-import { DISHES, type DishId } from '../../data/food';
-import { formatMealTime, formatNum, type Meal } from '../../logic/food';
+import type { DishId } from '../../data/food';
+import { dishOf, formatMealTime, formatNum, ingredientLines, saladLine, type Meal } from '../../logic/food';
+import { useStore } from '../../store/AppStore';
+import type { FoodData } from '../../types';
 import { colors, gap, radius } from '../../theme';
 import { Button } from '../ui';
 import { DishImage } from './DishImage';
 import { Icon } from '../Icon';
 
-export const saladLine = () => `Салат: ${DISHES.salad.ingredients.join(', ')}`;
-
-// Ингредиенты блюда списком; у блюд с рисом салат — отдельной строкой.
-export function Ingredients({ dish, withTitle }: { dish: keyof typeof DISHES; withTitle?: boolean }) {
-  const d = DISHES[dish];
+// Ингредиенты блюда списком; у блюд «с салатом» салат — отдельной строкой.
+export function Ingredients({ dish, withTitle }: { dish: DishId; withTitle?: boolean }) {
+  const { food } = useStore().data;
+  const d = dishOf(food, dish);
+  if (!d) return null;
+  const salad = d.salad ? saladLine(food) : undefined;
   return (
     <View style={styles.ingredients}>
       {withTitle && <Text style={styles.groupTitle}>{d.name}</Text>}
-      {d.ingredients.map((i) => (
-        <Text key={i} style={styles.ingredient}>
+      {ingredientLines(food, d).map((i, n) => (
+        <Text key={`${n}-${i}`} style={styles.ingredient}>
           • {i}
         </Text>
       ))}
-      {d.salad && <Text style={styles.ingredient}>• {saladLine()}</Text>}
+      {salad && <Text style={styles.ingredient}>• {salad}</Text>}
     </View>
   );
 }
@@ -36,16 +39,18 @@ type Props = {
 };
 
 // Рецепт блюда; у приёма из двух блюд — сначала выбор блюда.
-export function openRecipe(dishes: DishId[]) {
+export function openRecipe(food: FoodData, dishes: DishId[]) {
   const go = (dish: DishId) => router.push({ pathname: '/recipe', params: { dish } });
+  if (dishes.length === 0) return;
   if (dishes.length === 1) return go(dishes[0]);
   Alert.alert('Рецепт', 'Какое блюдо?', [
-    ...dishes.map((id) => ({ text: DISHES[id].name, onPress: () => go(id) })),
+    ...dishes.map((id) => ({ text: dishOf(food, id)?.name ?? id, onPress: () => go(id) })),
     { text: 'Отмена', style: 'cancel' as const },
   ]);
 }
 
 export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
+  const { food } = useStore().data;
   const open = () => router.push({ pathname: '/meal', params: { day, slot: meal.slot } });
   const multi = meal.dishes.length > 1;
   return (
@@ -62,12 +67,16 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
           </View>
         )}
       </View>
-      <View style={styles.images}>
-        {meal.dishes.map((id) => (
-          <DishImage key={id} dish={id} style={styles.image} iconSize={multi ? 32 : 40} />
-        ))}
-      </View>
-      <Text style={styles.name}>{meal.dishes.map((id) => DISHES[id].name).join(' + ')}</Text>
+      {meal.dishes.length > 0 && (
+        <View style={styles.images}>
+          {meal.dishes.map((id) => (
+            <DishImage key={id} dish={id} style={styles.image} iconSize={multi ? 32 : 40} />
+          ))}
+        </View>
+      )}
+      <Text style={[styles.name, meal.dishes.length === 0 && styles.empty]}>
+        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishOf(food, id)?.name).join(' + ') : 'Блюдо не выбрано'}
+      </Text>
       {meal.swapped && <Text style={styles.muted}>Замена на этот день</Text>}
       {!compact && meal.dishes.map((id) => <Ingredients key={id} dish={id} withTitle={multi} />)}
       <View style={styles.numbers}>
@@ -89,7 +98,7 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
               onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
               style={[styles.flex, styles.tight]}
             />
-            <Button title="Рецепт" variant="secondary" onPress={() => openRecipe(meal.dishes)} style={[styles.flex, styles.tight]} />
+            <Button title="Рецепт" variant="secondary" onPress={() => openRecipe(food, meal.dishes)} style={[styles.flex, styles.tight]} />
           </>
         )}
       </View>
@@ -110,6 +119,7 @@ const styles = StyleSheet.create({
   images: { flexDirection: 'row', gap: 8 },
   image: { flex: 1 },
   name: { fontSize: 20, fontWeight: '700', color: colors.text },
+  empty: { color: colors.muted },
   muted: { fontSize: 13, color: colors.muted },
   ingredients: { gap: 2 },
   groupTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginTop: 2 },

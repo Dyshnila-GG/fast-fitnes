@@ -3,9 +3,9 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 import { DishImage } from '../components/food/DishImage';
 import { Button } from '../components/ui';
-import { DISHES, SWAP_DISHES, type DishId } from '../data/food';
+import type { DishId } from '../data/food';
 import { formatDay } from '../logic/format';
-import { formatNum, mealsFor, setSwap } from '../logic/food';
+import { formatNum, mealsFor, setSwap, swapDishes } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap, radius } from '../theme';
 import { Icon } from '../components/Icon';
@@ -28,8 +28,8 @@ export default function FoodSwapScreen() {
         {meal.title} · {formatDay(day)}. Замена действует только на этот день.
       </Text>
       {meal.swapped && <Button title="Вернуть блюдо по расписанию" variant="secondary" onPress={() => choose(null)} />}
-      {SWAP_DISHES.map((id) => {
-        const dish = DISHES[id];
+      {swapDishes(data.food).map((dish) => {
+        const id = dish.id;
         const current = meal.dishes.length === 1 && meal.dishes[0] === id;
         return (
           <Pressable

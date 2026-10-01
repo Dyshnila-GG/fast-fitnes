@@ -1,4 +1,5 @@
-// Питание (SPEC_v3 §3–6, SPEC_v3_2 §5): блюда, расписание «День зала» / «Обычный день», продукты.
+// Питание: стартовые данные (SPEC_v3_3 §C). Блюда, свои продукты и расписание хранятся в данных пользователя
+// (FoodData) — здесь только стандартное меню, справочник продуктов и стартовое расписание по дням.
 // Все количества — в граммах; штучное — количество + граммы в скобках.
 
 // ---- Продукты для списка «Продукты на неделю» ----
@@ -47,13 +48,14 @@ const PRODUCT_LIST = {
   olive_oil: { name: 'Оливковое масло', section: 'other' },
 } satisfies Record<string, Product>;
 
-export type ProductId = keyof typeof PRODUCT_LIST;
-export const PRODUCTS: Record<ProductId, Product> = PRODUCT_LIST;
+export type StdProductId = keyof typeof PRODUCT_LIST;
+export const PRODUCTS: Record<StdProductId, Product> = PRODUCT_LIST;
+export const isStdProduct = (id: string): id is StdProductId => id in PRODUCTS;
 
-// Ингредиент для подсчёта продуктов: граммы на порцию (соль не считается).
-export type DishItem = { product: ProductId; g: number };
+// Ингредиент: продукт (стандартный или свой) и граммы на порцию (соль не считается); count — штук, необязательно.
+export type DishItem = { product: string; g: number; count?: number };
 
-export type DishId =
+export type StdDishId =
   | 'granola'
   | 'shake'
   | 'yogurt'
@@ -65,19 +67,24 @@ export type DishId =
   | 'salmon_rice'
   | 'salad';
 
+export type DishId = string;
+
 export type Dish = {
   id: DishId;
   name: string;
-  ingredients: string[];
-  items: DishItem[]; // те же ингредиенты в граммах — для «Продуктов на неделю»
+  ingredients?: string[]; // текст ингредиентов стандартного блюда; у своих и изменённых — строится из items
+  items: DishItem[]; // ингредиенты в граммах — для «Продуктов на неделю»
   kcal: number;
   protein: number;
-  steps: string[];
-  salad?: boolean; // рядом салат: ингредиенты салата — отдельной строкой «Салат: …»
+  steps?: string[]; // стандартный рецепт
+  salad?: boolean; // подавать с салатом: ингредиенты салата — отдельной строкой «Салат: …»
   note?: string; // подсказка на экране блюда
+  std?: StdDishId; // стандартное блюдо без изменений (для перевода стандартного контента)
 };
 
-export const DISHES: Record<DishId, Dish> = {
+export const SALAD: StdDishId = 'salad';
+
+const STANDARD_DISHES: Record<StdDishId, Omit<Dish, 'std'>> = {
   granola: {
     id: 'granola',
     name: 'Мюсли с молоком и бананом',
@@ -204,46 +211,48 @@ export const DISHES: Record<DishId, Dish> = {
   },
 };
 
-// Блюда для «Заменить»: салат — часть блюд с рисом, отдельно не предлагается.
-export const SWAP_DISHES: DishId[] = [
-  'granola',
-  'shake',
-  'yogurt',
-  'eggs',
-  'bacon_sandwich',
-  'meat_sandwich',
-  'pasta',
-  'chicken_rice',
-  'salmon_rice',
-];
+export const isStdDish = (id: string): id is StdDishId => id in STANDARD_DISHES;
+export const STD_DISH_IDS = Object.keys(STANDARD_DISHES) as StdDishId[];
+
+// Стандартные блюда — копия (данные пользователя меняются независимо).
+export function standardDish(id: StdDishId): Dish {
+  return JSON.parse(JSON.stringify({ ...STANDARD_DISHES[id], std: id }));
+}
+
+export function defaultDishes(): Record<DishId, Dish> {
+  return Object.fromEntries(STD_DISH_IDS.map((id) => [id, standardDish(id)]));
+}
 
 export type DayType = 'gym' | 'rest';
 
 export const DAY_TYPE_LABEL: Record<DayType, string> = { gym: 'День зала', rest: 'Обычный день' };
 
-export type MealSlot = {
-  id: string;
-  title: string;
-  time: string; // «HH:MM» по умолчанию
-  dishes: DishId[];
-  sunday?: DishId[]; // Вс — другое блюдо
-};
-
-export const SCHEDULE: Record<DayType, MealSlot[]> = {
-  gym: [
-    { id: 'pre', title: 'До зала', time: '07:00', dishes: ['yogurt'] },
-    { id: 'post', title: 'После зала', time: '09:30', dishes: ['eggs', 'bacon_sandwich'] },
-    { id: 'lunch', title: 'Обед', time: '13:00', dishes: ['chicken_rice'] },
-    { id: 'snack', title: 'Перекус', time: '16:00', dishes: ['meat_sandwich'] },
-    { id: 'dinner', title: 'Ужин', time: '19:30', dishes: ['salmon_rice'] },
-  ],
-  rest: [
-    { id: 'breakfast', title: 'Завтрак', time: '08:00', dishes: ['granola'] },
-    { id: 'snack1', title: 'Перекус 1', time: '11:00', dishes: ['shake'] },
-    { id: 'lunch', title: 'Обед', time: '13:30', dishes: ['pasta'], sunday: ['chicken_rice'] },
-    { id: 'snack2', title: 'Перекус 2', time: '16:30', dishes: ['meat_sandwich'] },
-    { id: 'dinner', title: 'Ужин', time: '19:30', dishes: ['chicken_rice'], sunday: ['salmon_rice'] },
-  ],
-};
-
 export const GYM_WEEKDAYS = [2, 4, 6]; // Вт, Чт, Сб (0 = Вс)
+
+// Приём пищи в расписании дня; id уникален в пределах дня (по нему — отметки «Съел» и замены).
+export type MealSlot = { id: string; title: string; time: string; dishes: DishId[] };
+
+// Стартовое расписание под режим «подъём 5:00, зал 6:00, сон 22:00» (SPEC_v3_3 §C3).
+const GYM_DAY: MealSlot[] = [
+  { id: 'pre', title: 'До зала', time: '05:15', dishes: ['yogurt'] },
+  { id: 'post', title: 'После зала', time: '07:30', dishes: ['eggs', 'bacon_sandwich'] },
+  { id: 'lunch', title: 'Обед', time: '11:30', dishes: ['chicken_rice'] },
+  { id: 'snack', title: 'Перекус', time: '15:00', dishes: ['meat_sandwich'] },
+  { id: 'dinner', title: 'Ужин', time: '18:30', dishes: ['salmon_rice'] },
+];
+const REST_DAY: MealSlot[] = [
+  { id: 'breakfast', title: 'Завтрак', time: '06:00', dishes: ['granola'] },
+  { id: 'snack1', title: 'Перекус', time: '09:30', dishes: ['shake'] },
+  { id: 'lunch', title: 'Обед', time: '12:30', dishes: ['pasta'] },
+  { id: 'snack2', title: 'Перекус', time: '15:30', dishes: ['meat_sandwich'] },
+  { id: 'dinner', title: 'Ужин', time: '18:30', dishes: ['chicken_rice'] },
+];
+const SUNDAY: MealSlot[] = REST_DAY.map((s) =>
+  s.id === 'lunch' ? { ...s, dishes: ['chicken_rice'] } : s.id === 'dinner' ? { ...s, dishes: ['salmon_rice'] } : s,
+);
+
+// Индекс — день недели JS (0 = Вс).
+export function defaultSchedule(): MealSlot[][] {
+  const day = (w: number) => (w === 0 ? SUNDAY : GYM_WEEKDAYS.includes(w) ? GYM_DAY : REST_DAY);
+  return [0, 1, 2, 3, 4, 5, 6].map((w) => day(w).map((s) => ({ ...s, dishes: [...s.dishes] })));
+}

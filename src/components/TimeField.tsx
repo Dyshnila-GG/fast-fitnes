@@ -12,7 +12,7 @@ const toDate = (time: string) => {
 const fromDate = (d: Date) => fromMinutes(d.getHours() * 60 + d.getMinutes());
 
 // Выбор времени «HH:MM»: Android — системный диалог, iOS — компактный пикер.
-export function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (time: string) => void }) {
+export function TimeField({ label, value, onChange }: { label?: string; value: string; onChange: (time: string) => void }) {
   const open = () =>
     DateTimePickerAndroid.open({
       value: toDate(value),
@@ -23,7 +23,7 @@ export function TimeField({ label, value, onChange }: { label: string; value: st
 
   return (
     <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
+      {label != null && <Text style={styles.label}>{label}</Text>}
       {Platform.OS === 'ios' ? (
         <DateTimePicker
           value={toDate(value)}

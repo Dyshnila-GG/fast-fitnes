@@ -20,14 +20,25 @@ function photoExists(uri: string): boolean {
   }
 }
 
-// Картинка блюда: своё фото → фото по ссылке (кэш на телефоне) → тёмная заглушка с иконкой.
+// Картинка блюда: своё фото → фото стандартного блюда по ссылке (кэш на телефоне) → тёмная заглушка с иконкой.
 // При смене блюда вызывающий передаёт key={dish}, чтобы счётчик повторов сбрасывался.
-export function DishImage({ dish, style, iconSize = 40 }: { dish: DishId; style?: StyleProp<ViewStyle>; iconSize?: number }) {
+// photo — показать этот файл вместо сохранённого, null — без своего фото (предпросмотр в форме блюда).
+export function DishImage({
+  dish,
+  photo,
+  style,
+  iconSize = 40,
+}: {
+  dish?: DishId;
+  photo?: string | null;
+  style?: StyleProp<ViewStyle>;
+  iconSize?: number;
+}) {
   const { data } = useStore();
-  const custom = data.food.photos[dish];
+  const custom = photo === undefined ? (dish ? data.food.photos[dish] : undefined) : (photo ?? undefined);
   const uri = useMemo(() => {
     if (custom && photoExists(custom)) return custom;
-    return (FOOD_IMAGES as Partial<Record<DishId, string>>)[dish] || null;
+    return (dish && (FOOD_IMAGES as Partial<Record<DishId, string>>)[dish]) || null;
   }, [custom, dish]);
 
   const [attempt, setAttempt] = useState(0);

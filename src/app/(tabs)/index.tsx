@@ -8,9 +8,8 @@ import { MonthCalendar } from '../../components/home/MonthCalendar';
 import { Ring } from '../../components/home/Ring';
 import { Tile, TILE_GAP, TileRow } from '../../components/home/Tile';
 import { Icon } from '../../components/Icon';
-import { DISHES } from '../../data/food';
 import { useNow } from '../../hooks/useNow';
-import { dayTotals, formatMealTime, formatNum, nextMeal, toggleEaten } from '../../logic/food';
+import { dayTotals, dishOf, formatMealTime, formatNum, nextMeal, toggleEaten } from '../../logic/food';
 import {
   dayLabel,
   daysAgo,
@@ -151,7 +150,7 @@ function MealTile({ data, today, nowMin }: TileProps & { nowMin: number }) {
       <Text style={styles.muted}>{formatMealTime(meal.time)}</Text>
       <DishImage dish={meal.dishes[0]} style={styles.thumb} iconSize={24} />
       <Text style={styles.name} numberOfLines={2}>
-        {meal.dishes.map((id) => DISHES[id].name).join(' + ')}
+        {meal.dishes.length > 0 ? meal.dishes.map((id) => dishOf(data.food, id)?.name).join(' + ') : 'Блюдо не выбрано'}
       </Text>
       <Text style={styles.muted}>~{formatNum(meal.kcal)} ккал</Text>
       <Pressable

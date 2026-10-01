@@ -72,7 +72,8 @@ export default function ProfileScreen() {
         }
         onPress={() => router.push('/runs')}
       />
-      <NavCard title="Настройки еды" subtitle="Время приёмов пищи для «Дня зала» и «Обычного дня»" onPress={() => router.push('/food-settings')} />
+      <NavCard title="Меню" subtitle={`Блюд: ${Object.keys(data.food.dishes).length} · добавить своё, изменить, удалить`} onPress={() => router.push('/menu')} />
+      <NavCard title="Расписание еды" subtitle="Приёмы пищи по дням недели: время, название, блюда" onPress={() => router.push('/food-settings')} />
       <NavCard
         title="Бэкап"
         subtitle={
