@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { getVariant } from '../../data/program';
 import { formatPreview } from '../../logic/format';
 import { getBest } from '../../logic/records';

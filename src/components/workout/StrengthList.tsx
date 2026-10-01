@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { PROGRAM } from '../../data/program';
 import { formatDate } from '../../logic/format';
 import { highlightedTemplate } from '../../logic/schedule';

@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '../Text';
 import { colors } from '../../theme';
 
 const BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises';

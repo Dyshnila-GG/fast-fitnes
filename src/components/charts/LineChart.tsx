@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import type { Point } from '../../logic/metrics';
 import { colors } from '../../theme';

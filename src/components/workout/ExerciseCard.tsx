@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { getExercise, getVariant } from '../../data/program';
 import { formatPlan, formatRest, RATING_LABEL } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';

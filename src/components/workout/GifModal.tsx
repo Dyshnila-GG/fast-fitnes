@@ -1,4 +1,5 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { formatRest } from '../../logic/format';
 import { colors, radius } from '../../theme';
 import type { Exercise, Variant } from '../../types';

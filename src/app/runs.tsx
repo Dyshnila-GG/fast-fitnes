@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { Card } from '../components/ui';
 import { formatDay, WEEKDAYS } from '../logic/format';
 import { dayDate } from '../logic/metrics';

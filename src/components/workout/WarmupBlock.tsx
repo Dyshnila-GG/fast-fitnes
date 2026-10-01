@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../Text';
 import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { parseNum } from '../../logic/metrics';

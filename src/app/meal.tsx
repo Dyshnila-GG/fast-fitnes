@@ -1,7 +1,8 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { Ingredients, openRecipe } from '../components/food/MealCard';
 import { DishImage } from '../components/food/DishImage';
 import { Button, Card } from '../components/ui';

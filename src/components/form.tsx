@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, type TextInputProps } from 'react-native';
+import { Text, TextInput } from './Text';
 import { formatDay } from '../logic/format';
 import { dayKey, shiftDay } from '../logic/metrics';
 import { colors } from '../theme';

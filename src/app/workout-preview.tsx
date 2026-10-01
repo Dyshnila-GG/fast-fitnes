@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../components/Text';
 import { Button, Card, Segmented } from '../components/ui';
 import { LENGTHS, WorkoutPreview } from '../components/workout/WorkoutPreview';
 import { getTemplate } from '../data/program';

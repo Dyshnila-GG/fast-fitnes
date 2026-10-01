@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { LineChart } from '../components/charts/LineChart';
 import { Card } from '../components/ui';
 import { formatDate } from '../logic/format';

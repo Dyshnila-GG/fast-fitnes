@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { Button, Card } from '../components/ui';
 import { formatDay } from '../logic/format';
 import { dayKey } from '../logic/metrics';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../Text';
 import { colors } from '../../theme';
 
 // «Заметка» — необязательная, свёрнута до тапа.

@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { DISHES, type DishId } from '../../data/food';
 import { formatMealTime, formatNum, type Meal } from '../../logic/food';
 import { colors, gap, radius } from '../../theme';

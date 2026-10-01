@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { getExercise, getVariant } from '../../data/program';
 import { exerciseMeta, formatFact } from '../../logic/format';
 import { colors } from '../../theme';

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../Text';
 import { FEEL_LABEL } from '../../logic/format';
 import { parseNum } from '../../logic/metrics';
 import { colors } from '../../theme';

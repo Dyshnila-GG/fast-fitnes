@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../components/Text';
 import { LineChart } from '../components/charts/LineChart';
 import { DayPicker, EntryRow, NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';

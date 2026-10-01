@@ -1,21 +1,21 @@
 import { router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '../../components/Icon';
+import { FONT } from '../../components/Text';
 import { colors } from '../../theme';
 
 const BAR_HEIGHT = 72;
 const ICON = 28;
-const DOT = 4;
 
-// Активная вкладка — белая иконка и белая точка под ней, неактивная — серая; подписей нет (SPEC_v3_2 §1).
+// Активная вкладка — белая иконка, неактивная — серая; подписей и точек нет (SPEC_v3_3 §A4).
 const icon =
   (name: IconName) =>
   ({ focused }: { focused: boolean }) => (
     <View style={styles.icon}>
       <Icon name={name} size={ICON} color={focused ? colors.text : colors.muted} />
-      <View style={[styles.dot, focused && styles.dotActive]} />
     </View>
   );
 
@@ -29,7 +29,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         headerStyle: { backgroundColor: colors.bg },
         headerTintColor: colors.text,
-        headerTitleStyle: { color: colors.text, fontWeight: '700' },
+        headerTitleStyle: { color: colors.text, fontFamily: FONT[700] },
         tabBarStyle: {
           height: BAR_HEIGHT + insets.bottom,
           paddingBottom: insets.bottom,
@@ -79,9 +79,7 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  icon: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', gap: 5 },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
-  dotActive: { backgroundColor: colors.text },
+  icon: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
   headerButton: {
     flexDirection: 'row',

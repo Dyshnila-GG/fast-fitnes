@@ -1,60 +1,60 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '../../components/Icon';
-import { RunPanel } from '../../components/workout/RunPanel';
-import { StrengthList } from '../../components/workout/StrengthList';
+import { Text } from '../../components/Text';
 import { colors, gap } from '../../theme';
 
-type Kind = 'strength' | 'run';
-
-const KINDS: { id: Kind; title: string; icon: IconName }[] = [
-  { id: 'strength', title: 'Силовые', icon: 'dumbbell' },
-  { id: 'run', title: 'Пробежка', icon: 'run' },
+const KINDS: { title: string; icon: IconName; href: Href }[] = [
+  { title: 'Силовые', icon: 'dumbbell', href: '/strength' },
+  { title: 'Пробежка', icon: 'run', href: '/run-start' },
 ];
 
-// «Тренировки» (SPEC_v3_2 §4): сверху выбор «Силовые / Пробежка».
+// «Тренировки» (SPEC_v3_3 §A5): только две большие плитки; списки — на следующем уровне.
 export default function WorkoutsScreen() {
-  const [kind, setKind] = useState<Kind>('strength');
-
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.tiles}>
-        {KINDS.map((k) => {
-          const active = k.id === kind;
-          return (
-            <Pressable
-              key={k.id}
-              onPress={() => setKind(k.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={({ pressed }) => [styles.tile, active && styles.tileActive, pressed && styles.pressed]}
-            >
-              <Icon name={k.icon} size={30} color={active ? colors.onPrimary : colors.muted} />
-              <Text style={[styles.tileText, active && styles.tileTextActive]}>{k.title}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {kind === 'strength' ? <StrengthList /> : <RunPanel />}
-    </ScrollView>
+    <View style={styles.content}>
+      {KINDS.map((k) => (
+        <Pressable
+          key={k.title}
+          onPress={() => router.push(k.href)}
+          accessibilityRole="button"
+          accessibilityLabel={k.title}
+          style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+        >
+          <View style={styles.badge}>
+            <Icon name={k.icon} size={40} />
+          </View>
+          <View style={styles.bottom}>
+            <Text style={styles.title}>{k.title}</Text>
+            <Icon name="arrow-right" size={28} color={colors.muted} />
+          </View>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16, gap },
-  tiles: { flexDirection: 'row', gap },
+  content: { flex: 1, padding: 16, gap },
   tile: {
     flex: 1,
-    minHeight: 104,
-    borderRadius: 24,
-    padding: 16,
+    maxHeight: 280,
+    borderRadius: 32,
+    padding: 24,
     justifyContent: 'space-between',
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tileActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pressed: { opacity: 0.75 },
-  tileText: { fontSize: 20, fontWeight: '700', color: colors.muted },
-  tileTextActive: { color: colors.onPrimary },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
+  badge: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.button,
+  },
+  bottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  title: { fontSize: 40, fontWeight: '800', color: colors.text, letterSpacing: -1 },
 });

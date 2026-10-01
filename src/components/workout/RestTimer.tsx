@@ -1,6 +1,7 @@
 import { useAudioPlayer } from 'expo-audio';
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, Vibration, View } from 'react-native';
+import { StyleSheet, Vibration, View } from 'react-native';
+import { Text } from '../Text';
 import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { colors, radius } from '../../theme';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { DayPicker, EntryRow, NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { formatDay } from '../logic/format';

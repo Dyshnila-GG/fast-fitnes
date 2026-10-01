@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { confirmDeleteSession } from '../../components/history/confirmDelete';
 import { Icon } from '../../components/Icon';
 import { Card } from '../../components/ui';

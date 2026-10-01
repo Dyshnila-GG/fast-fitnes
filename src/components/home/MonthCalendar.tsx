@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import type { CalendarDay, MonthGrid } from '../../logic/home';
 import { colors } from '../../theme';
 

@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 import { Button, Card } from '../components/ui';
 import { DAY_TYPE_LABEL, SCHEDULE, type DayType } from '../data/food';
 import { formatMealTime, mealTime, resetMealTimes, shiftMealTime } from '../logic/food';

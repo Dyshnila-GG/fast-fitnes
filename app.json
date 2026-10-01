@@ -1,25 +1,24 @@
 {
   "expo": {
-    "name": "GymLog",
+    "name": "TOCHKA Fitness",
     "slug": "gymlog",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#ECECEA",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -36,12 +35,22 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "GymLog использует фото, чтобы заменить картинку блюда на ваше.",
-          "cameraPermission": "GymLog использует камеру, чтобы сфотографировать блюдо.",
+          "photosPermission": "TOCHKA Fitness использует фото, чтобы заменить картинку блюда на ваше.",
+          "cameraPermission": "TOCHKA Fitness использует камеру, чтобы сфотографировать блюдо.",
           "microphonePermission": false
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ]
     ],
     "scheme": "gymlog",
     "backgroundColor": "#000000"

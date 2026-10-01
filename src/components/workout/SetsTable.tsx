@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../Text';
 import { colors } from '../../theme';
 import type { SetLog, Variant } from '../../types';
 import { Button } from '../ui';

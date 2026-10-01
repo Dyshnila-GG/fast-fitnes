@@ -1,14 +1,23 @@
+import { Manrope_400Regular } from '@expo-google-fonts/manrope/400Regular';
+import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
+import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
+import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
+import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import { BackButton } from '../components/nav/BackButton';
+import { FONT } from '../components/Text';
 import { AppStoreProvider, useStore } from '../store/AppStore';
 import { colors } from '../theme';
 
-const loading = (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-    <ActivityIndicator />
-  </View>
-);
+// Заставка держится, пока грузятся шрифт Manrope и данные (SPEC_v3_3 §A3).
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+const loading = <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 
 // Пока идёт тренировка или пробежка, доступен только её экран (в т.ч. сразу при запуске приложения).
 // После завершения тренировки — экран итога, пока его не закроют кнопкой «Готово».
@@ -17,18 +26,24 @@ function RootStack() {
   const active = data.activeSession != null;
   const running = !active && data.activeRun != null;
   const summary = !active && !running && data.summaryId != null;
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
   return (
     <Stack
       screenOptions={{
         contentStyle: { backgroundColor: colors.bg },
         headerStyle: { backgroundColor: colors.bg },
         headerTintColor: colors.text,
+        headerTitleStyle: { fontFamily: FONT[700] },
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Protected guard={!active && !running && !summary}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="strength" options={{ title: 'Силовые', headerLeft: () => <BackButton /> }} />
+        <Stack.Screen name="run-start" options={{ title: 'Пробежка', headerLeft: () => <BackButton /> }} />
         <Stack.Screen name="weight" options={{ title: 'Вес тела' }} />
         <Stack.Screen name="measurements" options={{ title: 'Замеры' }} />
         <Stack.Screen name="history/index" options={{ title: 'История тренировок' }} />
@@ -62,6 +77,15 @@ function RootStack() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  // Ошибка загрузки шрифта не должна блокировать приложение — тогда системный шрифт.
+  if (!fontsLoaded && !fontError) return null;
   return (
     <AppStoreProvider fallback={loading}>
       <StatusBar style="light" />

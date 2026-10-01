@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../Text';
 import { useNow } from '../../hooks/useNow';
 import { formatDuration } from '../../logic/format';
 import { elapsedMs, pausedTotalMs } from '../../logic/session';

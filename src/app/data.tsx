@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet, Text, TextInput } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../components/Text';
 import { Button, Card } from '../components/ui';
 import { exportData, finishedSessions, parseImport } from '../logic/metrics';
 import { useStore } from '../store/AppStore';
@@ -15,7 +16,7 @@ export default function DataScreen() {
   const [text, setText] = useState('');
 
   const share = () => {
-    Share.share({ message: exportData(data), title: 'GymLog — резервная копия' }).catch(() =>
+    Share.share({ message: exportData(data), title: 'TOCHKA Fitness — резервная копия' }).catch(() =>
       Alert.alert('Не удалось открыть «Поделиться»'),
     );
   };

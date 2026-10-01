@@ -1,16 +1,7 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  ToastAndroid,
-  View,
-} from 'react-native';
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ToastAndroid, View } from 'react-native';
+import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NumInput } from '../components/form';
 import { Button, Card } from '../components/ui';
@@ -183,7 +174,7 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 15, fontWeight: '600', color: colors.muted, letterSpacing: 0.4 },
   stopwatch: { flex: 1, justifyContent: 'space-between', gap: 24 },
   clockWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 280 },
-  clock: { fontSize: 96, fontWeight: '200', color: colors.text, fontVariant: ['tabular-nums'], letterSpacing: -2 },
+  clock: { fontSize: 88, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'], letterSpacing: -2 },
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stateDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.dim },
   stateDotOn: { backgroundColor: colors.text },

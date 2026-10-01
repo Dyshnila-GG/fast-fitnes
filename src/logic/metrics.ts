@@ -143,7 +143,7 @@ export function parseImport(text: string): ImportResult {
   } catch {
     return { ok: false, error: 'Это не JSON. Скопируйте текст экспорта целиком.' };
   }
-  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: 'Неизвестный формат: это не экспорт GymLog.' };
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: 'Неизвестный формат: это не экспорт TOCHKA Fitness.' };
   const p = raw.profile;
   if (!isObj(p) || !isNum(p.age) || !isNum(p.heightIn) || !isNum(p.startWeight)) {
     return { ok: false, error: 'Повреждён профиль.' };
