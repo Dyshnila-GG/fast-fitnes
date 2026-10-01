@@ -492,6 +492,7 @@ export const en: Dict = {
 
   // ---- Reminders, backup, trash ----
   'reminders.quote': '“{text}”',
+  'reminders.expoGo': 'Reminders work in the installed app (APK); they are not available in Expo Go',
   'reminders.daily': 'Daily',
   'reminders.workoutExample': '“{text}” — name by day',
   'reminders.offTitle': 'Notifications are off',

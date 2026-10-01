@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
 import { anyReminderOn } from '../logic/reminders';
 import { useStore } from '../store/AppStore';
-import { requestNotifications, syncReminders } from './notifications';
+import { remindersSupported, requestNotifications, syncReminders } from './notifications';
 
 // Первый запуск с включёнными напоминаниями — запрос разрешения; при любом изменении — перепланирование.
+// В Expo Go напоминания недоступны — ничего не делаем.
 export function useReminders() {
   const { data, update } = useStore();
   const { reminders } = data;
   const key = JSON.stringify([reminders.sleep, reminders.workout]);
 
   useEffect(() => {
+    if (!remindersSupported) return;
     let cancelled = false;
     (async () => {
       if (!reminders.asked && anyReminderOn(reminders)) {

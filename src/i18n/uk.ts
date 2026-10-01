@@ -492,6 +492,7 @@ export const uk: Dict = {
 
   // ---- Нагадування, бекап, кошик ----
   'reminders.quote': '«{text}»',
+  'reminders.expoGo': 'Нагадування працюють у встановленому застосунку (APK), в Expo Go недоступні',
   'reminders.daily': 'Щодня',
   'reminders.workoutExample': '«{text}» — назва за днем',
   'reminders.offTitle': 'Сповіщення вимкнено',

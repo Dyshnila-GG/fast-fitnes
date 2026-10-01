@@ -491,6 +491,7 @@ export const ru = {
 
   // ---- Напоминания, бэкап, корзина ----
   'reminders.quote': '«{text}»',
+  'reminders.expoGo': 'Напоминания работают в установленном приложении (APK), в Expo Go недоступны',
   'reminders.daily': 'Ежедневно',
   'reminders.workoutExample': '«{text}» — название по дню',
   'reminders.offTitle': 'Уведомления выключены',

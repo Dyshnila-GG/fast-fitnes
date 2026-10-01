@@ -4,7 +4,7 @@ import { Text } from '../components/Text';
 import { TimeField } from '../components/TimeField';
 import { Card } from '../components/ui';
 import { GYM_TIME, setReminder, WAKE_TIME } from '../logic/reminders';
-import { requestNotifications } from '../services/notifications';
+import { remindersSupported, requestNotifications } from '../services/notifications';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import { PROGRAM } from '../data/program';
@@ -50,6 +50,12 @@ export default function RemindersScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      {!remindersSupported && (
+        <View style={styles.notice}>
+          <Icon name="information-outline" size={20} color={colors.muted} />
+          <Text style={[styles.muted, styles.flex]}>{t('reminders.expoGo')}</Text>
+        </View>
+      )}
       {items().map((item) => {
         const r = data.reminders[item.key];
         return (
@@ -65,6 +71,7 @@ export default function RemindersScreen() {
               <Switch
                 value={r.on}
                 onValueChange={(on) => toggle(item.key, on)}
+                disabled={!remindersSupported}
                 trackColor={{ false: colors.button, true: colors.primary }}
                 thumbColor={r.on ? colors.onPrimary : colors.muted}
                 ios_backgroundColor={colors.button}
@@ -91,4 +98,14 @@ const styles = StyleSheet.create({
   muted: { fontSize: 14, color: colors.muted },
   time: { paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   off: { opacity: 0.4 },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
 });
