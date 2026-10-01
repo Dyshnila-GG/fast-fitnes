@@ -39,6 +39,8 @@ function RootStack() {
         <Stack.Screen name="meal" options={{ title: 'Блюдо' }} />
         <Stack.Screen name="food-swap" options={{ title: 'Заменить блюдо' }} />
         <Stack.Screen name="food-settings" options={{ title: 'Время приёмов пищи' }} />
+        <Stack.Screen name="products" options={{ title: 'Продукты на неделю' }} />
+        <Stack.Screen name="recipe" options={{ title: 'Рецепт' }} />
         <Stack.Screen name="sleep" options={{ title: 'Сон' }} />
         <Stack.Screen name="sleep-edit" options={{ title: 'Сон', presentation: 'modal' }} />
         <Stack.Screen name="runs" options={{ title: 'Пробежки' }} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { DISHES, SCHEDULE, SWAP_DISHES } from '../../data/food';
+import { DISHES, PRODUCTS, SCHEDULE, SWAP_DISHES, type ProductId } from '../../data/food';
 import { FOOD_IMAGES } from '../../data/foodImages';
 import { defaultData } from '../../store/defaults';
 import type { AppData } from '../../types';
@@ -9,13 +9,14 @@ import {
   foodStats,
   formatMealTime,
   formatNum,
-  hasPrep,
   isEaten,
   mealsFor,
   mealTime,
   nextMeal,
-  prepCounts,
-  prepPlan,
+  productTotals,
+  recipeOf,
+  setRecipe,
+  standardRecipe,
   resetMealTimes,
   salmonTomorrow,
   sanitizeFood,
@@ -23,7 +24,7 @@ import {
   setSwap,
   shiftMealTime,
   toggleEaten,
-  togglePrep,
+  weekProducts,
 } from '../food';
 import { exportData, parseImport } from '../metrics';
 
@@ -37,10 +38,6 @@ describe('тип дня и расписание', () => {
   it('Вт/Чт/Сб — день зала, остальные — обычный', () => {
     expect(['2026-09-29', '2026-10-01', '2026-10-03'].map(dayType)).toEqual(['gym', 'gym', 'gym']);
     expect([SUN, MON, WED, '2026-10-02'].map(dayType)).toEqual(['rest', 'rest', 'rest', 'rest']);
-  });
-
-  it('заготовка — только Вс и Ср', () => {
-    expect([SUN, MON, TUE, WED].map(hasPrep)).toEqual([true, false, false, true]);
   });
 
   it('день зала: 5 приёмов, «После зала» — яичница + бутерброды, итого из блюд', () => {
@@ -123,44 +120,76 @@ describe('отметки, замены, суммы', () => {
     expect(d.food.swaps[MON]).toBeUndefined();
   });
 
-  it('чек-лист заготовки по датам', () => {
-    let d = togglePrep(defaultData(), SUN, 'rice');
-    expect(d.food.prep[SUN]).toEqual(['rice']);
-    expect(d.food.prep[WED]).toBeUndefined();
-    d = togglePrep(d, SUN, 'rice');
-    expect(d.food.prep[SUN]).toBeUndefined();
-  });
 });
 
-describe('заготовка из меню', () => {
-  it('Вс (на Вс–Вт): филе 3, рис 5, паста 1, мясо 3', () => {
-    expect(prepCounts(defaultData().food, SUN)).toEqual({ chicken: 3, rice: 5, pasta: 1, meat: 3 });
+describe('продукты на неделю (SPEC_v3_2 §5.2)', () => {
+  const NEXT_SUN = '2026-10-04';
+
+  // Независимый подсчёт: ингредиенты всех приёмов недели (салат — у блюд с рисом).
+  function expected(food: AppData['food']): Partial<Record<ProductId, number>> {
+    const out: Partial<Record<ProductId, number>> = {};
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(2026, 8, 28 + i);
+      const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      for (const m of mealsFor(food, key)) {
+        for (const id of m.dishes) {
+          for (const dish of DISHES[id].salad ? [id, 'salad' as const] : [id]) {
+            for (const it of DISHES[dish].items) out[it.product] = (out[it.product] ?? 0) + it.g;
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  it('продукты недели = сумма ингредиентов всех приёмов пн–вс', () => {
+    const food = defaultData().food;
+    const totals = productTotals(food, MON);
+    expect(totals).toEqual(expected(food));
+    expect(totals).toMatchObject({
+      rice: 880,
+      chicken: 1610,
+      sandwich_meat: 840,
+      salmon: 680,
+      milk: 2280,
+      bananas: 960,
+      eggs: 600,
+      bread: 700,
+      pasta: 300,
+      salad_mix: 1100,
+    });
   });
 
-  it('Ср (на Ср–Сб): филе 4, рис 6, паста 2, мясо 4', () => {
-    expect(prepCounts(defaultData().food, WED)).toEqual({ chicken: 4, rice: 6, pasta: 2, meat: 4 });
+  it('замены учитываются', () => {
+    const d = setSwap(defaultData(), MON, 'lunch', 'salmon_rice');
+    const totals = productTotals(d.food, MON);
+    expect(totals).toEqual(expected(d.food));
+    expect(totals).toMatchObject({ pasta: 200, rice: 960, salmon: 850 });
+    // Замена на следующей неделе в эту неделю не попадает.
+    expect(productTotals(setSwap(defaultData(), '2026-10-05', 'lunch', 'salmon_rice').food, MON).pasta).toBe(300);
   });
 
-  it('пункты с количествами; лосося в заготовке нет', () => {
-    const items = prepPlan(defaultData().food, SUN);
-    expect(items.map((i) => i.id)).toEqual(['rice', 'chicken', 'pasta', 'meat']);
-    expect(items[0].title).toBe('Рис: 5 × 80 г = 400 г');
-    expect(items[0].text).toContain('600 г воды');
-    expect(items[1].title).toBe('Куриное филе: 3 × 230 г = 690 г');
-    expect(items[1].text).toContain('3 порц. по 170 г');
-    expect(items[2].text).toContain('100 г пасты + 150 г фарша');
-    expect(items[2].text).toContain('маринара 120 г');
-    expect(items[3].title).toBe('Мясо для сэндвичей: 3 × 120 г = 360 г');
-    expect(JSON.stringify(items)).not.toMatch(/лосос/i);
+  it('группы по разделам, строки «Рис (сухой) — 880 г», штучное — количество и граммы', () => {
+    const groups = weekProducts(defaultData().food, NEXT_SUN); // любой день недели
+    expect(groups.map((g) => g.title)).toEqual(['Мясо и рыба', 'Молочное и яйца', 'Крупы и хлеб', 'Овощи и фрукты', 'Прочее']);
+    const rows = Object.fromEntries(groups.flatMap((g) => g.rows).map((r) => [r.product, r.text]));
+    expect(rows.rice).toBe('Рис (сухой) — 880 г');
+    expect(rows.chicken).toBe(`Куриное филе (сырое) — ${formatNum(1610)} г`);
+    expect(rows.milk).toBe(`Молоко — ${formatNum(2280)} г`);
+    expect(rows.bananas).toBe('Бананы — 8 шт. (~960 г)');
+    expect(rows.eggs).toBe('Яйца — 12 шт. (~600 г)');
+    for (const g of groups) {
+      expect(g.rows.every((r) => PRODUCTS[r.product].section === g.section)).toBe(true);
+      expect(g.rows.map((r) => r.name)).toEqual([...g.rows.map((r) => r.name)].sort((a, b) => a.localeCompare(b, 'ru')));
+    }
   });
 
-  it('замены учитываются, пустые пункты не показываются', () => {
-    let d = defaultData();
-    for (const [day, slot] of [[SUN, 'snack2'], [MON, 'snack2'], [TUE, 'snack']] as const) d = setSwap(d, day, slot, 'yogurt');
-    d = setSwap(d, MON, 'lunch', 'chicken_rice');
-    expect(prepCounts(d.food, SUN)).toEqual({ chicken: 4, rice: 6, pasta: 0, meat: 0 });
-    expect(prepPlan(d.food, SUN).map((i) => i.id)).toEqual(['rice', 'chicken']);
-    expect(prepPlan(d.food, MON)).toEqual([]);
+  it('граммы продуктов блюда совпадают с ингредиентами блюда', () => {
+    for (const dish of Object.values(DISHES)) {
+      const text = dish.ingredients.join(' | ');
+      for (const it of dish.items) expect(text).toMatch(new RegExp(`(^|[^\\d])${it.g} г`));
+      expect(dish.items.length).toBe(dish.ingredients.filter((i) => i !== 'соль').length);
+    }
   });
 
   it('напоминание про лосось — накануне дня с лососем', () => {
@@ -227,13 +256,13 @@ describe('экспорт / импорт еды', () => {
   function sample(): AppData {
     let d = toggleEaten(defaultData(), TUE, 'pre');
     d = setSwap(d, MON, 'lunch', 'chicken_rice');
-    d = togglePrep(d, SUN, 'rice');
+    d = setRecipe(d, 'pasta', 'Своя паста');
     d = setPhoto(d, 'granola', 'file:///data/food-photos/granola-1.jpg');
     d = shiftMealTime(d, 'rest', 'breakfast', 15);
     return d;
   }
 
-  it('экспорт → импорт сохраняет отметки, замены, заготовку, фото и время', () => {
+  it('экспорт → импорт сохраняет отметки, замены, фото, рецепты и время', () => {
     const d = sample();
     const res = parseImport(exportData(d));
     expect(res.ok).toBe(true);
@@ -270,5 +299,57 @@ describe('экспорт / импорт еды', () => {
     expect(food.swaps).toEqual({ [MON]: { dinner: 'pasta' } });
     expect(food.photos).toEqual({ granola: 'file:///a.jpg' });
     expect(food.times).toEqual({ gym: { post: '09:45' }, rest: {} });
+  });
+});
+
+describe('свой рецепт (SPEC_v3_2 §5.3)', () => {
+  it('без своего — стандартные шаги блюда (у блюд с рисом — и салат)', () => {
+    expect(recipeOf(defaultData().food, 'granola')).toEqual({
+      text: '1. Мюсли в миску\n2. Залить молоком\n3. Сверху нарезанный банан',
+      custom: false,
+    });
+    expect(standardRecipe('chicken_rice')).toContain('Салат: нарезать, заправить');
+  });
+
+  it('рецепт хранится по блюду и виден у этого блюда в другой день и другом приёме', () => {
+    const d = setRecipe(defaultData(), 'chicken_rice', '  Курица 250 г, рис 90 г\nЗапечь  ');
+    expect(d.food.recipes).toEqual({ chicken_rice: 'Курица 250 г, рис 90 г\nЗапечь' });
+    // Пн — ужин, Вс — обед: одно блюдо, один рецепт.
+    const mon = mealsFor(d.food, MON).find((m) => m.dishes.includes('chicken_rice'))!;
+    const sun = mealsFor(d.food, SUN).find((m) => m.dishes.includes('chicken_rice'))!;
+    expect(mon.slot).toBe('dinner');
+    expect(sun.slot).toBe('lunch');
+    for (const id of [...mon.dishes, ...sun.dishes]) expect(recipeOf(d.food, id)).toEqual({ text: 'Курица 250 г, рис 90 г\nЗапечь', custom: true });
+    expect(recipeOf(d.food, 'salmon_rice').custom).toBe(false);
+  });
+
+  it('«Вернуть стандартный» и пустой текст удаляют свой рецепт', () => {
+    let d = setRecipe(defaultData(), 'pasta', 'Своя');
+    d = setRecipe(d, 'pasta', null);
+    expect(d.food.recipes).toEqual({});
+    expect(setRecipe(defaultData(), 'pasta', '   ').food.recipes).toEqual({});
+  });
+
+  it('экспорт → импорт сохраняет рецепты; битые отбрасываются, старые id переносятся', () => {
+    const d = setRecipe(defaultData(), 'meat_sandwich', 'Мой сэндвич');
+    const res = parseImport(exportData(d));
+    expect(res.ok && res.data.food.recipes).toEqual({ meat_sandwich: 'Мой сэндвич' });
+    expect(sanitizeFood({ recipes: { pizza: 'x', pasta: 5, granola: ' ', chicken_sandwich: 'Старый' } }).recipes).toEqual({
+      meat_sandwich: 'Старый',
+    });
+  });
+});
+
+describe('своё фото (SPEC_v3_2 §5.4)', () => {
+  it('фото хранится по блюду: видно у этого блюда во всех приёмах и днях, переживает экспорт/импорт', () => {
+    const uri = 'file:///data/food-photos/chicken_rice-1.jpg';
+    const d = setPhoto(defaultData(), 'chicken_rice', uri);
+    const meals = [MON, TUE, SUN].flatMap((day) => mealsFor(d.food, day)).filter((m) => m.dishes.includes('chicken_rice'));
+    expect(meals.length).toBeGreaterThanOrEqual(3);
+    for (const m of meals) expect(d.food.photos[m.dishes[0]]).toBe(uri);
+    expect(d.food.photos.salmon_rice).toBeUndefined();
+    const res = parseImport(exportData(d));
+    expect(res.ok && res.data.food.photos).toEqual({ chicken_rice: uri });
+    expect(setPhoto(d, 'chicken_rice', null).food.photos).toEqual({});
   });
 });

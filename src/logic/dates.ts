@@ -14,3 +14,9 @@ export function shiftDay(day: string, delta: number): string {
   d.setDate(d.getDate() + delta);
   return dayKey(d);
 }
+
+// Понедельник недели (неделя пн–вс).
+export function weekStart(day: string): string {
+  const w = dayDate(day).getDay();
+  return shiftDay(day, -((w + 6) % 7));
+}

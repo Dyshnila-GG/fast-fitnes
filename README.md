@@ -18,7 +18,7 @@ npx expo start --tunnel   # если в одной сети не подключ�
 
 ```bash
 npx tsc --noEmit   # типы
-npm test           # юнит-тесты (рекорды и вес по самочувствию, разминка, пропуски, завершение, перенос, метрики, еда, главная: сон, неделя, пробежки, экспорт/импорт)
+npm test           # юнит-тесты (рекорды и вес по самочувствию, разминка, пропуски, завершение, удаление и откат рекорда, перенос, метрики, еда: продукты на неделю, рецепты, фото; главная: календарь, сон, неделя; активная пробежка, экспорт/импорт)
 npx expo-doctor    # зависимости и конфиг
 ```
 
@@ -26,17 +26,18 @@ npx expo-doctor    # зависимости и конфиг
 
 ```
 src/app/            экраны (Expo Router): вкладки (tabs)/index — главная (плитки), workouts — тренировки, food — еда, profile — профиль;
-                    workout — активная тренировка, summary — итог; meal — блюдо, food-swap — замена блюда, food-settings — время приёмов;
+                    workout — активная тренировка, summary — итог, run — активная пробежка; meal — блюдо, food-swap — замена блюда,
+                    food-settings — время приёмов, products — продукты на неделю, recipe — рецепт блюда;
                     модалки с «Главной»: weight-add, sleep-edit, run-edit, workout-preview; sleep, runs — списки;
                     personal, weight, measurements, history/, progress, data — разделы «Профиля»
 src/data/program.ts программа Вт/Чт/Сб (20 упражнений, по 1–2 варианта); legacy.ts — старая A/B/C (только для истории)
-src/data/food.ts    блюда (граммы, ккал, белок, шаги), расписание «День зала» / «Обычный день» / Вс, нормы заготовки;
+src/data/food.ts    блюда (граммы, ккал, белок, шаги, продукты), справочник продуктов по разделам, расписание «День зала» / «Обычный день» / Вс;
                     foodImages.ts — ссылки на фото блюд
 src/logic/          расчёты: сессия и секундомеры разминки, рекорды и вес «сегодня» (SPEC §5), тоннаж, метрики и экспорт/импорт, еда (food.ts),
-                    «Главная» (home.ts), сон и пробежки (sleep.ts), даты и время, расписание, округление весов, форматирование; тесты — src/logic/__tests__
+                    «Главная» и календарь (home.ts), сон и пробежки (sleep.ts), активная пробежка (run.ts), даты и время, расписание, округление весов, форматирование; тесты — src/logic/__tests__
 src/store/          состояние приложения, сохранение в AsyncStorage, перенос данных v1 → v2 (migrate.ts)
-src/components/     общие UI-компоненты (Icon — иконки MaterialCommunityIcons, TimeField — выбор времени); home/ — плитка, кольцо, точечный календарь;
-                    workout/ — блоки экрана тренировки и предпросмотр, summary/ — блоки итога, food/ — карточка приёма и картинка блюда,
+src/components/     общие UI-компоненты (Icon — иконки MaterialCommunityIcons, TimeField — выбор времени); home/ — плитка, кольцо, календарь месяца;
+                    workout/ — блоки экрана тренировки и предпросмотр, summary/ — блоки итога, history/ — удаление тренировки, food/ — карточка приёма и картинка блюда,
                     charts/ — линейный график (react-native-svg), form — поля и списки метрик
 src/hooks/          общие хуки (useNow — тик таймеров)
 ```
@@ -54,7 +55,7 @@ src/hooks/          общие хуки (useNow — тик таймеров)
 | id | Блюдо | Автор | Лицензия | Источник |
 |---|---|---|---|---|
 | `granola` | Мюсли с молоком и бананом | joyosity | CC BY 2.0 | https://www.flickr.com/photos/33993074@N00/3566981596 |
-| `shake` | Шоколадный коктейль | EasyHealthySmoothie | CC BY 2.0 | https://www.flickr.com/photos/150788323@N04/33941875343 |
+| `shake` | Шоколадный коктейль | BrittReneePhotography | CC BY-SA 2.0 | https://www.flickr.com/photos/36158105@N07/8420414521 |
 | `yogurt` | Йогурт | grongar | CC BY 2.0 | https://www.flickr.com/photos/70757891@N00/5537372504 |
 | `eggs` | Яичница | avlxyz | CC BY-SA 2.0 | https://www.flickr.com/photos/10559879@N00/2409085893 |
 | `bacon_sandwich` | Бутерброды с беконом | fancycwabs | CC BY-SA 2.0 | https://www.flickr.com/photos/36818084@N00/3389649469 |

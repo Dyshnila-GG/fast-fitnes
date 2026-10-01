@@ -1,12 +1,12 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ingredients } from '../components/food/MealCard';
+import { Ingredients, openRecipe } from '../components/food/MealCard';
 import { DishImage } from '../components/food/DishImage';
 import { Button, Card } from '../components/ui';
 import { DISHES, type DishId } from '../data/food';
-import { formatMealTime, formatNum, isEaten, mealsFor, setPhoto, toggleEaten } from '../logic/food';
+import { formatMealTime, formatNum, isEaten, mealsFor, recipeOf, setPhoto, toggleEaten } from '../logic/food';
 import { useStore } from '../store/AppStore';
 import { colors, gap } from '../theme';
 import { Icon } from '../components/Icon';
@@ -72,6 +72,7 @@ export default function MealScreen() {
       <Stack.Screen options={{ title: `${meal.title} · ${formatMealTime(meal.time)}` }} />
       {meal.dishes.map((id) => {
         const dish = DISHES[id];
+        const recipe = recipeOf(data.food, id);
         return (
           <Card key={id} style={styles.card}>
             <Pressable onPress={() => choosePhoto(id)}>
@@ -93,13 +94,11 @@ export default function MealScreen() {
             )}
             <Text style={styles.section}>Ингредиенты</Text>
             <Ingredients dish={id} />
-            <Text style={styles.section}>Как готовить</Text>
-            {dish.steps.map((step, i) => (
-              <Text key={step} style={styles.step}>
-                {i + 1}. {step}
-              </Text>
-            ))}
-            {dish.salad && <Text style={styles.step}>Салат: {DISHES.salad.steps.join(', ').toLowerCase()}</Text>}
+            <View style={styles.sectionRow}>
+              <Text style={[styles.section, styles.flex]}>Как готовить</Text>
+              {recipe.custom && <Text style={styles.ownTag}>Свой рецепт</Text>}
+            </View>
+            <Text style={styles.step}>{recipe.text}</Text>
           </Card>
         );
       })}
@@ -107,11 +106,21 @@ export default function MealScreen() {
         <Text style={styles.kcal}>~{formatNum(meal.kcal)} ккал</Text>
         <Text style={styles.protein}>{meal.protein} г белка</Text>
       </View>
-      <Button
-        title={eaten ? 'Съедено · снять отметку' : 'Съел'}
-        variant={eaten ? 'secondary' : 'primary'}
-        onPress={() => update((d) => toggleEaten(d, day, meal.slot))}
-      />
+      <View style={styles.actions}>
+        <Button
+          title={eaten ? 'Съедено' : 'Съел'}
+          variant={eaten ? 'secondary' : 'primary'}
+          onPress={() => update((d) => toggleEaten(d, day, meal.slot))}
+          style={styles.action}
+        />
+        <Button
+          title="Заменить"
+          variant="secondary"
+          onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
+          style={styles.action}
+        />
+        <Button title="Рецепт" variant="secondary" onPress={() => openRecipe(meal.dishes)} style={styles.action} />
+      </View>
     </ScrollView>
   );
 }
@@ -126,7 +135,12 @@ const styles = StyleSheet.create({
   noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   note: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   section: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 6 },
-  step: { fontSize: 15, color: colors.text },
+  step: { fontSize: 15, lineHeight: 22, color: colors.text },
+  flex: { flex: 1 },
+  actions: { flexDirection: 'row', gap: 8 },
+  action: { flex: 1, paddingHorizontal: 6 },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  ownTag: { fontSize: 13, fontWeight: '600', color: colors.muted },
   footer: { flexDirection: 'row', alignItems: 'baseline', gap, paddingHorizontal: 4 },
   kcal: { fontSize: 28, fontWeight: '800', color: colors.text },
   protein: { fontSize: 16, fontWeight: '600', color: colors.muted },

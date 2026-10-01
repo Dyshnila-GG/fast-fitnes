@@ -51,9 +51,25 @@ export default function TabsLayout() {
           title: 'Еда',
           tabBarIcon: icon('silverware-fork-knife'),
           headerRight: () => (
-            <Pressable onPress={() => router.push('/food-settings')} hitSlop={10} style={{ paddingHorizontal: 16 }}>
-              <Text style={{ fontSize: 15, color: colors.text }}>Время</Text>
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                onPress={() => router.push('/products')}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+              >
+                <Icon name="cart-outline" size={18} />
+                <Text style={styles.headerText}>Продукты</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/food-settings')}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.headerText}>Время</Text>
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -66,4 +82,16 @@ const styles = StyleSheet.create({
   icon: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', gap: 5 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
   dotActive: { backgroundColor: colors.text },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
+  headerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: colors.card,
+  },
+  headerText: { fontSize: 15, fontWeight: '600', color: colors.text },
+  pressed: { opacity: 0.7 },
 });

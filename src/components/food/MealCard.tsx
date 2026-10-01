@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { DISHES } from '../../data/food';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { DISHES, type DishId } from '../../data/food';
 import { formatMealTime, formatNum, type Meal } from '../../logic/food';
 import { colors, gap, radius } from '../../theme';
 import { Button } from '../ui';
@@ -33,6 +33,16 @@ type Props = {
   onToggle: () => void;
   compact?: boolean; // без ингредиентов и «Заменить» (Главная)
 };
+
+// Рецепт блюда; у приёма из двух блюд — сначала выбор блюда.
+export function openRecipe(dishes: DishId[]) {
+  const go = (dish: DishId) => router.push({ pathname: '/recipe', params: { dish } });
+  if (dishes.length === 1) return go(dishes[0]);
+  Alert.alert('Рецепт', 'Какое блюдо?', [
+    ...dishes.map((id) => ({ text: DISHES[id].name, onPress: () => go(id) })),
+    { text: 'Отмена', style: 'cancel' as const },
+  ]);
+}
 
 export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
   const open = () => router.push({ pathname: '/meal', params: { day, slot: meal.slot } });
@@ -68,15 +78,18 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
           title={eaten ? 'Съедено' : 'Съел'}
           variant={eaten ? 'secondary' : 'primary'}
           onPress={onToggle}
-          style={styles.flex}
+          style={[styles.flex, styles.tight]}
         />
         {!compact && (
-          <Button
-            title="Заменить"
-            variant="secondary"
-            onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
-            style={styles.flex}
-          />
+          <>
+            <Button
+              title="Заменить"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/food-swap', params: { day, slot: meal.slot } })}
+              style={[styles.flex, styles.tight]}
+            />
+            <Button title="Рецепт" variant="secondary" onPress={() => openRecipe(meal.dishes)} style={[styles.flex, styles.tight]} />
+          </>
         )}
       </View>
     </Pressable>
@@ -104,4 +117,5 @@ const styles = StyleSheet.create({
   kcal: { fontSize: 28, fontWeight: '800', color: colors.text },
   protein: { fontSize: 16, fontWeight: '600', color: colors.muted },
   actions: { flexDirection: 'row', gap: 8 },
+  tight: { paddingHorizontal: 6 },
 });

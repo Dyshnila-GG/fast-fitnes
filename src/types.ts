@@ -115,8 +115,8 @@ export type MeasurementEntry = {
 export type FoodData = {
   eaten: Record<string, string[]>; // отмеченные приёмы
   swaps: Record<string, Record<string, DishId>>; // замена блюда приёма на эту дату
-  prep: Record<string, string[]>; // отмеченные пункты заготовки
   photos: Partial<Record<DishId, string>>; // своё фото блюда — путь к файлу
+  recipes: Partial<Record<DishId, string>>; // свой рецепт блюда — свободный текст
   times: { gym: Record<string, string>; rest: Record<string, string> }; // своё время приёмов «HH:MM»
 };
 

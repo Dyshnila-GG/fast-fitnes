@@ -1,15 +1,17 @@
 import {
   DISHES,
   GYM_WEEKDAYS,
-  PREP,
-  PREP_DAYS,
+  PRODUCT_SECTIONS,
+  PRODUCTS,
   SCHEDULE,
   type DayType,
   type DishId,
+  type ProductId,
+  type ProductSection,
 } from '../data/food';
 import { defaultFood } from '../store/defaults';
 import type { AppData, FoodData } from '../types';
-import { dayDate, shiftDay } from './dates';
+import { dayDate, shiftDay, weekStart } from './dates';
 import { fromMinutes, isTime, toMinutes } from './time';
 
 // Приём пищи на конкретную дату (с учётом Вс-исключений, замен и своего времени).
@@ -25,10 +27,6 @@ export type Meal = {
 
 export function dayType(day: string): DayType {
   return GYM_WEEKDAYS.includes(dayDate(day).getDay()) ? 'gym' : 'rest';
-}
-
-export function hasPrep(day: string): boolean {
-  return PREP_DAYS[dayDate(day).getDay()] != null;
 }
 
 export const sumKcal = (dishes: DishId[]) => dishes.reduce((n, id) => n + DISHES[id].kcal, 0);
@@ -103,14 +101,6 @@ export function setSwap(d: AppData, day: string, slot: string, dish: DishId | nu
   return withFood(d, { swaps });
 }
 
-export function togglePrep(d: AppData, day: string, item: string): AppData {
-  const list = d.food.prep[day] ?? [];
-  const next = list.includes(item) ? list.filter((s) => s !== item) : [...list, item];
-  const prep = { ...d.food.prep, [day]: next };
-  if (next.length === 0) delete prep[day];
-  return withFood(d, { prep });
-}
-
 export function setPhoto(d: AppData, dish: DishId, uri: string | null): AppData {
   const photos = { ...d.food.photos };
   if (uri) photos[dish] = uri;
@@ -118,63 +108,69 @@ export function setPhoto(d: AppData, dish: DishId, uri: string | null): AppData 
   return withFood(d, { photos });
 }
 
-// ---- Заготовка из меню ----
+// ---- Свой рецепт блюда (SPEC_v3_2 §5.3): по dishId, во всех приёмах и днях ----
 
-// Порции на период заготовки (с учётом замен). Лосось не заготавливается.
-export type PrepCounts = { rice: number; chicken: number; pasta: number; meat: number };
+// Стандартный рецепт — шаги блюда (у блюд с рисом — и салат).
+export function standardRecipe(dish: DishId): string {
+  const d = DISHES[dish];
+  const steps = d.steps.map((step, i) => `${i + 1}. ${step}`);
+  if (d.salad) steps.push(`Салат: ${DISHES.salad.steps.join(', ').toLowerCase()}`);
+  return steps.join('\n');
+}
 
-export function prepCounts(food: FoodData, day: string): PrepCounts {
-  const c: PrepCounts = { rice: 0, chicken: 0, pasta: 0, meat: 0 };
-  const days = PREP_DAYS[dayDate(day).getDay()] ?? 0;
+export function recipeOf(food: FoodData, dish: DishId): { text: string; custom: boolean } {
+  const own = food.recipes[dish];
+  return own ? { text: own, custom: true } : { text: standardRecipe(dish), custom: false };
+}
+
+// Пустой текст или null — вернуть стандартный.
+export function setRecipe(d: AppData, dish: DishId, text: string | null): AppData {
+  const recipes = { ...d.food.recipes };
+  const clean = text?.trim();
+  if (clean) recipes[dish] = clean;
+  else delete recipes[dish];
+  return withFood(d, { recipes });
+}
+
+// ---- Продукты на неделю (SPEC_v3_2 §5.2): меню пн–вс с заменами, салат у блюд с рисом ----
+
+export type ProductRow = { product: ProductId; name: string; g: number; count?: number; amount: string; text: string };
+export type ProductGroup = { section: ProductSection; title: string; rows: ProductRow[] };
+
+// «Рис (сухой) — 880 г», «Бананы — 8 шт. (~960 г)»
+export function formatProductRow(product: ProductId, g: number): ProductRow {
+  const p = PRODUCTS[product];
+  const grams = `${formatNum(g)} г`;
+  const count = p.piece ? Math.round((g / p.piece.g) * 10) / 10 : undefined;
+  const amount = p.piece ? `${String(count).replace('.', ',')} ${p.piece.unit} (~${grams})` : grams;
+  return { product, name: p.name, g, count, amount, text: `${p.name} — ${amount}` };
+}
+
+// Сумма граммов по продуктам за дни [from, from + days).
+export function productTotals(food: FoodData, from: string, days = 7): Partial<Record<ProductId, number>> {
+  const totals: Partial<Record<ProductId, number>> = {};
   for (let i = 0; i < days; i++) {
-    for (const m of mealsFor(food, shiftDay(day, i))) {
-      for (const id of m.dishes) {
-        if (id === 'chicken_rice' || id === 'salmon_rice') c.rice += 1;
-        if (id === 'chicken_rice') c.chicken += 1;
-        if (id === 'pasta') c.pasta += 1;
-        if (id === 'meat_sandwich') c.meat += 1;
+    for (const meal of mealsFor(food, shiftDay(from, i))) {
+      for (const id of meal.dishes) {
+        const items = DISHES[id].salad ? [...DISHES[id].items, ...DISHES.salad.items] : DISHES[id].items;
+        for (const { product, g } of items) totals[product] = (totals[product] ?? 0) + g;
       }
     }
   }
-  return c;
+  return totals;
 }
 
-export type PrepItem = { id: keyof PrepCounts; title: string; text: string };
-
-// Пункты чек-листа с количествами; блюд нет в периоде — пункта нет.
-export function prepPlan(food: FoodData, day: string): PrepItem[] {
-  const c = prepCounts(food, day);
-  const items: PrepItem[] = [];
-  if (c.rice > 0) {
-    const rice = c.rice * PREP.riceDry;
-    items.push({
-      id: 'rice',
-      title: `Рис: ${c.rice} × ${PREP.riceDry} г = ${rice} г`,
-      text: `Промыть ${rice} г, ${Math.round(rice * PREP.waterRatio)} г воды, закипит → минимальный огонь под крышкой 15 мин → 10 мин не открывать → по ${PREP.riceCookedPortion} г готового в контейнер.`,
-    });
-  }
-  if (c.chicken > 0) {
-    items.push({
-      id: 'chicken',
-      title: `Куриное филе: ${c.chicken} × ${PREP.chickenRaw} г = ${c.chicken * PREP.chickenRaw} г`,
-      text: `Соль, перец, чеснок, паприка, ${PREP.chickenOil} г масла → духовка 425°F 18–22 мин (внутри 165°F) → остудить → ${c.chicken} порц. по ${PREP.chickenCooked} г.`,
-    });
-  }
-  if (c.pasta > 0) {
-    items.push({
-      id: 'pasta',
-      title: `Паста с фаршем: ${c.pasta} порц.`,
-      text: `${c.pasta * PREP.pasta} г пасты + ${c.pasta * PREP.mince} г фарша. Фарш обжарить 8–10 мин, маринара ${c.pasta * PREP.marinara} г, 5 мин, смешать с пастой, по контейнерам.`,
-    });
-  }
-  if (c.meat > 0) {
-    items.push({
-      id: 'meat',
-      title: `Мясо для сэндвичей: ${c.meat} × ${PREP.meat} г = ${c.meat * PREP.meat} г`,
-      text: 'Варёное куриное филе (варить 20 мин после закипания) или готовая нарезка.',
-    });
-  }
-  return items;
+// Сгруппировано по разделам (порядок разделов фиксирован), внутри — по алфавиту; пустых разделов нет.
+export function weekProducts(food: FoodData, day: string): ProductGroup[] {
+  const totals = productTotals(food, weekStart(day));
+  return PRODUCT_SECTIONS.map(({ id, title }) => ({
+    section: id,
+    title,
+    rows: (Object.keys(totals) as ProductId[])
+      .filter((p) => PRODUCTS[p].section === id)
+      .map((p) => formatProductRow(p, totals[p]!))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+  })).filter((g) => g.rows.length > 0);
 }
 
 // Напоминание про лосось — накануне дня, где в меню лосось.
@@ -264,7 +260,6 @@ export function sanitizeFood(raw: unknown): FoodData {
   const food = defaultFood();
   if (!isObj(raw)) return food;
   food.eaten = strLists(raw.eaten);
-  food.prep = strLists(raw.prep);
   if (isObj(raw.swaps)) {
     for (const [k, map] of Object.entries(raw.swaps)) {
       if (!isDay(k) || !isObj(map)) continue;
@@ -281,6 +276,12 @@ export function sanitizeFood(raw: unknown): FoodData {
     for (const [k, uri] of Object.entries(raw.photos)) {
       const id = k === 'rotisserie_rice' ? undefined : dishOf(k);
       if (id && typeof uri === 'string' && (k === id || food.photos[id] == null)) food.photos[id] = uri;
+    }
+  }
+  if (isObj(raw.recipes)) {
+    for (const [k, text] of Object.entries(raw.recipes)) {
+      const id = dishOf(k);
+      if (id && typeof text === 'string' && text.trim() && (k === id || food.recipes[id] == null)) food.recipes[id] = text.trim();
     }
   }
   if (isObj(raw.times)) food.times = { gym: times(raw.times.gym), rest: times(raw.times.rest) };

@@ -1,7 +1,7 @@
 import type { AppData, FoodData } from '../types';
 
 export function defaultFood(): FoodData {
-  return { eaten: {}, swaps: {}, prep: {}, photos: {}, times: { gym: {}, rest: {} } };
+  return { eaten: {}, swaps: {}, photos: {}, recipes: {}, times: { gym: {}, rest: {} } };
 }
 
 export function defaultData(): AppData {

@@ -1,6 +1,6 @@
 import { getExercise, getVariant, isLegacyTemplate, PROGRAM } from '../data/program';
 import type { AppData, BodyWeightEntry, Session, WorkoutTemplate } from '../types';
-import { dayDate, dayKey, shiftDay } from './dates';
+import { dayDate, dayKey, shiftDay, weekStart } from './dates';
 import { formatBest } from './format';
 import { finishedSessions } from './metrics';
 import { getBest, startBest } from './records';
@@ -66,10 +66,7 @@ export function recordGains(data: AppData, s: Session): string[] {
 
 // ---- Неделя пн–вс ----
 
-export function weekStart(day: string): string {
-  const w = dayDate(day).getDay();
-  return shiftDay(day, -((w + 6) % 7));
-}
+export { weekStart };
 
 export type WeekCounts = { workouts: number; runs: number };
 

@@ -5,7 +5,7 @@ import type { DishId } from './food';
 // Своё фото пользователя важнее ссылки.
 export const FOOD_IMAGES: Record<Exclude<DishId, 'salad'>, string> = {
   granola: 'https://live.staticflickr.com/3553/3566981596_ed20c44717_b.jpg',
-  shake: 'https://live.staticflickr.com/4161/33941875343_be26ff4ff8_b.jpg',
+  shake: 'https://live.staticflickr.com/8073/8420414521_924123a1ff_b.jpg',
   yogurt: 'https://live.staticflickr.com/5256/5537372504_df5b0d436d_b.jpg',
   eggs: 'https://live.staticflickr.com/3193/2409085893_ef652e7374_b.jpg',
   bacon_sandwich: 'https://live.staticflickr.com/3428/3389649469_8a9a75bf7e_b.jpg',

@@ -3,21 +3,18 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MealCard } from '../../components/food/MealCard';
 import { Card } from '../../components/ui';
 import { Icon } from '../../components/Icon';
-import { DAY_TYPE_LABEL, PREP_DAYS } from '../../data/food';
+import { DAY_TYPE_LABEL } from '../../data/food';
 import { useNow } from '../../hooks/useNow';
 import { formatDay, WEEKDAYS } from '../../logic/format';
 import {
   dayTotals,
   dayType,
   formatNum,
-  hasPrep,
   isEaten,
   mealsFor,
   nextMeal,
-  prepPlan,
   salmonTomorrow,
   toggleEaten,
-  togglePrep,
 } from '../../logic/food';
 import { dayDate, dayKey, shiftDay } from '../../logic/metrics';
 import { useStore } from '../../store/AppStore';
@@ -68,25 +65,6 @@ export default function FoodScreen() {
         </Text>
       </Card>
 
-      {hasPrep(day) && (
-        <Card style={styles.card}>
-          <Text style={styles.title}>Заготовка</Text>
-          <Text style={styles.muted}>{prepPeriod(day)}</Text>
-          {prepPlan(food, day).map((item) => {
-            const done = (food.prep[day] ?? []).includes(item.id);
-            return (
-              <Pressable key={item.id} onPress={() => update((d) => togglePrep(d, day, item.id))} style={styles.check}>
-                <Icon name={done ? 'checkbox-marked-outline' : 'checkbox-blank-outline'} size={22} color={done ? colors.muted : colors.text} />
-                <View style={styles.flex}>
-                  <Text style={[styles.checkTitle, done && styles.doneText]}>{item.title}</Text>
-                  <Text style={styles.muted}>{item.text}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </Card>
-      )}
-
       {salmonTomorrow(food, day) && (
         <Card style={styles.reminder}>
           <Icon name="fish" size={20} color={colors.muted} />
@@ -120,16 +98,6 @@ const styles = StyleSheet.create({
   muted: { fontSize: 14, color: colors.muted },
   progress: { fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 4 },
   stat: { fontSize: 22, fontWeight: '800', color: colors.text },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
-  check: { flexDirection: 'row', gap: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.border },
   reminder: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
-  checkTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  doneText: { color: colors.muted, textDecorationLine: 'line-through' },
 });
 
-// «На Вс, Пн, Вт» / «На Ср, Чт, Пт, Сб»
-const SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-function prepPeriod(day: string): string {
-  const w = dayDate(day).getDay();
-  return `На ${Array.from({ length: PREP_DAYS[w] ?? 0 }, (_, i) => SHORT[(w + i) % 7]).join(', ')}`;
-}
