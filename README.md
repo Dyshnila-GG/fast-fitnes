@@ -45,8 +45,20 @@ src/hooks/          общие хуки (useNow — тик таймеров)
 
 ## Фото блюд
 
-Фото загружаются по ссылке и кэшируются на телефоне (как GIF упражнений). Ссылки — в `src/data/foodImages.ts`
-(id: `granola`, `shake`, `yogurt`, `eggs`, `bacon_sandwich`, `meat_sandwich`, `pasta`, `chicken_rice`, `salmon_rice`).
-Пока ссылки пустые — показывается тёмная заглушка с серой иконкой. Если ссылка не загрузилась (2 повтора) — тоже заглушка.
-
+Фото загружаются по ссылке и кэшируются на телефоне (как GIF упражнений). Ссылки — в `src/data/foodImages.ts`.
+Если ссылка не загрузилась (2 повтора) — тёмная заглушка с серой иконкой.
 Своё фото важнее ссылки: экран блюда → тап по картинке → «Сфотографировать» / «Из галереи».
+
+Фото — Flickr, лицензии Creative Commons ([CC BY 2.0](https://creativecommons.org/licenses/by/2.0/), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/)):
+
+| id | Блюдо | Автор | Лицензия | Источник |
+|---|---|---|---|---|
+| `granola` | Мюсли с молоком и бананом | joyosity | CC BY 2.0 | https://www.flickr.com/photos/33993074@N00/3566981596 |
+| `shake` | Шоколадный коктейль | EasyHealthySmoothie | CC BY 2.0 | https://www.flickr.com/photos/150788323@N04/33941875343 |
+| `yogurt` | Йогурт | grongar | CC BY 2.0 | https://www.flickr.com/photos/70757891@N00/5537372504 |
+| `eggs` | Яичница | avlxyz | CC BY-SA 2.0 | https://www.flickr.com/photos/10559879@N00/2409085893 |
+| `bacon_sandwich` | Бутерброды с беконом | fancycwabs | CC BY-SA 2.0 | https://www.flickr.com/photos/36818084@N00/3389649469 |
+| `meat_sandwich` | Сэндвич с мясом | uwenna | CC BY-SA 2.0 | https://www.flickr.com/photos/40647380@N06/3866395618 |
+| `pasta` | Паста с фаршем | Lachlan Hardy | CC BY 2.0 | https://www.flickr.com/photos/98983159@N00/2516258656 |
+| `chicken_rice` | Курица с рисом и салатом | kawanet | CC BY 2.0 | https://www.flickr.com/photos/50902562@N00/2597505789 |
+| `salmon_rice` | Лосось с рисом и салатом | Vrysxy | CC BY 2.0 | https://www.flickr.com/photos/9013832@N03/3299328084 |

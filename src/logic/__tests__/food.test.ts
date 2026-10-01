@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { DISHES, SCHEDULE, SWAP_DISHES } from '../../data/food';
+import { FOOD_IMAGES } from '../../data/foodImages';
 import { defaultData } from '../../store/defaults';
 import type { AppData } from '../../types';
 import {
@@ -64,6 +65,12 @@ describe('тип дня и расписание', () => {
     const meals = mealsFor(defaultData().food, SUN);
     expect(meals.map((m) => m.dishes[0])).toEqual(['granola', 'shake', 'chicken_rice', 'meat_sandwich', 'salmon_rice']);
     expect(dayTotals(defaultData().food, SUN).kcalTotal).toBe(620 + 540 + 755 + 540 + 825);
+  });
+
+  it('у каждого блюда, кроме салата, есть ссылка на фото', () => {
+    for (const id of Object.keys(DISHES).filter((d) => d !== 'salad')) {
+      expect((FOOD_IMAGES as Record<string, string>)[id]).toMatch(/^https:\/\/live\.staticflickr\.com\/.+\.jpg$/);
+    }
   });
 
   it('новые блюда: курица с рисом 755/62 (филе, без бёдер), сэндвич с мясом 540/45, курицы-гриль нет', () => {
