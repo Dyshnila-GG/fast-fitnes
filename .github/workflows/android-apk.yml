@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, claude/loving-archimedes-o49fef] # TEMP: проверка сборки на ветке
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
