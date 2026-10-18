@@ -25,6 +25,15 @@ export type PlanProfilePreset = {
 export type PlanExercise = {
   exerciseId: string;
   variantId: string;
+  /** Portable display/runtime metadata. Optional for legacy packs that use built-in IDs. */
+  title?: string;
+  variantName?: string;
+  equipment?: string;
+  gifId?: string;
+  cue?: string;
+  muscles?: string;
+  kind?: 'machine' | 'free';
+  mode?: 'weight' | 'bodyweight' | 'time';
   sets: number;
   repsMin?: number;
   repsMax?: number;
