@@ -123,7 +123,7 @@ export function parseImport(text: string): ImportResult {
   } catch {
     return { ok: false, error: t('import.notJson') };
   }
-  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: t('import.unknown') };
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2 && raw.version !== 3)) return { ok: false, error: t('import.unknown') };
   const p = raw.profile;
   if (!isObj(p) || !isNum(p.age) || !isNum(p.heightIn) || !isNum(p.startWeight)) {
     return { ok: false, error: t('import.badProfile') };
