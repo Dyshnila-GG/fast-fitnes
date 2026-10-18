@@ -189,7 +189,7 @@ describe('перенос рекордов из планов v1', () => {
   it('без сохранённого плана — стартовый рекорд v2; история, профиль и метрики не меняются', () => {
     const old = { ...defaultData(), version: 1, records: undefined, plans: { A1: { machine: { sets: 4, reps: 8, weight: 85 } } } };
     const d = migrateData(old);
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
     expect(getBest(d, variant('tue1', 'machine'))).toEqual({ weight: 85 });
     expect(getBest(d, variant('thu3', 'machine'))).toEqual({ weight: 45 }); // в v1 было 90, но плана не сохранено
     expect([d.sessions, d.profile, d.bodyWeight, d.plans]).toEqual([old.sessions, old.profile, old.bodyWeight, old.plans]);
