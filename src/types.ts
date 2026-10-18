@@ -1,10 +1,12 @@
 import type { Dish, DishId, MealSlot, Product } from './data/food';
+import type { GainStrategy, Goal, TochkaPlanPack } from './planPack';
 
 export type Kind = 'machine' | 'free';
 export type Mode = 'weight' | 'bodyweight' | 'time';
 export type Length = 'long' | 'short';
 export type LegacyTemplateId = 'A' | 'B' | 'C'; // программа v1 — только история
-export type TemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
+export type BuiltInTemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
+export type TemplateId = BuiltInTemplateId | (string & {});
 export type Rating = 'easy' | 'normal' | 'hard' | 'fail'; // оценка после рабочих подходов
 export type Feel = 'easy' | 'normal' | 'hard'; // «Как пошла разминка?»
 
@@ -22,11 +24,21 @@ export type Warmup = { pct: number; reps?: number; seconds?: number }; // pct = 
 export type Best = Omit<Plan, 'sets'>;
 
 export type Variant = {
+  /** Stable v4 identity. Legacy variants are migrated from their name when absent. */
+  id?: string;
   kind: Kind;
   name: string;
   equipment: string;
   gifId: string;
   cue: string;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  setup?: string[];
+  execution?: string[];
+  mistakes?: string[];
+  feelCues?: string[];
+  targetRir?: number;
+  restRangeSec?: [number, number];
   mode: Mode;
   plan: Plan;
   warmup: Warmup[];
@@ -61,13 +73,23 @@ export type SetLog = {
   factWeight?: number;
   factReps?: number;
   factSeconds?: number;
+  /** v4 set-level effort. 4 means 4+ clean reps remained. */
+  rir?: 0 | 1 | 2 | 3 | 4;
+  completedAt?: string;
+  actualRestSec?: number;
+  stopReason?: 'target' | 'technique' | 'other_muscle' | 'pain';
+  limitingMuscle?: string;
   done: boolean;
 };
 
 export type ExerciseLog = {
   exerciseId: string;
   variant: Kind;
+  variantId?: string;
   sets: SetLog[];
+  targetRir?: number;
+  muscleFeel?: 'low' | 'normal' | 'high';
+  techniqueConfidence?: 'low' | 'normal' | 'high';
   record?: Best; // рекорд на начало тренировки («было»)
   feel?: Feel;
   todayWeight?: number; // вес «сегодня» для всех рабочих подходов
@@ -100,7 +122,15 @@ export type Session = {
   exercises: ExerciseLog[];
 };
 
-export type Profile = { age: number; heightIn: number; startWeight: number };
+export type Profile = {
+  age: number;
+  heightIn: number;
+  startWeight: number;
+  goal?: Goal;
+  gainStrategy?: GainStrategy;
+  musclePriorities?: string[];
+  limitations?: string[];
+};
 export type BodyWeightEntry = { id: string; date: string; value: number };
 export type MeasurementEntry = {
   id: string;
@@ -146,8 +176,15 @@ export type Lang = 'ru' | 'en' | 'uk';
 export type Units = 'imperial' | 'metric';
 export type Settings = { lang: Lang; units: Units };
 
+export type InstalledPlan = {
+  pack: TochkaPlanPack;
+  installedAt: string;
+};
+
 export type AppData = {
-  version: 2;
+  version: 3;
+  /** Imported configuration. History remains separate and user-owned. */
+  installedPlan: InstalledPlan | null;
   profile: Profile;
   lengthChoice: Partial<Record<TemplateId, Length>>;
   variantChoice: Record<string, Kind>;
