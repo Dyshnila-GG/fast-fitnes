@@ -110,6 +110,11 @@ export default function ProfileScreen() {
         onPress={() => router.push('/trash')}
       />
       <NavCard
+        title="Plan Pack"
+        subtitle={data.installedPlan ? `${data.installedPlan.pack.title} · v${data.installedPlan.pack.version}` : 'Импорт тренировок, питания и настроек'}
+        onPress={() => router.push('/plan-import')}
+      />
+      <NavCard
         title={t('profile.appSettings')}
         subtitle={`${LANG_NAMES[data.settings.lang]} · ${t(`settings.units.${data.settings.units}`)}`}
         onPress={() => router.push('/app-settings')}
