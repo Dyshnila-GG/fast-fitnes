@@ -1,4 +1,4 @@
-import { decideAfterSet } from '../trainingEngine';
+import { applyDecisionToNextSet, decideAfterSet } from '../trainingEngine';
 
 describe('trainingEngine', () => {
   const base = { kind: 'machine' as const, repsMin: 8, repsMax: 12, targetRir: 2, restMinSec: 150 };
@@ -28,5 +28,11 @@ describe('trainingEngine', () => {
   test('pain always stops progression', () => {
     const d=decideAfterSet({ ...base, set:{type:'work',factWeight:100,factReps:9,rir:2,stopReason:'pain',done:true} });
     expect(d.type).toBe('STOP');
+  });
+  test('writes an increase into the next set plan', () => {
+    const current={type:'work' as const,factWeight:100,factReps:12,rir:4 as const,done:true};
+    const next={type:'work' as const,planReps:8,planRepsMax:12,done:false};
+    const d=decideAfterSet({...base,set:current});
+    expect(applyDecisionToNextSet(current,next,d).planWeight).toBe(105);
   });
 });
