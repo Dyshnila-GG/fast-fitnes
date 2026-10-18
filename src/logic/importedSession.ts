@@ -10,6 +10,8 @@ function workSets(e: PlanExercise): SetLog[] {
     planReps: e.repsMin,
     planRepsMax: e.repsMax,
     planSeconds: e.seconds,
+    // Seed the first prescription with the pack's load when present.
+    planWeight: (e as PlanExercise & { weight?: number }).weight,
     done: false,
   }));
 }
