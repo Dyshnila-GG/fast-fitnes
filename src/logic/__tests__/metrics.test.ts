@@ -186,7 +186,7 @@ describe('экспорт / импорт', () => {
     const res = parseImport(JSON.stringify(v1));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.data.version).toBe(2);
+    expect(res.data.version).toBe(3);
     expect(res.data.records['Жим лёжа в Смите']).toEqual({ weight: 85 });
     expect(res.data.sessions).toEqual(JSON.parse(JSON.stringify(v1.sessions)));
   });
