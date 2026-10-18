@@ -87,7 +87,7 @@ export function ExerciseCard(props: Props) {
       </View>
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
-      {needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
+      {!v4 && needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
       <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} engine={v4 ? {kind:variant.kind,units,targetRir:log.targetRir,restMinSec} : undefined} />
       {!v4 && <Text style={styles.meta}>{t('exercise.reserve')}</Text>}
       <Button title={t('exercise.rest', { rest: formatRest(restMinSec ?? ex.restSec) })} onPress={onRest} />
