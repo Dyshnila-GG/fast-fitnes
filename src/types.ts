@@ -110,6 +110,21 @@ export type Session = {
   id: string;
   units?: Units; // единицы на момент тренировки: в них считались округления и рост рекорда
   templateId: TemplateId;
+  /** Immutable copy of an imported workout prescription used for this session. */
+  planSnapshot?: {
+    title: string;
+    exercises: Array<{
+      exerciseId: string;
+      variantId: string;
+      sets: number;
+      repsMin?: number;
+      repsMax?: number;
+      seconds?: number;
+      targetRir?: number;
+      restMinSec?: number;
+      restMaxSec?: number;
+    }>;
+  };
   length: Length;
   startedAt: string;
   finishedAt?: string;
