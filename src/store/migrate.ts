@@ -38,7 +38,7 @@ export function recordsFromLegacyPlans(plans: LegacyPlans): Record<string, Best>
 export function migrateData(raw: Record<string, unknown>): AppData {
   const base = defaultData();
   const d = { ...base, ...raw } as AppData;
-  const legacy = raw.version === 2 ? {} : recordsFromLegacyPlans(d.plans ?? {});
+  const legacy = raw.version === 1 ? recordsFromLegacyPlans(d.plans ?? {}) : {};
   return {
     ...d,
     version: 3,
