@@ -132,6 +132,9 @@ export type Session = {
   pausedAt?: string; // момент начала текущей паузы
   restEndsAt?: string; // окончание текущего отдыха
   restSec?: number; // длительность текущего отдыха
+  /** v4: when rest began and which completed work set it belongs to. */
+  restStartedAt?: string;
+  restFor?: { exerciseIndex: number; setIndex: number };
   warmup?: SessionWarmup;
   warmupDone?: string[]; // v1: чек-лист разминки
   exercises: ExerciseLog[];
