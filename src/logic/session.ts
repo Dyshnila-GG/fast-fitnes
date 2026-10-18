@@ -181,8 +181,8 @@ export function togglePause(s: Session, now = new Date()): Session {
   return { ...s, pausedMs: pausedTotalMs(s, now.getTime()), pausedAt: undefined };
 }
 
-export function startRest(s: Session, sec: number, now = Date.now()): Session {
-  return { ...s, restSec: sec, restEndsAt: new Date(now + sec * 1000).toISOString() };
+export function startRest(s: Session, sec: number, now = Date.now(), restFor?: Session['restFor']): Session {
+  return { ...s, restSec: sec, restStartedAt: new Date(now).toISOString(), restEndsAt: new Date(now + sec * 1000).toISOString(), restFor };
 }
 
 export function shiftRest(s: Session, deltaSec: number, now = Date.now()): Session {
@@ -191,8 +191,14 @@ export function shiftRest(s: Session, deltaSec: number, now = Date.now()): Sessi
   return { ...s, restSec: Math.max(0, (s.restSec ?? 0) + deltaSec), restEndsAt: new Date(end).toISOString() };
 }
 
-export function stopRest(s: Session): Session {
-  return { ...s, restEndsAt: undefined, restSec: undefined };
+export function stopRest(s: Session, now = Date.now()): Session {
+  let exercises = s.exercises;
+  if (s.restStartedAt && s.restFor) {
+    const actualRestSec = Math.max(0, Math.round((now - ms(s.restStartedAt)) / 1000));
+    const owner = s.restFor;
+    exercises = s.exercises.map((log, ei) => ei !== owner.exerciseIndex ? log : ({ ...log, sets: log.sets.map((set, si) => si !== owner.setIndex ? set : ({ ...set, actualRestSec })) }));
+  }
+  return { ...s, exercises, restEndsAt: undefined, restSec: undefined, restStartedAt: undefined, restFor: undefined };
 }
 
 // Подход заполнен, когда введены обязательные поля факта.
