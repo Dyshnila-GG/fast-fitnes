@@ -77,8 +77,9 @@ export default function WorkoutScreen() {
   const updateLog = (index: number, fn: (log: ExerciseLog) => ExerciseLog) =>
     updateSession((s) => ({ ...s, exercises: s.exercises.map((l, i) => (i === index ? fn(l) : l)) }));
 
+  const importedPlanExercise = (log: ExerciseLog) => session.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
   const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
-  const modeOf = (log: ExerciseLog) => variantOf(log).mode;
+  const modeOf = (log: ExerciseLog) => importedPlanExercise(log)?.seconds != null ? 'time' : variantOf(log).mode;
 
   const switchVariant = (index: number, kind: Kind) => {
     const apply = () =>
@@ -148,7 +149,11 @@ export default function WorkoutScreen() {
                 onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
                 prevRating={lastRating(data.sessions, variantOf(log).name)}
                 prevNote={lastNote(data.sessions, variantOf(log).name)}
-                onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
+                onRest={() => {
+                  const imported = importedPlanExercise(log);
+                  const rest = imported?.restMinSec ?? getExercise(log.exerciseId).restSec;
+                  updateSession((s) => startRest(s, rest));
+                }}
               />
             ))}
           </ScrollView>
