@@ -26,7 +26,14 @@ export function buildSets(variant: Variant, best: Best, length: Length, units: U
 export function buildExerciseLog(data: AppData, exercise: Exercise, kind: Kind, length: Length): ExerciseLog {
   const variant = getVariant(exercise, kind);
   const record = getBest(data, variant);
-  return { exerciseId: exercise.id, variant: kind, record, sets: buildSets(variant, record, length, data.settings.units) };
+  return {
+    exerciseId: exercise.id,
+    variant: kind,
+    variantId: variant.id ?? variant.name,
+    targetRir: variant.targetRir,
+    record,
+    sets: buildSets(variant, record, length, data.settings.units),
+  };
 }
 
 export function sessionExercises(templateId: TemplateId, length: Length): Exercise[] {
@@ -199,7 +206,12 @@ export function updateSet(log: ExerciseLog, mode: Variant['mode'], index: number
   const sets = log.sets.map((s, i) => {
     if (i !== index) return s;
     const next = { ...s, ...patch };
-    return { ...next, done: isSetFilled(next, mode) };
+    const filled = isSetFilled(next, mode);
+    return {
+      ...next,
+      done: filled,
+      completedAt: filled ? next.completedAt ?? new Date().toISOString() : undefined,
+    };
   });
   return { ...log, sets };
 }
@@ -243,7 +255,11 @@ const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), 
 // Заполнено: есть ответ после разминки (кроме планки), факты всех рабочих подходов и оценка.
 export function isExerciseComplete(log: ExerciseLog): boolean {
   const variant = variantOf(log);
-  return (!needsFeel(variant) || log.feel != null) && log.rating != null && log.sets.every((s) => s.type !== 'work' || s.done);
+  const work = log.sets.filter((s) => s.type === 'work');
+  const v4Complete = work.every((s) => s.done && (variant.mode === 'time' || s.rir != null));
+  // Imported/v4 plans use set-level RIR. Legacy built-in sessions keep the v3 completion contract.
+  if (log.variantId && variant.targetRir != null) return v4Complete;
+  return (!needsFeel(variant) || log.feel != null) && log.rating != null && work.every((s) => s.done);
 }
 
 // Номер текущего упражнения: первое незавершённое (иначе последнее).
