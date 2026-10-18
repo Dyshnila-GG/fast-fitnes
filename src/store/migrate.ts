@@ -41,7 +41,8 @@ export function migrateData(raw: Record<string, unknown>): AppData {
   const legacy = raw.version === 2 ? {} : recordsFromLegacyPlans(d.plans ?? {});
   return {
     ...d,
-    version: 2,
+    version: 3,
+    installedPlan: d.installedPlan ?? null,
     plans: d.plans ?? {},
     records: { ...legacy, ...(d.records ?? {}) },
     food: sanitizeFood(raw.food),
