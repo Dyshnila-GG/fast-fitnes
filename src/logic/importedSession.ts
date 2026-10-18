@@ -18,7 +18,7 @@ export function buildImportedExerciseLog(e: PlanExercise): ExerciseLog {
   return {
     exerciseId: e.exerciseId,
     // Compatibility field until ExerciseLog v4 removes the old machine/free switch.
-    variant: 'machine',
+    variant: e.kind ?? 'machine',
     variantId: e.variantId,
     targetRir: e.targetRir,
     sets: workSets(e),
