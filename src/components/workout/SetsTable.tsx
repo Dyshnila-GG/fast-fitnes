@@ -70,7 +70,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
             <Pressable onPress={() => onRemove(i)} hitSlop={6} style={styles.icon}><Icon name="close" size={16} color={colors.muted} /></Pressable>
           </View>
           {type === 'work' && (s.factReps != null || s.factSeconds != null) ? <RirPicker value={s.rir} onChange={(rir)=>onChange(i,{rir})} /> : null}
-          {type === 'work' && engine && s.factReps != null && s.rir != null ? <SetDecision decision={decideAfterSet({
+          {type === 'work' && engine && s.factReps != null && s.rir != null ? <SetDecision units={engine.units} decision={decideAfterSet({
             set:s,
             repsMin:s.planReps,
             repsMax:s.planRepsMax ?? s.planReps,
