@@ -167,6 +167,17 @@ describe('экспорт / импорт', () => {
     if (res.ok) expect(res.data).toEqual(JSON.parse(JSON.stringify(d)));
   });
 
+  it('экспорт → импорт сохраняет установленный Plan Pack', () => {
+    const d = sample();
+    d.installedPlan = {
+      installedAt: '2026-10-18T00:00:00.000Z',
+      pack: { format: 'tochka-plan', schemaVersion: 1, id: 'v4', version: '1', title: 'V4 Test' },
+    };
+    const res = parseImport(exportData(d));
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.installedPlan).toEqual(d.installedPlan);
+  });
+
   it('незавершённая тренировка и открытый итог не импортируются', () => {
     const d = { ...sample(), summaryId: 'x', activeSession: buildSession(defaultData(), 'B', 'long') };
     const res = parseImport(exportData(d));
