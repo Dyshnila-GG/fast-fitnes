@@ -1,5 +1,6 @@
 name: Android test APK
 on:
+  pull_request:
   workflow_dispatch:
   push:
     branches: [tochka-v4-core]
