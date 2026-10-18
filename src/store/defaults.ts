@@ -11,7 +11,8 @@ export function defaultReminders(): Reminders {
 
 export function defaultData(): AppData {
   return {
-    version: 2,
+    version: 3,
+    installedPlan: null,
     profile: { age: 22, heightIn: 72, startWeight: 161.3 },
     lengthChoice: {},
     variantChoice: {},
