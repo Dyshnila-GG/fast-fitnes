@@ -35,6 +35,8 @@ export type PlanExercise = {
   kind?: 'machine' | 'free';
   mode?: 'weight' | 'bodyweight' | 'time';
   sets: number;
+  /** Prescribed starting load in canonical lb storage units. */
+  weight?: number;
   repsMin?: number;
   repsMax?: number;
   seconds?: number;
