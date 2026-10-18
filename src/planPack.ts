@@ -129,5 +129,26 @@ export function parsePlanPack(raw: unknown): PlanPackImportResult {
   if (typeof raw.id !== 'string' || !raw.id.trim()) return { ok: false, error: 'plan.missingId' };
   if (typeof raw.version !== 'string' || !raw.version.trim()) return { ok: false, error: 'plan.missingVersion' };
   if (typeof raw.title !== 'string' || !raw.title.trim()) return { ok: false, error: 'plan.missingTitle' };
+  if (raw.training != null) {
+    if (!obj(raw.training) || !Array.isArray(raw.training.workouts)) return { ok: false, error: 'plan.invalidTraining' };
+    for (const workout of raw.training.workouts) {
+      if (!obj(workout) || typeof workout.id !== 'string' || !workout.id.trim() || typeof workout.title !== 'string' || !Array.isArray(workout.exercises))
+        return { ok: false, error: 'plan.invalidWorkout' };
+      for (const exercise of workout.exercises) {
+        if (!obj(exercise) || typeof exercise.exerciseId !== 'string' || !exercise.exerciseId.trim() || typeof exercise.variantId !== 'string' || !exercise.variantId.trim())
+          return { ok: false, error: 'plan.invalidExercise' };
+        if (!Number.isInteger(exercise.sets) || (exercise.sets as number) < 1 || (exercise.sets as number) > 20)
+          return { ok: false, error: 'plan.invalidSets' };
+        const nums = ['weight','repsMin','repsMax','seconds','targetRir','restMinSec','restMaxSec'] as const;
+        if (nums.some((k) => exercise[k] != null && (typeof exercise[k] !== 'number' || !Number.isFinite(exercise[k] as number) || (exercise[k] as number) < 0)))
+          return { ok: false, error: 'plan.invalidExerciseValue' };
+        if (exercise.repsMin != null && exercise.repsMax != null && (exercise.repsMax as number) < (exercise.repsMin as number))
+          return { ok: false, error: 'plan.invalidRepRange' };
+        if (exercise.targetRir != null && (exercise.targetRir as number) > 4) return { ok: false, error: 'plan.invalidRir' };
+        if (exercise.kind != null && exercise.kind !== 'machine' && exercise.kind !== 'free') return { ok: false, error: 'plan.invalidKind' };
+        if (exercise.mode != null && !['weight','bodyweight','time'].includes(exercise.mode as string)) return { ok: false, error: 'plan.invalidMode' };
+      }
+    }
+  }
   return { ok: true, pack: raw as TochkaPlanPack };
 }
