@@ -34,6 +34,7 @@ import {
   warmupOf,
 } from '../logic/session';
 import { applyFeel, setTodayWeight } from '../logic/records';
+import { coachImportedSet } from '../logic/importedSession';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 import type { ExerciseLog, Kind, Session } from '../types';
@@ -139,7 +140,7 @@ export default function WorkoutScreen() {
                 log={log}
                 number={i + 1}
                 onVariant={(k) => switchVariant(i, k)}
-                onSet={(si, patch) => updateLog(i, (l) => updateSet(l, modeOf(l), si, patch))}
+                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && patch.rir != null ? coachImportedSet(next,i,si,variantOf(exercises[i]).kind).session : next; })}
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
