@@ -57,6 +57,7 @@ function RootStack() {
         <Stack.Screen name="progress" options={{ title: t('nav.progress') }} />
         <Stack.Screen name="personal" options={{ title: t('nav.personal') }} />
         <Stack.Screen name="data" options={{ title: t('nav.data') }} />
+        <Stack.Screen name="plan-import" options={{ title: 'Plan Pack' }} />
         <Stack.Screen name="app-settings" options={{ title: t('nav.app_settings') }} />
         <Stack.Screen name="trash" options={{ title: t('nav.trash') }} />
         <Stack.Screen name="backup" options={{ title: t('nav.backup') }} />
