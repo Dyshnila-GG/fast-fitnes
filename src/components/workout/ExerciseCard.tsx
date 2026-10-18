@@ -6,7 +6,7 @@ import { formatPlan, formatRest, ratingLabel } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';
 import { colors } from '../../theme';
 import { needsFeel } from '../../logic/records';
-import type { ExerciseLog, Feel, Kind, Rating, SetLog, Units } from '../../types';
+import type { ExerciseLog, Feel, Kind, Mode, Rating, SetLog, Units, Variant } from '../../types';
 import { Button, Card, Segmented } from '../ui';
 import { ExerciseGif } from './ExerciseGif';
 import { GifModal } from './GifModal';
@@ -41,29 +41,44 @@ type Props = {
   v4?: boolean;
   units?: Units;
   restMinSec?: number;
+  planExercise?: {
+    title?: string; variantName?: string; equipment?: string; gifId?: string; cue?: string; muscles?: string;
+    kind?: Kind; mode?: Mode; restMinSec?: number;
+  };
 };
 
 export function ExerciseCard(props: Props) {
   const t = useT();
-  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating, v4, units='imperial', restMinSec } = props;
-  const ex = getExercise(log.exerciseId);
-  const variant = getVariant(ex, log.variant);
+  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating, v4, units='imperial', restMinSec, planExercise } = props;
+  const ex = v4 ? undefined : getExercise(log.exerciseId);
+  const legacyVariant = ex ? getVariant(ex, log.variant) : undefined;
+  const variant: Variant = legacyVariant ?? {
+    id: log.variantId,
+    kind: planExercise?.kind ?? log.variant,
+    name: planExercise?.variantName ?? planExercise?.title ?? log.exerciseId,
+    equipment: planExercise?.equipment ?? '',
+    gifId: planExercise?.gifId ?? '',
+    cue: planExercise?.cue ?? '',
+    mode: planExercise?.mode ?? (log.sets.some((s) => s.planSeconds != null) ? 'time' : 'weight'),
+    plan: { sets: log.sets.filter((s) => s.type === 'work').length },
+    warmup: [],
+  };
   const work = log.sets.filter((s) => s.type === 'work');
   const first = work[0];
-  const complete = isExerciseComplete(log);
+  const complete = isExerciseComplete(log, !!v4);
   const [demo, setDemo] = useState(false);
 
   return (
     <Card style={styles.card}>
       <Text style={styles.index}>
-        {number}. {exerciseTitle(ex)}
+        {number}. {ex ? exerciseTitle(ex) : (planExercise?.title ?? log.exerciseId)}
         {complete ? ` · ${t('exercise.done')}` : ''}
       </Text>
-      <Text style={styles.name}>{variantName(variant)}</Text>
+      <Text style={styles.name}>{ex ? variantName(variant) : variant.name}</Text>
       {prevRating ? <Text style={styles.prevNote}>{t('exercise.prevRating', { rating: ratingLabel(prevRating) })}</Text> : null}
       {prevNote ? <Text style={styles.prevNote}>{t('exercise.prevNote', { note: prevNote })}</Text> : null}
       <Text style={styles.meta}>
-        {variantEquipment(variant)} ·{' '}
+        {(ex ? variantEquipment(variant) : variant.equipment) || '—'} ·{' '}
         {formatPlan(variant, {
           sets: work.length,
           reps: first?.planReps,
@@ -72,17 +87,17 @@ export function ExerciseCard(props: Props) {
           weight: first?.planWeight,
         })}
       </Text>
-      {ex.variants.length > 1 && (
+      {!v4 && ex && ex.variants.length > 1 && (
         <Segmented options={kinds()} value={log.variant} onChange={(k) => k !== log.variant && onVariant(k)} />
       )}
-      <Pressable onPress={() => setDemo(true)}>
+      {variant.gifId ? <Pressable onPress={() => setDemo(true)}>
         <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={!demo} />
-      </Pressable>
-      <Text style={styles.meta}>{t('exercise.muscles', { muscles: exerciseMuscles(ex) })}</Text>
+      </Pressable> : null}
+      <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.muscles ?? '—') })}</Text>
       <View style={styles.cue}>
-        <Text style={styles.cueText}>{variantCue(ex, variant)}</Text>
+        <Text style={styles.cueText}>{ex ? variantCue(ex, variant) : (variant.cue || '—')}</Text>
         <Text style={styles.meta}>
-          {t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) })}
+          {ex ? t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) }) : t('exercise.rest', { rest: formatRest(restMinSec ?? 120) })}
         </Text>
       </View>
 
@@ -90,10 +105,10 @@ export function ExerciseCard(props: Props) {
       {!v4 && needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
       <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} engine={v4 ? {kind:variant.kind,units,targetRir:log.targetRir,restMinSec} : undefined} />
       {!v4 && <Text style={styles.meta}>{t('exercise.reserve')}</Text>}
-      <Button title={t('exercise.rest', { rest: formatRest(restMinSec ?? ex.restSec) })} onPress={onRest} />
+      <Button title={t('exercise.rest', { rest: formatRest(restMinSec ?? ex?.restSec ?? 120) })} onPress={onRest} />
       {!v4 && <RatingBlock rating={log.rating} onChange={onRate} />}
       <NoteField value={log.comment} onChange={onNote} />
-      <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} />
+      {ex && variant.gifId ? <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} /> : null}
     </Card>
   );
 }
