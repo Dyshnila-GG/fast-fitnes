@@ -253,18 +253,19 @@ export function hasFacts(log: ExerciseLog): boolean {
 const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
 
 // Заполнено: есть ответ после разминки (кроме планки), факты всех рабочих подходов и оценка.
-export function isExerciseComplete(log: ExerciseLog): boolean {
+export function isExerciseComplete(log: ExerciseLog, imported = false): boolean {
   const variant = variantOf(log);
   const work = log.sets.filter((s) => s.type === 'work');
   const v4Complete = work.every((s) => s.done && (variant.mode === 'time' || s.rir != null));
   // Imported/v4 plans use set-level RIR. Legacy built-in sessions keep the v3 completion contract.
-  if (log.variantId && variant.targetRir != null) return v4Complete;
+  if (imported || variant.targetRir != null) return v4Complete;
   return (!needsFeel(variant) || log.feel != null) && log.rating != null && work.every((s) => s.done);
 }
 
 // Номер текущего упражнения: первое незавершённое (иначе последнее).
 export function currentExerciseIndex(s: Session): number {
-  const i = s.exercises.findIndex((e) => !isExerciseComplete(e));
+  const imported=!!s.planSnapshot;
+  const i = s.exercises.findIndex((e) => !isExerciseComplete(e, imported));
   return i === -1 ? s.exercises.length - 1 : i;
 }
 
