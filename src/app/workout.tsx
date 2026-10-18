@@ -142,7 +142,7 @@ export default function WorkoutScreen() {
                 log={log}
                 number={i + 1}
                 onVariant={(k) => switchVariant(i, k)}
-                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && patch.rir != null ? coachImportedSet(next,i,si,variantOf(exercises[i]).kind).session : next; })}
+                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && patch.rir != null ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
@@ -150,14 +150,15 @@ export default function WorkoutScreen() {
                 onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w, sessionUnits(session)))}
                 onNote={(comment) => updateLog(i, (l) => ({ ...l, comment }))}
                 onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
-                prevRating={lastRating(data.sessions, variantOf(log).name)}
-                prevNote={lastNote(data.sessions, variantOf(log).name)}
+                prevRating={session.planSnapshot ? undefined : lastRating(data.sessions, variantOf(log).name)}
+                prevNote={session.planSnapshot ? undefined : lastNote(data.sessions, variantOf(log).name)}
                 v4={!!session.planSnapshot}
                 units={sessionUnits(session)}
                 restMinSec={importedPlanExercise(log)?.restMinSec}
+                planExercise={importedPlanExercise(log)}
                 onRest={() => {
                   const imported = importedPlanExercise(log);
-                  const rest = imported?.restMinSec ?? getExercise(log.exerciseId).restSec;
+                  const rest = imported?.restMinSec ?? (session.planSnapshot ? 120 : getExercise(log.exerciseId).restSec);
                   // Rest belongs to the NEXT work set: that set's performance must be
                   // evaluated against the rest that happened immediately before it.
                   const setIndex = log.sets.findIndex((x) => x.type === 'work' && !x.done);
