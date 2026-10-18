@@ -156,8 +156,10 @@ export default function WorkoutScreen() {
                 onRest={() => {
                   const imported = importedPlanExercise(log);
                   const rest = imported?.restMinSec ?? getExercise(log.exerciseId).restSec;
-                  const setIndex = log.sets.map((x, index) => ({ x, index })).filter(({ x }) => x.type === 'work' && x.done).pop()?.index;
-                  updateSession((s) => startRest(s, rest, Date.now(), setIndex == null ? undefined : { exerciseIndex: i, setIndex }));
+                  // Rest belongs to the NEXT work set: that set's performance must be
+                  // evaluated against the rest that happened immediately before it.
+                  const setIndex = log.sets.findIndex((x) => x.type === 'work' && !x.done);
+                  updateSession((s) => startRest(s, rest, Date.now(), setIndex < 0 ? undefined : { exerciseIndex: i, setIndex }));
                 }}
               />
             ))}
