@@ -155,7 +155,8 @@ export default function WorkoutScreen() {
                 onRest={() => {
                   const imported = importedPlanExercise(log);
                   const rest = imported?.restMinSec ?? getExercise(log.exerciseId).restSec;
-                  updateSession((s) => startRest(s, rest));
+                  const setIndex = log.sets.map((x, index) => ({ x, index })).filter(({ x }) => x.type === 'work' && x.done).pop()?.index;
+                  updateSession((s) => startRest(s, rest, Date.now(), setIndex == null ? undefined : { exerciseIndex: i, setIndex }));
                 }}
               />
             ))}
