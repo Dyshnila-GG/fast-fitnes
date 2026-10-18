@@ -6,7 +6,7 @@ import { formatPlan, formatRest, ratingLabel } from '../../logic/format';
 import { isExerciseComplete } from '../../logic/session';
 import { colors } from '../../theme';
 import { needsFeel } from '../../logic/records';
-import type { ExerciseLog, Feel, Kind, Rating, SetLog } from '../../types';
+import type { ExerciseLog, Feel, Kind, Rating, SetLog, Units } from '../../types';
 import { Button, Card, Segmented } from '../ui';
 import { ExerciseGif } from './ExerciseGif';
 import { GifModal } from './GifModal';
@@ -38,11 +38,14 @@ type Props = {
   onRest: () => void;
   prevNote?: string;
   prevRating?: Rating;
+  v4?: boolean;
+  units?: Units;
+  restMinSec?: number;
 };
 
 export function ExerciseCard(props: Props) {
   const t = useT();
-  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating } = props;
+  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating, v4, units='imperial', restMinSec } = props;
   const ex = getExercise(log.exerciseId);
   const variant = getVariant(ex, log.variant);
   const work = log.sets.filter((s) => s.type === 'work');
@@ -85,10 +88,10 @@ export function ExerciseCard(props: Props) {
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
       {needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
-      <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} />
-      <Text style={styles.meta}>{t('exercise.reserve')}</Text>
-      <Button title={t('exercise.rest', { rest: formatRest(ex.restSec) })} onPress={onRest} />
-      <RatingBlock rating={log.rating} onChange={onRate} />
+      <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} engine={v4 ? {kind:variant.kind,units,targetRir:log.targetRir,restMinSec} : undefined} />
+      {!v4 && <Text style={styles.meta}>{t('exercise.reserve')}</Text>}
+      <Button title={t('exercise.rest', { rest: formatRest(restMinSec ?? ex.restSec) })} onPress={onRest} />
+      {!v4 && <RatingBlock rating={log.rating} onChange={onRate} />}
       <NoteField value={log.comment} onChange={onNote} />
       <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} />
     </Card>
