@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { BackButton } from '../components/nav/BackButton';
 import { FONT } from '../components/Text';
 import { useT } from '../i18n/useT';
@@ -99,8 +99,8 @@ export default function RootLayout() {
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
-  // Ошибка загрузки шрифта не должна блокировать приложение — тогда системный шрифт.
-  if (!fontsLoaded && !fontError) return null;
+  // Never let font loading keep the native splash on screen forever.
+  // The UI already has a system-font fallback, so render immediately and let Manrope load in the background.
   return (
     <AppStoreProvider fallback={loading}>
       <StatusBar style="light" />
