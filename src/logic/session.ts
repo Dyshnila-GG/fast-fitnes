@@ -283,10 +283,16 @@ export function skippedItems(s: Session): string[] {
   }
   for (const log of s.exercises) {
     const variant = variantOf(log);
-    if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name: variantName(variant) }));
+    const name = s.planSnapshot ? log.exerciseId : variantName(variant);
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
-    if (empty > 0) out.push(t('skip.emptySets', { name: variantName(variant), n: empty }));
-    if (!log.rating) out.push(t('skip.noRating', { name: variantName(variant) }));
+    if (empty > 0) out.push(t('skip.emptySets', { name, n: empty }));
+    if (s.planSnapshot) {
+      const noRir = log.sets.filter((x) => x.type === 'work' && x.done && x.rir == null).length;
+      if (noRir > 0) out.push(`${name}: RIR не указан — ${noRir}`);
+      continue;
+    }
+    if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name }));
+    if (!log.rating) out.push(t('skip.noRating', { name }));
   }
   return out;
 }
