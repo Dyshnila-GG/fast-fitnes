@@ -9,6 +9,7 @@ import { t as tr, type Key } from '../../i18n';
 import { formatWeightNum } from '../../logic/format';
 import { weightToLb, weightUnit, weightValue } from '../../logic/units';
 import { useT } from '../../i18n/useT';
+import { RirPicker } from './RirPicker';
 
 const HELP: Record<SetLog['type'], [Key, Key]> = {
   warmup: ['sets.warmup.title', 'sets.warmup.help'],
@@ -47,31 +48,24 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
         <Text style={[styles.head, styles.fact]}>{t('report.fact')}</Text>
       </View>
       {rows.map(({ s, i }, n) => (
-        <View key={i} style={[styles.row, s.done ? styles.rowDone : styles.rowPending]}>
-          <Text style={[styles.cell, styles.num]}>{n + 1}</Text>
-          <Text style={[styles.cell, styles.plan]}>{planText(s, variant)}</Text>
-          <View style={[styles.fact, styles.inputs]}>
-            {time ? (
-              <NumField value={s.factSeconds} placeholder={t('unit.sec')} onChange={(v) => onChange(i, { factSeconds: v })} />
-            ) : (
-              <>
-                <NumField
-                  decimal
-                  weight
-                  value={s.factWeight}
-                  placeholder={variant.mode === 'bodyweight' ? t('set.own') : weightUnit()}
-                  onChange={(v) => onChange(i, { factWeight: v })}
-                />
-                <NumField value={s.factReps} placeholder={t('unit.reps')} onChange={(v) => onChange(i, { factReps: v })} />
-              </>
-            )}
+        <View key={i} style={styles.setBlock}>
+          <View style={[styles.row, s.done ? styles.rowDone : styles.rowPending]}>
+            <Text style={[styles.cell, styles.num]}>{n + 1}</Text>
+            <Text style={[styles.cell, styles.plan]}>{planText(s, variant)}</Text>
+            <View style={[styles.fact, styles.inputs]}>
+              {time ? (
+                <NumField value={s.factSeconds} placeholder={t('unit.sec')} onChange={(v) => onChange(i, { factSeconds: v })} />
+              ) : (
+                <>
+                  <NumField decimal weight value={s.factWeight} placeholder={variant.mode === 'bodyweight' ? t('set.own') : weightUnit()} onChange={(v) => onChange(i, { factWeight: v })} />
+                  <NumField value={s.factReps} placeholder={t('unit.reps')} onChange={(v) => onChange(i, { factReps: v })} />
+                </>
+              )}
+            </View>
+            <Pressable onPress={() => onCopy(i)} hitSlop={6} style={[styles.icon, styles.copy]}><Icon name="check" size={18} /></Pressable>
+            <Pressable onPress={() => onRemove(i)} hitSlop={6} style={styles.icon}><Icon name="close" size={16} color={colors.muted} /></Pressable>
           </View>
-          <Pressable onPress={() => onCopy(i)} hitSlop={6} style={[styles.icon, styles.copy]}>
-            <Icon name="check" size={18} />
-          </Pressable>
-          <Pressable onPress={() => onRemove(i)} hitSlop={6} style={styles.icon}>
-            <Icon name="close" size={16} color={colors.muted} />
-          </Pressable>
+          {type === 'work' && (s.factReps != null || s.factSeconds != null) ? <RirPicker value={s.rir} onChange={(rir)=>onChange(i,{rir})} /> : null}
         </View>
       ))}
       <Button title={t('sets.add')} variant="secondary" small onPress={onAdd} />
@@ -138,6 +132,7 @@ const styles = StyleSheet.create({
   helpText: { fontSize: 12, fontWeight: '700', color: colors.muted },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 6 },
   head: { fontSize: 12, color: colors.muted },
+  setBlock: { gap: 7 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 6, paddingVertical: 6, borderRadius: 12, borderWidth: 1, backgroundColor: colors.bg },
   rowDone: { borderColor: colors.border },
   rowPending: { borderColor: colors.highlight },
