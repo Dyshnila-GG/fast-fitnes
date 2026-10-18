@@ -159,6 +159,8 @@ export function parseImport(text: string): ImportResult {
       backup: raw.backup as AppData['backup'],
       reminders: raw.reminders as AppData['reminders'],
       settings: raw.settings as AppData['settings'],
+      // v4 Plan Pack is configuration, not personal history; preserve it across backup restore.
+      installedPlan: raw.installedPlan as AppData['installedPlan'],
       // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
       activeRun: null,
