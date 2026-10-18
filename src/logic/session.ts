@@ -300,7 +300,8 @@ export function finishActive(d: AppData, now = new Date()): AppData {
     pausedAt: undefined,
     finishedAt: now.toISOString(),
   };
-  return applyRecords({ ...d, activeSession: null, sessions: [...d.sessions, done], summaryId: done.id }, done);
+  const saved={ ...d, activeSession: null, sessions: [...d.sessions, done], summaryId: done.id };
+  return done.planSnapshot ? saved : applyRecords(saved, done);
 }
 
 // Рост рекордов (SPEC_v2 §2.4). Тренировки v1 рекорды не меняют.
