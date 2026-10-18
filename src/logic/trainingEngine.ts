@@ -70,3 +70,16 @@ export function actualRestSeconds(previousCompletedAt?: string, completedAt?: st
   const delta = Date.parse(completedAt) - Date.parse(previousCompletedAt);
   return Number.isFinite(delta) && delta >= 0 ? Math.round(delta / 1000) : undefined;
 }
+
+
+/**
+ * Applies a deterministic decision to the next work set prescription.
+ * STOP and REST_LONGER never mutate load. Technique HOLD also leaves it unchanged.
+ */
+export function applyDecisionToNextSet(current: SetLog, next: SetLog, decision: TrainingDecision): SetLog {
+  if (decision.type === 'INCREASE' || decision.type === 'DECREASE' || decision.type === 'HOLD') {
+    const weight = decision.suggestedWeight ?? current.factWeight ?? current.planWeight;
+    return weight == null ? next : { ...next, planWeight: weight };
+  }
+  return next;
+}
