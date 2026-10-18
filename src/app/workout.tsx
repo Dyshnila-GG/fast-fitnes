@@ -54,9 +54,11 @@ export default function WorkoutScreen() {
   // Кадры обоих вариантов каждого упражнения — заранее, чтобы переключение было мгновенным.
   useEffect(() => {
     if (!exerciseIds) return;
-    const urls = exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
-    Image.prefetch(urls, 'memory-disk').catch(() => {});
-  }, [exerciseIds]);
+    const urls = session?.planSnapshot
+      ? session.planSnapshot.exercises.flatMap((e) => e.gifId ? demoUrls(e.gifId) : [])
+      : exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
+    if (urls.length) Image.prefetch(urls, 'memory-disk').catch(() => {});
+  }, [exerciseIds, session?.planSnapshot]);
 
   // Системная кнопка «назад» на Android заблокирована.
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function WorkoutScreen() {
 
   const importedPlanExercise = (log: ExerciseLog) => session.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
   const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
-  const modeOf = (log: ExerciseLog) => importedPlanExercise(log)?.seconds != null ? 'time' : variantOf(log).mode;
+  const modeOf = (log: ExerciseLog) => importedPlanExercise(log)?.mode ?? (importedPlanExercise(log)?.seconds != null ? 'time' : variantOf(log).mode);
 
   const switchVariant = (index: number, kind: Kind) => {
     const apply = () =>
