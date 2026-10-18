@@ -1,7 +1,7 @@
 import { defaultData } from '../../store/defaults';
 import { buildImportedSession, startImportedWorkout } from '../importedSession';
 
-const workout={id:'push',title:'Push',weekday:2,exercises:[{exerciseId:'chest-press',variantId:'machine',sets:3,repsMin:8,repsMax:12,targetRir:2,restMinSec:150,restMaxSec:180}]};
+const workout={id:'push',title:'Push',weekday:2,exercises:[{exerciseId:'portable-chest',variantId:'pf-chest',title:'Chest Press',variantName:'Planet Fitness Chest Press',equipment:'Chest press machine',muscles:'Chest, triceps',cue:'Keep shoulder blades stable.',gifId:'Leverage_Chest_Press',kind:'machine' as const,mode:'weight' as const,sets:3,repsMin:8,repsMax:12,targetRir:2,restMinSec:150,restMaxSec:180}]};
 
 describe('importedSession',()=>{
   test('creates a runnable session and snapshots the prescription',()=>{
@@ -11,6 +11,9 @@ describe('importedSession',()=>{
     expect(s.planSnapshot?.title).toBe('Push');
     expect(s.exercises[0].sets).toHaveLength(3);
     expect(s.exercises[0].targetRir).toBe(2);
+    expect(s.exercises[0].variant).toBe('machine');
+    expect(s.planSnapshot?.exercises[0].title).toBe('Chest Press');
+    expect(s.planSnapshot?.exercises[0].mode).toBe('weight');
   });
   test('starts only workouts present in installed pack',()=>{
     const d=defaultData();
