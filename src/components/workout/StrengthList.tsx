@@ -6,6 +6,7 @@ import { formatDate } from '../../logic/format';
 import { highlightedTemplate } from '../../logic/schedule';
 import { lastFinished, SHORT_EXERCISES, setLengthChoice, SHORT_MAX_WORK_SETS, startWorkout } from '../../logic/session';
 import { planExerciseLabel } from '../../logic/planRuntime';
+import { startImportedWorkout } from '../../logic/importedSession';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import type { Length, TemplateId } from '../../types';
@@ -35,7 +36,7 @@ export function StrengthList() {
               <Text style={styles.meta}>{tpl.exercises.length} упражнений · Plan Pack</Text>
               <Button title={opened ? t('strength.hideExercises') : t('strength.exercises')} variant="secondary" small onPress={()=>setOpen(opened?null:tpl.id)} />
               {opened && <View>{tpl.exercises.map((e,i)=><View key={`${e.exerciseId}:${i}`} style={styles.exercise}><Text style={styles.exerciseName}>{i+1}. {e.exerciseId}</Text><Text style={styles.meta}>{planExerciseLabel(e)}</Text></View>)}</View>}
-              <Button title={t('common.start')} onPress={()=>update(d=>startWorkout(d,tpl.id))} />
+              <Button title={t('common.start')} onPress={()=>update(d=>startImportedWorkout(d,tpl.id))} />
             </Card>
           );
         })}
