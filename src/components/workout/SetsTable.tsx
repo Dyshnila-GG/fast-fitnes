@@ -10,6 +10,9 @@ import { formatWeightNum } from '../../logic/format';
 import { weightToLb, weightUnit, weightValue } from '../../logic/units';
 import { useT } from '../../i18n/useT';
 import { RirPicker } from './RirPicker';
+import { SetDecision } from './SetDecision';
+import { decideAfterSet } from '../../logic/trainingEngine';
+import type { Kind, Units } from '../../types';
 
 const HELP: Record<SetLog['type'], [Key, Key]> = {
   warmup: ['sets.warmup.title', 'sets.warmup.help'],
@@ -24,9 +27,10 @@ type Props = {
   onCopy: (index: number) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
+  engine?: { kind: Kind; units: Units; targetRir?: number; restMinSec?: number };
 };
 
-export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onAdd }: Props) {
+export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onAdd, engine }: Props) {
   const t = useT();
   const rows = sets.map((s, i) => ({ s, i })).filter((r) => r.s.type === type);
   if (type === 'warmup' && rows.length === 0) return null;
@@ -66,6 +70,16 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
             <Pressable onPress={() => onRemove(i)} hitSlop={6} style={styles.icon}><Icon name="close" size={16} color={colors.muted} /></Pressable>
           </View>
           {type === 'work' && (s.factReps != null || s.factSeconds != null) ? <RirPicker value={s.rir} onChange={(rir)=>onChange(i,{rir})} /> : null}
+          {type === 'work' && engine && s.factReps != null && s.rir != null ? <SetDecision decision={decideAfterSet({
+            set:s,
+            repsMin:s.planReps,
+            repsMax:s.planRepsMax ?? s.planReps,
+            targetRir:engine.targetRir,
+            kind:engine.kind,
+            units:engine.units,
+            previousWeight:s.factWeight,
+            restMinSec:engine.restMinSec,
+          })} /> : null}
         </View>
       ))}
       <Button title={t('sets.add')} variant="secondary" small onPress={onAdd} />
