@@ -125,6 +125,7 @@ export type Session = {
       kind?: Kind;
       mode?: Mode;
       sets: number;
+      weight?: number;
       repsMin?: number;
       repsMax?: number;
       seconds?: number;
