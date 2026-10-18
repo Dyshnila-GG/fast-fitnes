@@ -48,9 +48,9 @@ export function RestTimer({ endsAt, totalSec, onShift, onStop }: Props) {
         <View style={[styles.bar, { width: `${progress * 100}%` }]} />
       </View>
       <View style={styles.row}>
-        <Button title={`−15 ${t('unit.s')}`} variant="secondary" small onPress={() => onShift(-15)} style={styles.flex} />
-        <Button title={`+15 ${t('unit.s')}`} variant="secondary" small onPress={() => onShift(15)} style={styles.flex} />
-        <Button title={t('rest.skip')} small onPress={onStop} style={styles.flex} />
+        <Button title="ГОТОВ" small onPress={onStop} style={styles.flex} />
+        <Button title="+30 сек" variant="secondary" small onPress={() => onShift(30)} style={styles.flex} />
+        <Button title="+60 сек" variant="secondary" small onPress={() => onShift(60)} style={styles.flex} />
       </View>
     </View>
   );
