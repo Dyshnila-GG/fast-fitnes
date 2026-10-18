@@ -149,6 +149,9 @@ export default function WorkoutScreen() {
                 onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
                 prevRating={lastRating(data.sessions, variantOf(log).name)}
                 prevNote={lastNote(data.sessions, variantOf(log).name)}
+                v4={!!session.planSnapshot}
+                units={sessionUnits(session)}
+                restMinSec={importedPlanExercise(log)?.restMinSec}
                 onRest={() => {
                   const imported = importedPlanExercise(log);
                   const rest = imported?.restMinSec ?? getExercise(log.exerciseId).restSec;
