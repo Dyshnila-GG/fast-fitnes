@@ -116,6 +116,14 @@ export type Session = {
     exercises: Array<{
       exerciseId: string;
       variantId: string;
+      title?: string;
+      variantName?: string;
+      equipment?: string;
+      gifId?: string;
+      cue?: string;
+      muscles?: string;
+      kind?: Kind;
+      mode?: Mode;
       sets: number;
       repsMin?: number;
       repsMax?: number;
@@ -132,7 +140,7 @@ export type Session = {
   pausedAt?: string; // момент начала текущей паузы
   restEndsAt?: string; // окончание текущего отдыха
   restSec?: number; // длительность текущего отдыха
-  /** v4: when rest began and which completed work set it belongs to. */
+  /** v4: when rest began and which upcoming work set the elapsed rest belongs to. */
   restStartedAt?: string;
   restFor?: { exerciseIndex: number; setIndex: number };
   warmup?: SessionWarmup;
