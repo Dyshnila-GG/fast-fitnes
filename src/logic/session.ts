@@ -260,11 +260,13 @@ const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), 
 
 // Заполнено: есть ответ после разминки (кроме планки), факты всех рабочих подходов и оценка.
 export function isExerciseComplete(log: ExerciseLog, imported = false): boolean {
-  const variant = variantOf(log);
   const work = log.sets.filter((s) => s.type === 'work');
+  // Portable Plan Pack exercises must not depend on the built-in exercise catalog.
+  // Timed sets are self-describing through planSeconds; rep-based sets require RIR.
+  if (imported) return work.every((s) => s.done && (s.planSeconds != null || s.rir != null));
+  const variant = variantOf(log);
   const v4Complete = work.every((s) => s.done && (variant.mode === 'time' || s.rir != null));
-  // Imported/v4 plans use set-level RIR. Legacy built-in sessions keep the v3 completion contract.
-  if (imported || variant.targetRir != null) return v4Complete;
+  if (variant.targetRir != null) return v4Complete;
   return (!needsFeel(variant) || log.feel != null) && log.rating != null && work.every((s) => s.done);
 }
 
@@ -282,15 +284,15 @@ export function skippedItems(s: Session): string[] {
     if (!isWarmupItemDone(warmup[item.id])) out.push(t('skip.warmup', { item: item.label }));
   }
   for (const log of s.exercises) {
-    const variant = variantOf(log);
-    const name = s.planSnapshot ? log.exerciseId : variantName(variant);
+    const name = s.planSnapshot ? log.exerciseId : variantName(variantOf(log));
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
     if (empty > 0) out.push(t('skip.emptySets', { name, n: empty }));
     if (s.planSnapshot) {
-      const noRir = log.sets.filter((x) => x.type === 'work' && x.done && x.rir == null).length;
+      const noRir = log.sets.filter((x) => x.type === 'work' && x.done && x.planSeconds == null && x.rir == null).length;
       if (noRir > 0) out.push(`${name}: RIR не указан — ${noRir}`);
       continue;
     }
+    const variant = variantOf(log);
     if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name }));
     if (!log.rating) out.push(t('skip.noRating', { name }));
   }
