@@ -11,7 +11,7 @@ function workSets(e: PlanExercise): SetLog[] {
     planRepsMax: e.repsMax,
     planSeconds: e.seconds,
     // Seed the first prescription with the pack's load when present.
-    planWeight: (e as PlanExercise & { weight?: number }).weight,
+    planWeight: e.weight,
     done: false,
   }));
 }
