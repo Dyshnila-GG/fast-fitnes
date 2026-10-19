@@ -11,6 +11,7 @@ export type TrainingDecision = {
     | 'too_heavy'
     | 'short_rest'
     | 'technique'
+    | 'other_muscle'
     | 'pain'
     | 'insufficient_data';
   suggestedWeight?: number;
@@ -33,7 +34,8 @@ export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
   const units = input.units ?? 'imperial';
 
   if (set.stopReason === 'pain') return { type: 'STOP', reason: 'pain' };
-  if (set.stopReason === 'technique') return { type: 'HOLD', reason: 'technique' };
+  if (set.stopReason === 'technique') return { type: 'HOLD', reason: 'technique', suggestedWeight: set.factWeight ?? input.previousWeight };
+  if (set.stopReason === 'other_muscle') return { type: 'HOLD', reason: 'other_muscle', suggestedWeight: set.factWeight ?? input.previousWeight };
 
   const reps = set.factReps;
   const rir = set.rir;

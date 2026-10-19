@@ -142,7 +142,7 @@ export function parseImport(text: string): ImportResult {
     data: migrateData({
       ...base,
       version: raw.version,
-      profile: { age: p.age as number, heightIn: p.heightIn as number, startWeight: p.startWeight as number },
+      profile: { ...(isObj(raw.profile) ? (raw.profile as AppData['profile']) : {}), age: p.age as number, heightIn: p.heightIn as number, startWeight: p.startWeight as number },
       lengthChoice: isObj(raw.lengthChoice) ? (raw.lengthChoice as AppData['lengthChoice']) : base.lengthChoice,
       variantChoice: isObj(raw.variantChoice) ? (raw.variantChoice as AppData['variantChoice']) : base.variantChoice,
       plans: isObj(raw.plans) ? (raw.plans as AppData['plans']) : base.plans,
@@ -161,6 +161,8 @@ export function parseImport(text: string): ImportResult {
       settings: raw.settings as AppData['settings'],
       // v4 Plan Pack is configuration, not personal history; preserve it across backup restore.
       installedPlan: raw.installedPlan as AppData['installedPlan'],
+      // v4: факты питания, заготовки, активности, сигналы тела — проверяются в migrateData.
+      v4: raw.v4 as AppData['v4'],
       // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
       activeRun: null,

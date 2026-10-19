@@ -17,6 +17,8 @@ import { SetsTable } from './SetsTable';
 import { t as tr } from '../../i18n';
 import { exerciseMuscles, exerciseTitle, variantCue, variantEquipment, variantName } from '../../i18n/content';
 import { useT } from '../../i18n/useT';
+import type { PlanExercise } from '../../planPack';
+import { ExerciseGuide, PlanDemoModal } from './ExerciseGuide';
 
 const kinds = (): { value: Kind; label: string }[] => [
   { value: 'machine', label: tr('kind.machine') },
@@ -41,15 +43,23 @@ type Props = {
   v4?: boolean;
   units?: Units;
   restMinSec?: number;
-  planExercise?: {
-    title?: string; variantName?: string; equipment?: string; gifId?: string; cue?: string; muscles?: string;
-    kind?: Kind; mode?: Mode; restMinSec?: number;
-  };
+  planExercise?: PlanExercise;
+  /** v4: all ways to do the movement (main first) and the switch between them. */
+  planVariants?: PlanExercise[];
+  onPlanVariant?: (variantId: string) => void;
+  /** Подсказка восстановления (например, ноги нагружены волейболом). */
+  hint?: string;
+};
+
+const variantLabel = (v: PlanExercise, all: PlanExercise[]) => {
+  const sameKind = all.filter((x) => x.kind === v.kind).length > 1;
+  if (sameKind) return v.variantName ?? v.variantId;
+  return tr(v.kind === 'free' ? 'kind.free' : 'kind.machine');
 };
 
 export function ExerciseCard(props: Props) {
   const t = useT();
-  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating, v4, units='imperial', restMinSec, planExercise } = props;
+  const { log, number, onVariant, onSet, onCopy, onRemove, onAdd, onFeel, onToday, onNote, onRate, onRest, prevNote, prevRating, v4, units='imperial', restMinSec, planExercise, planVariants, onPlanVariant, hint } = props;
   const ex = v4 ? undefined : getExercise(log.exerciseId);
   const legacyVariant = ex ? getVariant(ex, log.variant) : undefined;
   const variant: Variant = legacyVariant ?? {
@@ -75,6 +85,7 @@ export function ExerciseCard(props: Props) {
         {complete ? ` · ${t('exercise.done')}` : ''}
       </Text>
       <Text style={styles.name}>{ex ? variantName(variant) : variant.name}</Text>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {prevRating ? <Text style={styles.prevNote}>{t('exercise.prevRating', { rating: ratingLabel(prevRating) })}</Text> : null}
       {prevNote ? <Text style={styles.prevNote}>{t('exercise.prevNote', { note: prevNote })}</Text> : null}
       <Text style={styles.meta}>
@@ -90,10 +101,18 @@ export function ExerciseCard(props: Props) {
       {!v4 && ex && ex.variants.length > 1 && (
         <Segmented options={kinds()} value={log.variant} onChange={(k) => k !== log.variant && onVariant(k)} />
       )}
-      {variant.gifId ? <Pressable onPress={() => setDemo(true)}>
-        <ExerciseGif key={variant.gifId} gifId={variant.gifId} playing={!demo} />
+      {v4 && planVariants && planVariants.length > 1 && onPlanVariant ? (
+        <Segmented
+          options={planVariants.map((v) => ({ value: v.variantId, label: variantLabel(v, planVariants) }))}
+          value={log.variantId ?? planVariants[0].variantId}
+          onChange={(id) => id !== log.variantId && onPlanVariant(id)}
+        />
+      ) : null}
+      {variant.gifId || planExercise?.mediaUrl ? <Pressable onPress={() => setDemo(true)}>
+        <ExerciseGif key={planExercise?.mediaUrl ?? variant.gifId} gifId={variant.gifId} mediaUrl={v4 ? planExercise?.mediaUrl : undefined} playing={!demo} />
       </Pressable> : null}
-      <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.muscles ?? '—') })}</Text>
+      <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.primaryMuscles?.join(', ') ?? planExercise?.muscles ?? '—') })}</Text>
+      {v4 && planExercise ? <ExerciseGuide e={planExercise} /> : null}
       <View style={styles.cue}>
         <Text style={styles.cueText}>{ex ? variantCue(ex, variant) : (variant.cue || '—')}</Text>
         <Text style={styles.meta}>
@@ -103,12 +122,13 @@ export function ExerciseCard(props: Props) {
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
       {!v4 && needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
-      <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} engine={v4 ? {kind:variant.kind,units,targetRir:log.targetRir,restMinSec} : undefined} />
+      <SetsTable type="work" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('work')} engine={v4 ? {kind:variant.kind,units,targetRir:log.targetRir,restMinSec,wrongFeel:planExercise?.wrongFeel} : undefined} />
       {!v4 && <Text style={styles.meta}>{t('exercise.reserve')}</Text>}
       <Button title={t('exercise.rest', { rest: formatRest(restMinSec ?? ex?.restSec ?? 120) })} onPress={onRest} />
       {!v4 && <RatingBlock rating={log.rating} onChange={onRate} />}
       <NoteField value={log.comment} onChange={onNote} />
       {ex && variant.gifId ? <GifModal exercise={ex} variant={variant} visible={demo} onClose={() => setDemo(false)} /> : null}
+      {v4 && planExercise ? <PlanDemoModal e={planExercise} visible={demo} onClose={() => setDemo(false)} /> : null}
     </Card>
   );
 }
@@ -119,6 +139,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 24, fontWeight: '800', color: colors.text },
   meta: { fontSize: 14, color: colors.muted },
   prevNote: { fontSize: 14, color: colors.muted, fontStyle: 'italic' },
+  hint: { fontSize: 14, color: '#FF9F0A', lineHeight: 20 },
   cue: { gap: 4, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   cueText: { fontSize: 15, color: colors.text, lineHeight: 21 },
 });

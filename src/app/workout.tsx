@@ -34,7 +34,11 @@ import {
   warmupOf,
 } from '../logic/session';
 import { applyFeel, setTodayWeight } from '../logic/records';
-import { coachImportedSet } from '../logic/importedSession';
+import { coachImportedSet, switchImportedVariant } from '../logic/importedSession';
+import { snapshotBase, snapshotFor, variantsOf } from '../logic/planVariant';
+import { formatDay } from '../logic/format';
+import { activityLabel, legsFatigue, LEG_EXERCISES } from '../logic/v4';
+import { dayKey } from '../logic/dates';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
 import type { ExerciseLog, Kind, Mode, Session } from '../types';
@@ -55,7 +59,7 @@ export default function WorkoutScreen() {
   useEffect(() => {
     if (!exerciseIds) return;
     const urls = session?.planSnapshot
-      ? session.planSnapshot.exercises.flatMap((e) => e.gifId ? demoUrls(e.gifId) : [])
+      ? session.planSnapshot.exercises.flatMap((e) => variantsOf(e).flatMap((v) => (v.mediaUrl ? [v.mediaUrl] : v.gifId ? demoUrls(v.gifId) : [])))
       : exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
     if (urls.length) Image.prefetch(urls, 'memory-disk').catch(() => {});
   }, [exerciseIds, session?.planSnapshot]);
@@ -76,11 +80,12 @@ export default function WorkoutScreen() {
   const stopRestTimer = useCallback(() => updateSession(stopRest), [updateSession]);
 
   if (!session) return null;
+  const fatigue = legsFatigue(data, dayKey());
 
   const updateLog = (index: number, fn: (log: ExerciseLog) => ExerciseLog) =>
     updateSession((s) => ({ ...s, exercises: s.exercises.map((l, i) => (i === index ? fn(l) : l)) }));
 
-  const importedPlanExercise = (log: ExerciseLog) => session.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
+  const importedPlanExercise = (log: ExerciseLog) => snapshotFor(session, log);
   const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
   // Imported Plan Pack exercises must not depend on the built-in catalog (handoff §46).
   const modeOf = (log: ExerciseLog): Mode => {
@@ -147,7 +152,7 @@ export default function WorkoutScreen() {
                 log={log}
                 number={i + 1}
                 onVariant={(k) => switchVariant(i, k)}
-                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && patch.rir != null ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
+                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && (patch.rir != null || 'stopReason' in patch) ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
@@ -161,6 +166,9 @@ export default function WorkoutScreen() {
                 units={sessionUnits(session)}
                 restMinSec={importedPlanExercise(log)?.restMinSec}
                 planExercise={importedPlanExercise(log)}
+                planVariants={(() => { const b = snapshotBase(session, log); return b ? variantsOf(b) : undefined; })()}
+                onPlanVariant={(variantId) => update((d) => switchImportedVariant(d, i, variantId))}
+                hint={fatigue && LEG_EXERCISES.has(log.exerciseId) ? `Ноги нагружены: ${activityLabel(fatigue)} (${formatDay(fatigue.date)}). Держи RIR 3, вес не повышай; боль — стоп.` : undefined}
                 onRest={() => {
                   const imported = importedPlanExercise(log);
                   const rest = imported?.restMinSec ?? (session.planSnapshot ? 120 : getExercise(log.exerciseId).restSec);

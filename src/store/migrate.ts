@@ -8,6 +8,8 @@ import { isObj } from '../logic/validate';
 import type { AppData, BackupState, Best, Plan, Reminder, Reminders, Settings } from '../types';
 import { isTime } from '../logic/time';
 import { defaultData, defaultReminders } from './defaults';
+import { V4_PERSONAL_PLAN } from '../data/v4PersonalPlan';
+import { sanitizeV4 } from '../logic/v4';
 
 type LegacyPlans = AppData['plans'];
 
@@ -42,7 +44,8 @@ export function migrateData(raw: Record<string, unknown>): AppData {
   return {
     ...d,
     version: 3,
-    installedPlan: d.installedPlan ?? null,
+    installedPlan: refreshBuiltInPlan(d.installedPlan ?? null),
+    v4: sanitizeV4(raw.v4),
     plans: d.plans ?? {},
     records: { ...legacy, ...(d.records ?? {}) },
     food: sanitizeFood(raw.food),
@@ -86,4 +89,11 @@ function sanitizeReminders(raw: unknown): Reminders {
   const out: Reminders = { sleep: one(raw.sleep, base.sleep), workout: one(raw.workout, base.workout) };
   if (raw.asked === true) out.asked = true;
   return out;
+}
+
+// Встроенный TOCHKA v4 обновляется вместе с приложением (новые варианты, подсказки, анимации).
+// Это только конфигурация: история, рекорды и выбор вариантов не трогаются.
+export function refreshBuiltInPlan(p: AppData['installedPlan']): AppData['installedPlan'] {
+  if (!p || p.pack.id !== V4_PERSONAL_PLAN.id || p.pack.version === V4_PERSONAL_PLAN.version) return p;
+  return { ...p, pack: V4_PERSONAL_PLAN };
 }

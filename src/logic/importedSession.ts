@@ -3,6 +3,7 @@ import type { PlanExercise, PlanWorkout } from '../planPack';
 import { newId } from './id';
 import { emptyWarmup } from './session';
 import { decideAfterSet, applyDecisionToNextSet, type TrainingDecision } from './trainingEngine';
+import { effectiveExercise, preferredVariant, snapshotBase, snapshotFor } from './planVariant';
 
 function workSets(e: PlanExercise, startWeight?: number): SetLog[] {
   return Array.from({ length: e.sets }, () => ({
@@ -70,7 +71,10 @@ export function buildImportedSession(data: AppData, workout: PlanWorkout, now = 
     startedAt: now.toISOString(),
     pausedMs: 0,
     warmup: emptyWarmup(),
-    exercises: workout.exercises.map((e) => buildImportedExerciseLog(e, carriedWeight(data, e))),
+    exercises: workout.exercises.map((base) => {
+      const e = preferredVariant(base, data.variantChoice[base.exerciseId]);
+      return buildImportedExerciseLog(e, carriedWeight(data, e));
+    }),
   };
 }
 
@@ -94,7 +98,7 @@ export function coachImportedSet(
 ): { session: Session; decision?: TrainingDecision } {
   const log=session.exercises[exerciseIndex];
   const set=log?.sets[setIndex];
-  const prescription=session.planSnapshot?.exercises.find((e)=>e.exerciseId===log?.exerciseId && e.variantId===log?.variantId);
+  const prescription=log ? snapshotFor(session,log) : undefined;
   if (!log || !set || !prescription || set.type !== 'work' || set.factReps == null || set.rir == null) return { session };
   const decision=decideAfterSet({
     set,
@@ -111,4 +115,30 @@ export function coachImportedSet(
   const next=applyDecisionToNextSet(set,log.sets[nextIndex],decision);
   const exercises=session.exercises.map((x,ei)=>ei!==exerciseIndex?x:{...x,sets:x.sets.map((s,si)=>si===nextIndex?next:s)});
   return { session:{...session,exercises}, decision };
+}
+
+/**
+ * Machine ↔ free-weight switch inside an imported workout. Completed sets stay as they were;
+ * the remaining work sets get the new variant's load (its own history, else its pack weight).
+ * The choice is remembered for the next sessions of this movement.
+ */
+export function switchImportedVariant(data: AppData, exerciseIndex: number, variantId: string): AppData {
+  const s = data.activeSession;
+  const log = s?.exercises[exerciseIndex];
+  if (!s || !log || log.variantId === variantId) return data;
+  const base = snapshotBase(s, log);
+  if (!base) return data;
+  const e = effectiveExercise(base, variantId);
+  if (e.variantId !== variantId) return data;
+  const weight = carriedWeight(data, e) ?? e.weight;
+  const kind = e.kind ?? 'machine';
+  const sets = log.sets.map((x) =>
+    x.done || x.type !== 'work' ? x : { ...x, planWeight: weight, factWeight: undefined, factReps: undefined, rir: undefined },
+  );
+  const next: ExerciseLog = { ...log, variantId, variant: kind, sets };
+  return {
+    ...data,
+    variantChoice: { ...data.variantChoice, [base.exerciseId]: kind },
+    activeSession: { ...s, exercises: s.exercises.map((l, i) => (i === exerciseIndex ? next : l)) },
+  };
 }

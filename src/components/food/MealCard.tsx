@@ -55,7 +55,8 @@ export function openRecipe(food: FoodData, dishes: DishId[]) {
 
 export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
   const t = useT();
-  const { food } = useStore().data;
+  const { food, v4 } = useStore().data;
+  const fact = v4.facts.find((f) => f.date === day && f.slot === meal.slot);
   const open = () => router.push({ pathname: '/meal', params: { day, slot: meal.slot } });
   const multi = meal.dishes.length > 1;
   return (
@@ -85,9 +86,18 @@ export function MealCard({ meal, day, eaten, next, onToggle, compact }: Props) {
       {meal.swapped && <Text style={styles.muted}>{t('meal.swapped')}</Text>}
       {!compact && meal.dishes.map((id) => <Ingredients key={id} dish={id} withTitle={multi} />)}
       <View style={styles.numbers}>
-        <Text style={styles.kcal}>~{formatNum(meal.kcal)} {t('unit.kcal')}</Text>
-        <Text style={styles.protein}>{t('food.protein', { n: meal.protein })}</Text>
+        <Text style={styles.kcal}>{fact ? '' : '~'}{formatNum(fact ? fact.kcal : meal.kcal)} {t('unit.kcal')}</Text>
+        <Text style={styles.protein}>{t('food.protein', { n: fact ? Math.round(fact.protein) : meal.protein })}</Text>
       </View>
+      {fact ? <Text style={styles.muted}>По факту: {fact.items.length} поз., граммы введены вручную</Text> : null}
+      {!compact && (
+        <Button
+          title={fact ? 'Изменить граммы' : 'Записать граммы'}
+          variant="secondary"
+          small
+          onPress={() => router.push({ pathname: '/food-log', params: { day, slot: meal.slot } })}
+        />
+      )}
       <View style={styles.actions}>
         <Button
           title={t(eaten ? 'meal.eaten' : 'meal.eat')}

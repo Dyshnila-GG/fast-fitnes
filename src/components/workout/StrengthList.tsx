@@ -7,6 +7,7 @@ import { highlightedTemplate } from '../../logic/schedule';
 import { lastFinished, SHORT_EXERCISES, setLengthChoice, SHORT_MAX_WORK_SETS, startWorkout } from '../../logic/session';
 import { planExerciseLabel } from '../../logic/planRuntime';
 import { carriedWeight, startImportedWorkout } from '../../logic/importedSession';
+import { preferredVariant } from '../../logic/planVariant';
 import { installPlanPack, uninstallPlanPack } from '../../logic/planInstall';
 import { V4_PERSONAL_PLAN } from '../../data/v4PersonalPlan';
 import { formatWeightNum } from '../../logic/format';
@@ -54,9 +55,10 @@ export function StrengthList() {
               <Text style={styles.meta}>{last ? t('strength.last',{date:formatDate(last.finishedAt!)}) : t('strength.never')}</Text>
               <Text style={styles.meta}>{tpl.exercises.length} упражнений · {data.installedPlan?.pack.title ?? 'Plan Pack'}</Text>
               <Button title={opened ? t('strength.hideExercises') : t('strength.exercises')} variant="secondary" small onPress={()=>setOpen(opened?null:tpl.id)} />
-              {opened && <View>{tpl.exercises.map((e,i)=>{
+              {opened && <View>{tpl.exercises.map((base,i)=>{
+                const e=preferredVariant(base,data.variantChoice[base.exerciseId]);
                 const w=carriedWeight(data,e) ?? e.weight;
-                return <View key={`${e.exerciseId}:${i}`} style={styles.exercise}><Text style={styles.exerciseName}>{i+1}. {e.variantName ?? e.title ?? e.exerciseId}</Text><Text style={styles.meta}>{planExerciseLabel(e)}{w != null ? ` · ${formatWeightNum(w)} ${weightUnit()}` : ' · вес подбери сам'}</Text></View>;
+                return <View key={`${e.exerciseId}:${i}`} style={styles.exercise}><Text style={styles.exerciseName}>{i+1}. {e.variantName ?? e.title ?? e.exerciseId}</Text><Text style={styles.meta}>{planExerciseLabel(e)}{e.mode === 'bodyweight' ? ' · свой вес' : w != null ? ` · ${formatWeightNum(w)} ${weightUnit()}` : ' · вес подбери сам'}</Text></View>;
               })}</View>}
               <Button title={t('common.start')} onPress={()=>update(d=>startImportedWorkout(d,tpl.id))} />
             </Card>

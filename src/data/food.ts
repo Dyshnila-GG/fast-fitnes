@@ -15,7 +15,7 @@ export const PRODUCT_SECTIONS: { id: ProductSection; title: string }[] = [
 ];
 
 // piece — вес одной штуки, г, и подпись счёта: такие продукты показываются «8 шт. (~960 г)».
-export type Product = { name: string; section: ProductSection; piece?: { g: number; unit: string } };
+export type Product = { name: string; section: ProductSection; piece?: { g: number; unit: string }; per100?: { kcal: number; protein: number } };
 
 const PRODUCT_LIST = {
   chicken: { name: 'Куриное филе (сырое)', section: 'meat' },

@@ -1,3 +1,4 @@
+import { snapshotFor } from './planVariant';
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
 import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, TrashItem, Units, Variant } from '../types';
 import { t } from '../i18n';
@@ -284,7 +285,7 @@ export function skippedItems(s: Session): string[] {
     if (!isWarmupItemDone(warmup[item.id])) out.push(t('skip.warmup', { item: item.label }));
   }
   for (const log of s.exercises) {
-    const snap = s.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
+    const snap = s.planSnapshot ? snapshotFor(s, log) : undefined;
     const name = s.planSnapshot ? (snap?.variantName ?? snap?.title ?? log.exerciseId) : variantName(variantOf(log));
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
     if (empty > 0) out.push(t('skip.emptySets', { name, n: empty }));

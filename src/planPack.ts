@@ -22,6 +22,23 @@ export type PlanProfilePreset = {
   limitations?: string[];
 };
 
+/** Variant-specific fields: an alternative way to do the same movement (machine ↔ free weight). */
+export type PlanVariantInfo = {
+  variantId: string;
+  variantName?: string;
+  equipment?: string;
+  gifId?: string;
+  /** Animated anatomical demo (absolute URL). */
+  mediaUrl?: string;
+  cue?: string;
+  setup?: string[];
+  execution?: string[];
+  kind?: 'machine' | 'free';
+  mode?: 'weight' | 'bodyweight' | 'time';
+  /** Prescribed starting load in canonical lb storage units. */
+  weight?: number;
+};
+
 export type PlanExercise = {
   exerciseId: string;
   variantId: string;
@@ -30,8 +47,19 @@ export type PlanExercise = {
   variantName?: string;
   equipment?: string;
   gifId?: string;
+  mediaUrl?: string;
   cue?: string;
+  setup?: string[];
+  execution?: string[];
   muscles?: string;
+  /** Exercise guidance (handoff §14), shared by all variants. */
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  feel?: string;
+  wrongFeel?: string[];
+  mistakes?: string[];
+  /** Other ways to do the movement when the main equipment is busy or missing. */
+  alternatives?: PlanVariantInfo[];
   kind?: 'machine' | 'free';
   mode?: 'weight' | 'bodyweight' | 'time';
   sets: number;
@@ -147,6 +175,17 @@ export function parsePlanPack(raw: unknown): PlanPackImportResult {
         if (exercise.targetRir != null && (exercise.targetRir as number) > 4) return { ok: false, error: 'plan.invalidRir' };
         if (exercise.kind != null && exercise.kind !== 'machine' && exercise.kind !== 'free') return { ok: false, error: 'plan.invalidKind' };
         if (exercise.mode != null && !['weight','bodyweight','time'].includes(exercise.mode as string)) return { ok: false, error: 'plan.invalidMode' };
+        if (exercise.alternatives != null) {
+          if (!Array.isArray(exercise.alternatives)) return { ok: false, error: 'plan.invalidAlternative' };
+          for (const alt of exercise.alternatives) {
+            if (!obj(alt) || typeof alt.variantId !== 'string' || !alt.variantId.trim() || alt.variantId === exercise.variantId)
+              return { ok: false, error: 'plan.invalidAlternative' };
+            if (alt.kind != null && alt.kind !== 'machine' && alt.kind !== 'free') return { ok: false, error: 'plan.invalidKind' };
+            if (alt.mode != null && !['weight','bodyweight','time'].includes(alt.mode as string)) return { ok: false, error: 'plan.invalidMode' };
+            if (alt.weight != null && (typeof alt.weight !== 'number' || !Number.isFinite(alt.weight) || alt.weight < 0))
+              return { ok: false, error: 'plan.invalidExerciseValue' };
+          }
+        }
       }
     }
   }

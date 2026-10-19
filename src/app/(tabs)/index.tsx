@@ -27,6 +27,7 @@ import { dayKey, latestFirst } from '../../logic/metrics';
 import { formatRunTime } from '../../logic/run';
 import { startWorkout } from '../../logic/session';
 import { startImportedWorkout } from '../../logic/importedSession';
+import { eatenTotals, nutritionTarget } from '../../logic/v4';
 import { formatSleepClock, sleepScore } from '../../logic/sleep';
 import { useStore } from '../../store/AppStore';
 import { colors } from '../../theme';
@@ -183,20 +184,21 @@ function MealTile({ data, today, nowMin }: TileProps & { nowMin: number }) {
 
 function CaloriesTile({ data, today }: TileProps) {
   const t = useT();
-  const totals = dayTotals(data.food, today);
+  const eaten = eatenTotals(data, today);
+  const target = nutritionTarget(data, today);
   return (
     <Tile onPress={() => router.navigate('/food')}>
       <Text style={styles.muted}>{t('home.calories')}</Text>
       <View style={styles.center}>
-        <Ring size={112} stroke={10} progress={totals.kcalTotal > 0 ? totals.kcalEaten / totals.kcalTotal : 0}>
+        <Ring size={112} stroke={10} progress={target.kcal > 0 ? eaten.kcal / target.kcal : 0}>
           <Text style={styles.ringNum} numberOfLines={1} adjustsFontSizeToFit>
-            {formatNum(totals.kcalEaten)}
+            {formatNum(eaten.kcal)}
           </Text>
         </Ring>
       </View>
-      <Text style={styles.muted}>/ {formatNum(totals.kcalTotal)} {t('unit.kcal')}</Text>
+      <Text style={styles.muted}>/ {formatNum(target.kcal)} {t('unit.kcal')}</Text>
       <Text style={styles.muted}>
-        {t('home.protein', { eaten: totals.proteinEaten, total: totals.proteinTotal })}
+        {t('home.protein', { eaten: Math.round(eaten.protein), total: target.protein })}
       </Text>
     </Tile>
   );

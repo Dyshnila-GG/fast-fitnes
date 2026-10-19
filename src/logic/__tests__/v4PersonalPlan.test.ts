@@ -79,3 +79,52 @@ describe('built-in TOCHKA v4 plan', () => {
     expect(skippedItems(s).some((x) => x.includes('Тяга верхнего блока'))).toBe(true);
   });
 });
+
+describe('machine / free-weight variants', () => {
+  const { switchImportedVariant } = require('../importedSession');
+  const { snapshotFor, variantsOf } = require('../planVariant');
+  const { decideAfterSet } = require('../trainingEngine');
+
+  test('every v4 movement has a machine and a free-weight way with its own demo', () => {
+    for (const w of V4_WORKOUTS)
+      for (const e of w.exercises) {
+        const kinds = variantsOf(e).map((v: { kind: string }) => v.kind).sort();
+        expect(kinds).toEqual(['free', 'machine']);
+        for (const v of variantsOf(e)) expect(v.mediaUrl).toMatch(/^https:\/\/static\.exercisedb\.dev\/media\/\w+\.gif$/);
+        expect(getExercise(e.exerciseId).variants).toHaveLength(2);
+      }
+  });
+
+  test('switching keeps done sets, reloads the rest and is remembered', () => {
+    let d = startImportedWorkout(install(), 'v4-tue');
+    const s0 = d.activeSession!;
+    d = { ...d, activeSession: { ...s0, exercises: s0.exercises.map((l, i) => (i !== 1 ? l : { ...l, sets: l.sets.map((x, k) => (k === 0 ? { ...x, factWeight: 100, factReps: 10, rir: 2 as const, done: true } : x)) })) } };
+    d = switchImportedVariant(d, 1, 'dumbbell');
+    const log = d.activeSession!.exercises[1];
+    expect(log.variantId).toBe('dumbbell');
+    expect(log.variant).toBe('free');
+    expect(log.sets[0].factWeight).toBe(100);
+    expect(log.sets[1].planWeight).toBe(30);
+    expect(snapshotFor(d.activeSession!, log)?.variantName).toBe('Жим гантелей лёжа');
+    expect(d.variantChoice['chest-press']).toBe('free');
+    const next = startImportedWorkout({ ...d, activeSession: null }, 'v4-sat');
+    expect(next.activeSession!.exercises[0].variantId).toBe('dumbbell');
+  });
+
+  test('limiter answers change the decision', () => {
+    const base = { factWeight: 100, factReps: 6, rir: 0 as const, planReps: 8, planRepsMax: 12, type: 'work' as const, done: true };
+    expect(decideAfterSet({ set: { ...base, stopReason: 'pain' }, repsMin: 8, repsMax: 12, kind: 'machine' }).type).toBe('STOP');
+    expect(decideAfterSet({ set: { ...base, stopReason: 'technique' }, repsMin: 8, repsMax: 12, kind: 'machine' }).type).toBe('HOLD');
+    expect(decideAfterSet({ set: { ...base, stopReason: 'other_muscle' }, repsMin: 8, repsMax: 12, kind: 'machine' }).reason).toBe('other_muscle');
+    expect(decideAfterSet({ set: base, repsMin: 8, repsMax: 12, kind: 'machine' }).type).toBe('DECREASE');
+  });
+
+  test('an installed older built-in pack is refreshed on load', () => {
+    const { migrateData } = require('../../store/migrate');
+    const d = install();
+    const old = { ...d, installedPlan: { ...d.installedPlan!, pack: { ...d.installedPlan!.pack, version: '1.0.0', training: { ...d.installedPlan!.pack.training!, workouts: [] } } } };
+    const m = migrateData(JSON.parse(JSON.stringify(old)));
+    expect(m.installedPlan.pack.version).toBe(V4_PERSONAL_PLAN.version);
+    expect(m.installedPlan.pack.training.workouts).toHaveLength(3);
+  });
+});
