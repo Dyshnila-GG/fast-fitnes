@@ -16,6 +16,7 @@ import {
   homeDayType,
   monthGrid,
   monthOf,
+  nextPlanWorkout,
   nextWorkout,
   RUNS_PER_WEEK,
   shiftMonth,
@@ -25,6 +26,8 @@ import {
 import { dayKey, latestFirst } from '../../logic/metrics';
 import { formatRunTime } from '../../logic/run';
 import { startWorkout } from '../../logic/session';
+import { startImportedWorkout } from '../../logic/importedSession';
+import { eatenTotals, nutritionTarget } from '../../logic/v4';
 import { formatSleepClock, sleepScore } from '../../logic/sleep';
 import { useStore } from '../../store/AppStore';
 import { colors } from '../../theme';
@@ -74,11 +77,18 @@ function WorkoutTile({ data, today }: TileProps) {
   const t = useT();
   const { update } = useStore();
   const { workouts } = weekCounts(data, today);
-  const next = nextWorkout(data, today);
+  const plan = nextPlanWorkout(data, today);
+  const next = plan ? undefined : nextWorkout(data, today);
+  const day = plan?.day ?? next!.day;
+  const name = plan ? plan.workout.title.replace(/^[^—]+—\s*/, '') : templateName(next!.template);
   // nextWorkout даёт сегодняшнюю, только если сегодня день зала и тренировка ещё не сделана.
-  const isToday = next.day === today;
-  const openStart = () => router.push({ pathname: '/workout-preview', params: { id: next.template.id, start: '1' } });
-  const openPreview = () => router.push({ pathname: '/workout-preview', params: { id: next.template.id } });
+  const isToday = day === today;
+  const openStart = () =>
+    plan ? router.push('/strength') : router.push({ pathname: '/workout-preview', params: { id: next!.template.id, start: '1' } });
+  const openPreview = () =>
+    plan ? router.push('/strength') : router.push({ pathname: '/workout-preview', params: { id: next!.template.id } });
+  const start = () =>
+    update((d) => (plan ? startImportedWorkout(d, plan.workout.id) : startWorkout(d, next!.template.id, 'long')));
 
   return (
     <Tile onPress={isToday ? openStart : openPreview}>
@@ -86,12 +96,12 @@ function WorkoutTile({ data, today }: TileProps) {
         <Text style={styles.ringNum}>{workouts}</Text>
       </Ring>
       <Text style={styles.name} numberOfLines={2}>
-        {templateName(next.template)}
+        {name}
       </Text>
-      <Text style={styles.muted}>{dayLabel(next.day, today)}</Text>
+      <Text style={styles.muted}>{dayLabel(day, today)}</Text>
       {isToday && (
         <Pressable
-          onPress={() => update((d) => startWorkout(d, next.template.id, 'long'))}
+          onPress={start}
           onLongPress={openStart}
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
@@ -174,20 +184,21 @@ function MealTile({ data, today, nowMin }: TileProps & { nowMin: number }) {
 
 function CaloriesTile({ data, today }: TileProps) {
   const t = useT();
-  const totals = dayTotals(data.food, today);
+  const eaten = eatenTotals(data, today);
+  const target = nutritionTarget(data, today);
   return (
     <Tile onPress={() => router.navigate('/food')}>
       <Text style={styles.muted}>{t('home.calories')}</Text>
       <View style={styles.center}>
-        <Ring size={112} stroke={10} progress={totals.kcalTotal > 0 ? totals.kcalEaten / totals.kcalTotal : 0}>
+        <Ring size={112} stroke={10} progress={target.kcal > 0 ? eaten.kcal / target.kcal : 0}>
           <Text style={styles.ringNum} numberOfLines={1} adjustsFontSizeToFit>
-            {formatNum(totals.kcalEaten)}
+            {formatNum(eaten.kcal)}
           </Text>
         </Ring>
       </View>
-      <Text style={styles.muted}>/ {formatNum(totals.kcalTotal)} {t('unit.kcal')}</Text>
+      <Text style={styles.muted}>/ {formatNum(target.kcal)} {t('unit.kcal')}</Text>
       <Text style={styles.muted}>
-        {t('home.protein', { eaten: totals.proteinEaten, total: totals.proteinTotal })}
+        {t('home.protein', { eaten: Math.round(eaten.protein), total: target.protein })}
       </Text>
     </Tile>
   );

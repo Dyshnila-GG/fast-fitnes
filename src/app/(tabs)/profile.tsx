@@ -80,6 +80,12 @@ export default function ProfileScreen() {
         }
         onPress={() => router.push('/runs')}
       />
+      <NavCard title="Цель питания" subtitle="Maintain / Lean Gain / Fast Gain, белок" onPress={() => router.push('/nutrition-goal')} />
+      <NavCard
+        title="Активности"
+        subtitle={data.v4.activities.length > 0 ? `Записей: ${data.v4.activities.length} · волейбол, бег и др.` : 'Волейбол, бег и др. — для восстановления'}
+        onPress={() => router.push('/activities')}
+      />
       <NavCard title={t('profile.menu')} subtitle={t('profile.menuSub', { n: Object.keys(data.food.dishes).length })} onPress={() => router.push('/menu')} />
       <NavCard title={t('profile.schedule')} subtitle={t('profile.scheduleSub')} onPress={() => router.push('/food-settings')} />
       <NavCard
@@ -108,6 +114,11 @@ export default function ProfileScreen() {
         title={t('profile.trash')}
         subtitle={data.trash.length > 0 ? t('profile.trashSub', { n: data.trash.length }) : t('profile.trashEmpty')}
         onPress={() => router.push('/trash')}
+      />
+      <NavCard
+        title="Plan Pack"
+        subtitle={data.installedPlan ? `${data.installedPlan.pack.title} · v${data.installedPlan.pack.version}` : 'Импорт тренировок, питания и настроек'}
+        onPress={() => router.push('/plan-import')}
       />
       <NavCard
         title={t('profile.appSettings')}

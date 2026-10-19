@@ -2,6 +2,7 @@ import { getExercise, getVariant, isLegacyTemplate, PROGRAM } from '../data/prog
 import { monthFull, t, tp, weekdayShort } from '../i18n';
 import { variantName } from '../i18n/content';
 import type { AppData, BodyWeightEntry, Session, WorkoutTemplate } from '../types';
+import type { PlanWorkout } from '../planPack';
 import { dayDate, dayKey, shiftDay, weekStart } from './dates';
 import { formatBest } from './format';
 import { finishedSessions } from './metrics';
@@ -47,6 +48,19 @@ export function nextWorkout(data: AppData, today: string): { day: string; templa
     if (template) return { day, template };
   }
   throw new Error('No gym days in the program');
+}
+
+// То же для установленного Plan Pack: сегодня (если ещё не сделана) или ближайшая по дню недели.
+export function nextPlanWorkout(data: AppData, today: string): { day: string; workout: PlanWorkout } | undefined {
+  const workouts = data.installedPlan?.pack.training?.workouts ?? [];
+  if (!workouts.length) return undefined;
+  const from = finishedOn(data, today) ? 1 : 0;
+  for (let i = from; i < from + 7; i++) {
+    const day = shiftDay(today, i);
+    const workout = workouts.find((w) => w.weekday === dayDate(day).getDay());
+    if (workout) return { day, workout };
+  }
+  return { day: shiftDay(today, from), workout: workouts[0] };
 }
 
 // Выросшие рекорды тренировки: «Жим лёжа в Смите 75 lb → 80 lb».

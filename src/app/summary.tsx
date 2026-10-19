@@ -71,7 +71,7 @@ export default function SummaryScreen() {
           ))}
         </Card>
 
-        {!isLegacyTemplate(session.templateId) && (
+        {!isLegacyTemplate(session.templateId) && !session.planSnapshot && (
           <Card style={styles.card}>
             <Text style={styles.section}>{t('summary.records')}</Text>
             <Text style={styles.hint}>

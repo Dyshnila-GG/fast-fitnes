@@ -1,0 +1,84 @@
+{
+  "format": "tochka-plan",
+  "schemaVersion": 1,
+  "id": "vitalii-aesthetic-mass",
+  "version": "1.0.0",
+  "title": "Vitalii — Aesthetic Mass",
+  "author": "TOCHKA",
+  "description": "Aggressive controlled muscle-gain preset with chest and biceps priority.",
+  "visibility": "private",
+  "profilePreset": {
+    "goal": "build_muscle",
+    "gainStrategy": "aggressive",
+    "trainingDays": [2, 4, 6],
+    "maxSessionMinutes": 120,
+    "musclePriorities": ["chest", "biceps", "abs", "shoulders", "arms", "back", "legs"],
+    "limitations": ["leg exercises: keep knee range at or above 90 degrees; stop on knee pain"]
+  },
+  "training": {
+    "id": "vitalii-fast-mass",
+    "title": "3-Day Aesthetic Mass",
+    "workouts": [
+      {
+        "id": "vitalii-tue",
+        "title": "Chest & Shoulders",
+        "weekday": 2,
+        "exercises": [
+          {"exerciseId":"incline-chest-press","variantId":"machine","sets":3,"repsMin":6,"repsMax":10,"targetRir":2,"restMinSec":150,"restMaxSec":180},
+          {"exerciseId":"chest-press","variantId":"machine","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":150,"restMaxSec":180},
+          {"exerciseId":"pec-deck","variantId":"machine","sets":2,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"lateral-raise","variantId":"machine","sets":3,"repsMin":12,"repsMax":20,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"shoulder-press","variantId":"machine","sets":2,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":120,"restMaxSec":150},
+          {"exerciseId":"triceps-pushdown","variantId":"cable","sets":2,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"ab-crunch","variantId":"machine","sets":3,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":90}
+        ]
+      },
+      {
+        "id": "vitalii-thu",
+        "title": "Back & Biceps",
+        "weekday": 4,
+        "exercises": [
+          {"exerciseId":"lat-pulldown","variantId":"machine","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":150,"restMaxSec":150},
+          {"exerciseId":"seated-row","variantId":"cable","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":150,"restMaxSec":150},
+          {"exerciseId":"reverse-pec-deck","variantId":"machine","sets":3,"repsMin":12,"repsMax":20,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"biceps-curl","variantId":"machine","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"incline-db-curl","variantId":"dumbbell","sets":2,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"hammer-curl","variantId":"dumbbell","sets":2,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"ab-crunch","variantId":"machine","sets":3,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":90}
+        ]
+      },
+      {
+        "id": "vitalii-sat",
+        "title": "Upper & Legs",
+        "weekday": 6,
+        "exercises": [
+          {"exerciseId":"chest-press","variantId":"machine","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":150,"restMaxSec":180},
+          {"exerciseId":"lat-pulldown","variantId":"machine","sets":3,"repsMin":8,"repsMax":12,"targetRir":2,"restMinSec":150,"restMaxSec":150},
+          {"exerciseId":"leg-press","variantId":"machine","sets":3,"repsMin":10,"repsMax":15,"targetRir":3,"restMinSec":150,"restMaxSec":180},
+          {"exerciseId":"seated-leg-curl","variantId":"machine","sets":3,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":120,"restMaxSec":120},
+          {"exerciseId":"lateral-raise","variantId":"machine","sets":3,"repsMin":12,"repsMax":20,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"biceps-curl","variantId":"machine","sets":2,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"calf-raise","variantId":"machine","sets":3,"repsMin":10,"repsMax":20,"targetRir":2,"restMinSec":90,"restMaxSec":120},
+          {"exerciseId":"ab-crunch","variantId":"machine","sets":3,"repsMin":10,"repsMax":15,"targetRir":2,"restMinSec":90,"restMaxSec":90}
+        ]
+      }
+    ]
+  },
+  "nutrition": {
+    "target": {"strategy":"aggressive","proteinG":150},
+    "recipes": [],
+    "menu": []
+  },
+  "coach": {
+    "enabled": true,
+    "reviewEveryDays": 14,
+    "calorieAdjustmentStep": 125,
+    "requireConfirmation": true
+  },
+  "tracking": {
+    "weight": {"enabled":true,"frequency":"daily"},
+    "waist": {"enabled":true,"everyDays":7},
+    "measurements": {"enabled":true,"everyDays":14},
+    "photos": {"enabled":true,"everyDays":14}
+  }
+}

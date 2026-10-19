@@ -167,6 +167,17 @@ describe('экспорт / импорт', () => {
     if (res.ok) expect(res.data).toEqual(JSON.parse(JSON.stringify(d)));
   });
 
+  it('экспорт → импорт сохраняет установленный Plan Pack', () => {
+    const d = sample();
+    d.installedPlan = {
+      installedAt: '2026-10-18T00:00:00.000Z',
+      pack: { format: 'tochka-plan', schemaVersion: 1, id: 'v4', version: '1', title: 'V4 Test' },
+    };
+    const res = parseImport(exportData(d));
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.installedPlan).toEqual(d.installedPlan);
+  });
+
   it('незавершённая тренировка и открытый итог не импортируются', () => {
     const d = { ...sample(), summaryId: 'x', activeSession: buildSession(defaultData(), 'B', 'long') };
     const res = parseImport(exportData(d));
@@ -186,7 +197,7 @@ describe('экспорт / импорт', () => {
     const res = parseImport(JSON.stringify(v1));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.data.version).toBe(2);
+    expect(res.data.version).toBe(3);
     expect(res.data.records['Жим лёжа в Смите']).toEqual({ weight: 85 });
     expect(res.data.sessions).toEqual(JSON.parse(JSON.stringify(v1.sessions)));
   });

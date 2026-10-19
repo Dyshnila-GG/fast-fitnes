@@ -21,6 +21,9 @@ import { dayDate, dayKey, shiftDay } from '../../logic/metrics';
 import { useStore } from '../../store/AppStore';
 import { colors, gap } from '../../theme';
 import { useT } from '../../i18n/useT';
+import { router } from 'expo-router';
+import { Button } from '../../components/ui';
+import { eatenTotals, NUTRITION_MODES, nutritionTarget } from '../../logic/v4';
 
 export default function FoodScreen() {
   const t = useT();
@@ -34,6 +37,8 @@ export default function FoodScreen() {
   const { food } = data;
   const meals = mealsFor(food, day);
   const totals = dayTotals(food, day);
+  const eaten = eatenTotals(data, day);
+  const target = nutritionTarget(data, today);
   const nowDate = new Date(now);
   const next = day === today ? nextMeal(food, day, nowDate.getHours() * 60 + nowDate.getMinutes()) : undefined;
   const offset = Math.round((dayDate(day).getTime() - dayDate(today).getTime()) / 86_400_000);
@@ -61,11 +66,21 @@ export default function FoodScreen() {
           {t('food.eatenOf', { eaten: totals.eaten, total: totals.total })}
         </Text>
         <Text style={styles.stat}>
-          {formatNum(totals.kcalEaten)} / ~{formatNum(totals.kcalTotal)} {t('unit.kcal')}
+          {formatNum(eaten.kcal)} / {formatNum(target.kcal)} {t('unit.kcal')}
         </Text>
         <Text style={styles.stat}>
-          {t('food.proteinOf', { eaten: totals.proteinEaten, total: totals.proteinTotal })}
+          {t('food.proteinOf', { eaten: Math.round(eaten.protein), total: target.protein })}
         </Text>
+        <Text style={styles.muted}>
+          Цель: {NUTRITION_MODES.find((m) => m.value === target.mode)?.label} · по меню ~{formatNum(totals.kcalTotal)} {t('unit.kcal')}
+          {eaten.facts > 0 ? ` · записей по факту: ${eaten.facts}` : ''}
+        </Text>
+        {target.excessFat && target.mode === 'fast_gain' ? <Text style={styles.warn}>Отмечен лишний жир — проверь цель питания.</Text> : null}
+        <View style={styles.buttons}>
+          <Button title="Что съел" variant="secondary" small onPress={() => router.push({ pathname: '/food-log', params: { day } })} style={styles.flex} />
+          <Button title="Заготовки" variant="secondary" small onPress={() => router.push('/batches')} style={styles.flex} />
+          <Button title="Цель" variant="secondary" small onPress={() => router.push('/nutrition-goal')} style={styles.flex} />
+        </View>
       </Card>
 
       {salmonTomorrow(food, day) && (
@@ -102,5 +117,7 @@ const styles = StyleSheet.create({
   progress: { fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 4 },
   stat: { fontSize: 22, fontWeight: '800', color: colors.text },
   reminder: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
+  buttons: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  warn: { fontSize: 14, color: '#FF9F0A' },
 });
 

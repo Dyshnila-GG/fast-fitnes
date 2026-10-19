@@ -1,10 +1,12 @@
 import type { Dish, DishId, MealSlot, Product } from './data/food';
+import type { GainStrategy, Goal, PlanExercise, TochkaPlanPack } from './planPack';
 
 export type Kind = 'machine' | 'free';
 export type Mode = 'weight' | 'bodyweight' | 'time';
 export type Length = 'long' | 'short';
 export type LegacyTemplateId = 'A' | 'B' | 'C'; // программа v1 — только история
-export type TemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
+export type BuiltInTemplateId = 'tue' | 'thu' | 'sat' | LegacyTemplateId;
+export type TemplateId = BuiltInTemplateId | (string & {});
 export type Rating = 'easy' | 'normal' | 'hard' | 'fail'; // оценка после рабочих подходов
 export type Feel = 'easy' | 'normal' | 'hard'; // «Как пошла разминка?»
 
@@ -22,11 +24,21 @@ export type Warmup = { pct: number; reps?: number; seconds?: number }; // pct = 
 export type Best = Omit<Plan, 'sets'>;
 
 export type Variant = {
+  /** Stable v4 identity. Legacy variants are migrated from their name when absent. */
+  id?: string;
   kind: Kind;
   name: string;
   equipment: string;
   gifId: string;
   cue: string;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  setup?: string[];
+  execution?: string[];
+  mistakes?: string[];
+  feelCues?: string[];
+  targetRir?: number;
+  restRangeSec?: [number, number];
   mode: Mode;
   plan: Plan;
   warmup: Warmup[];
@@ -61,13 +73,23 @@ export type SetLog = {
   factWeight?: number;
   factReps?: number;
   factSeconds?: number;
+  /** v4 set-level effort. 4 means 4+ clean reps remained. */
+  rir?: 0 | 1 | 2 | 3 | 4;
+  completedAt?: string;
+  actualRestSec?: number;
+  stopReason?: 'target' | 'technique' | 'other_muscle' | 'pain';
+  limitingMuscle?: string;
   done: boolean;
 };
 
 export type ExerciseLog = {
   exerciseId: string;
   variant: Kind;
+  variantId?: string;
   sets: SetLog[];
+  targetRir?: number;
+  muscleFeel?: 'low' | 'normal' | 'high';
+  techniqueConfidence?: 'low' | 'normal' | 'high';
   record?: Best; // рекорд на начало тренировки («было»)
   feel?: Feel;
   todayWeight?: number; // вес «сегодня» для всех рабочих подходов
@@ -88,6 +110,11 @@ export type Session = {
   id: string;
   units?: Units; // единицы на момент тренировки: в них считались округления и рост рекорда
   templateId: TemplateId;
+  /** Immutable copy of an imported workout prescription used for this session. */
+  planSnapshot?: {
+    title: string;
+    exercises: PlanExercise[];
+  };
   length: Length;
   startedAt: string;
   finishedAt?: string;
@@ -95,12 +122,23 @@ export type Session = {
   pausedAt?: string; // момент начала текущей паузы
   restEndsAt?: string; // окончание текущего отдыха
   restSec?: number; // длительность текущего отдыха
+  /** v4: when rest began and which upcoming work set the elapsed rest belongs to. */
+  restStartedAt?: string;
+  restFor?: { exerciseIndex: number; setIndex: number };
   warmup?: SessionWarmup;
   warmupDone?: string[]; // v1: чек-лист разминки
   exercises: ExerciseLog[];
 };
 
-export type Profile = { age: number; heightIn: number; startWeight: number };
+export type Profile = {
+  age: number;
+  heightIn: number;
+  startWeight: number;
+  goal?: Goal;
+  gainStrategy?: GainStrategy;
+  musclePriorities?: string[];
+  limitations?: string[];
+};
 export type BodyWeightEntry = { id: string; date: string; value: number };
 export type MeasurementEntry = {
   id: string;
@@ -146,8 +184,71 @@ export type Lang = 'ru' | 'en' | 'uk';
 export type Units = 'imperial' | 'metric';
 export type Settings = { lang: Lang; units: Units };
 
+// ---- v4: питание по факту, заготовки, активности, сигналы тела (handoff §16–22) ----
+
+export type NutritionMode = 'maintain' | 'lean_gain' | 'fast_gain';
+
+/** Реально съеденный продукт: граммы — главный источник истины; estimated — оценка без весов. */
+export type FoodFactItem = { product?: string; name: string; g: number; kcal: number; protein: number; estimated?: boolean };
+
+/** Факт приёма пищи. slot — приём из расписания, который этот факт заменяет в подсчёте. */
+export type FoodFact = {
+  id: string;
+  date: string;
+  title: string;
+  slot?: string;
+  batchId?: string;
+  items: FoodFactItem[];
+  kcal: number;
+  protein: number;
+};
+
+/** Заготовка: сырые ингредиенты → готовая масса. Калории считаются только от сырых продуктов. */
+export type FoodBatch = {
+  id: string;
+  date: string;
+  title: string;
+  inputs: { product?: string; name: string; g: number; kcal: number; protein: number }[];
+  outputG: number;
+  kcal: number;
+  protein: number;
+};
+
+export type ActivityType = 'volleyball' | 'run' | 'walk' | 'cycling' | 'gym' | 'custom';
+
+export type Activity = {
+  id: string;
+  date: string;
+  type: ActivityType;
+  title?: string;
+  minutes: number;
+  /** Субъективная нагрузка 1–10. */
+  rpe?: number;
+  /** Сильная нагрузка на ноги (прыжки, бег). */
+  legs: boolean;
+  source: 'manual' | 'garmin';
+};
+
+export type BodyFlag = { id: string; date: string; kind: 'excess_fat' };
+
+export type V4Data = {
+  nutrition: { mode: NutritionMode; proteinG: number; kcalOverride?: number };
+  facts: FoodFact[];
+  batches: FoodBatch[];
+  activities: Activity[];
+  bodyFlags: BodyFlag[];
+};
+
+export type InstalledPlan = {
+  pack: TochkaPlanPack;
+  installedAt: string;
+};
+
 export type AppData = {
-  version: 2;
+  version: 3;
+  /** Imported configuration. History remains separate and user-owned. */
+  installedPlan: InstalledPlan | null;
+  v4: V4Data;
   profile: Profile;
   lengthChoice: Partial<Record<TemplateId, Length>>;
   variantChoice: Record<string, Kind>;

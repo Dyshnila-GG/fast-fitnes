@@ -123,7 +123,7 @@ export function parseImport(text: string): ImportResult {
   } catch {
     return { ok: false, error: t('import.notJson') };
   }
-  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return { ok: false, error: t('import.unknown') };
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2 && raw.version !== 3)) return { ok: false, error: t('import.unknown') };
   const p = raw.profile;
   if (!isObj(p) || !isNum(p.age) || !isNum(p.heightIn) || !isNum(p.startWeight)) {
     return { ok: false, error: t('import.badProfile') };
@@ -142,7 +142,7 @@ export function parseImport(text: string): ImportResult {
     data: migrateData({
       ...base,
       version: raw.version,
-      profile: { age: p.age as number, heightIn: p.heightIn as number, startWeight: p.startWeight as number },
+      profile: { ...(isObj(raw.profile) ? (raw.profile as AppData['profile']) : {}), age: p.age as number, heightIn: p.heightIn as number, startWeight: p.startWeight as number },
       lengthChoice: isObj(raw.lengthChoice) ? (raw.lengthChoice as AppData['lengthChoice']) : base.lengthChoice,
       variantChoice: isObj(raw.variantChoice) ? (raw.variantChoice as AppData['variantChoice']) : base.variantChoice,
       plans: isObj(raw.plans) ? (raw.plans as AppData['plans']) : base.plans,
@@ -159,6 +159,10 @@ export function parseImport(text: string): ImportResult {
       backup: raw.backup as AppData['backup'],
       reminders: raw.reminders as AppData['reminders'],
       settings: raw.settings as AppData['settings'],
+      // v4 Plan Pack is configuration, not personal history; preserve it across backup restore.
+      installedPlan: raw.installedPlan as AppData['installedPlan'],
+      // v4: факты питания, заготовки, активности, сигналы тела — проверяются в migrateData.
+      v4: raw.v4 as AppData['v4'],
       // Незавершённые тренировка и пробежка и открытый итог не переносятся.
       activeSession: null,
       activeRun: null,

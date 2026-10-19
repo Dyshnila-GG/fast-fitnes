@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { BackButton } from '../components/nav/BackButton';
 import { FONT } from '../components/Text';
 import { useT } from '../i18n/useT';
@@ -57,6 +57,11 @@ function RootStack() {
         <Stack.Screen name="progress" options={{ title: t('nav.progress') }} />
         <Stack.Screen name="personal" options={{ title: t('nav.personal') }} />
         <Stack.Screen name="data" options={{ title: t('nav.data') }} />
+        <Stack.Screen name="plan-import" options={{ title: 'Plan Pack' }} />
+        <Stack.Screen name="food-log" options={{ title: 'Что съел' }} />
+        <Stack.Screen name="batches" options={{ title: 'Заготовки' }} />
+        <Stack.Screen name="nutrition-goal" options={{ title: 'Цель питания' }} />
+        <Stack.Screen name="activities" options={{ title: 'Активности' }} />
         <Stack.Screen name="app-settings" options={{ title: t('nav.app_settings') }} />
         <Stack.Screen name="trash" options={{ title: t('nav.trash') }} />
         <Stack.Screen name="backup" options={{ title: t('nav.backup') }} />
@@ -98,8 +103,8 @@ export default function RootLayout() {
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
-  // Ошибка загрузки шрифта не должна блокировать приложение — тогда системный шрифт.
-  if (!fontsLoaded && !fontError) return null;
+  // Never let font loading keep the native splash on screen forever.
+  // The UI already has a system-font fallback, so render immediately and let Manrope load in the background.
   return (
     <AppStoreProvider fallback={loading}>
       <StatusBar style="light" />

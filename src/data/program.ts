@@ -1,6 +1,9 @@
 import type { Exercise, Kind, Mode, Plan, Variant, Warmup, WorkoutTemplate } from '../types';
 import { exerciseFactory, v } from './helpers';
 import { LEGACY_PROGRAM } from './legacy';
+import { V4_WORKOUTS } from './v4PersonalPlan';
+import type { PlanExercise } from '../planPack';
+import { variantsOf } from '../logic/planVariant';
 
 // Программа v2 (SPEC_v2 §3). plan — подходы, диапазон повторов и стартовый рекорд.
 
@@ -163,7 +166,51 @@ export const PROGRAM: WorkoutTemplate[] = [
   },
 ];
 
-const ALL = [...PROGRAM, ...LEGACY_PROGRAM];
+// Упражнения встроенного Plan Pack v4 регистрируются в каталоге, чтобы история, итог, отчёт,
+// метрики и бэкап находили их так же, как упражнения v3.
+function catalogVariant(e: PlanExercise): Variant {
+  const mode = e.mode ?? (e.seconds != null ? 'time' : 'weight');
+  return {
+    id: e.variantId,
+    kind: e.kind ?? 'machine',
+    name: e.variantName ?? e.title ?? e.exerciseId,
+    equipment: e.equipment ?? '',
+    gifId: e.gifId ?? '',
+    cue: e.cue ?? '',
+    mode,
+    targetRir: e.targetRir,
+    restRangeSec: e.restMinSec != null ? [e.restMinSec, e.restMaxSec ?? e.restMinSec] : undefined,
+    primaryMuscles: e.primaryMuscles,
+    secondaryMuscles: e.secondaryMuscles,
+    setup: e.setup,
+    execution: e.execution,
+    mistakes: e.mistakes,
+    plan: { sets: e.sets, weight: e.weight, reps: e.repsMin, repsMax: e.repsMax, seconds: e.seconds },
+    warmup: [],
+  };
+}
+
+function catalogExercise(e: PlanExercise, restSec: number): Exercise {
+  return {
+    id: e.exerciseId,
+    title: e.title ?? e.exerciseId,
+    muscles: e.muscles ?? '',
+    restSec,
+    tempo: '2-0-1',
+    defaultVariant: e.kind ?? 'machine',
+    variants: variantsOf(e).map(catalogVariant),
+  };
+}
+
+export const V4_TEMPLATES: WorkoutTemplate[] = V4_WORKOUTS.map((w) => ({
+  id: w.id,
+  title: w.title,
+  day: '',
+  weekday: w.weekday ?? -1,
+  exercises: w.exercises.map((e) => catalogExercise(e, e.restMinSec ?? 120)),
+}));
+
+const ALL = [...PROGRAM, ...LEGACY_PROGRAM, ...V4_TEMPLATES];
 
 export function isLegacyTemplate(id: string): boolean {
   return LEGACY_PROGRAM.some((t) => t.id === id);

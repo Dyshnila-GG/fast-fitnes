@@ -34,9 +34,14 @@ import {
   warmupOf,
 } from '../logic/session';
 import { applyFeel, setTodayWeight } from '../logic/records';
+import { coachImportedSet, switchImportedVariant } from '../logic/importedSession';
+import { snapshotBase, snapshotFor, variantsOf } from '../logic/planVariant';
+import { formatDay } from '../logic/format';
+import { activityLabel, legsFatigue, LEG_EXERCISES } from '../logic/v4';
+import { dayKey } from '../logic/dates';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
-import type { ExerciseLog, Kind, Session } from '../types';
+import type { ExerciseLog, Kind, Mode, Session } from '../types';
 import { sessionUnits } from '../logic/session';
 import { useT } from '../i18n/useT';
 
@@ -53,9 +58,11 @@ export default function WorkoutScreen() {
   // Кадры обоих вариантов каждого упражнения — заранее, чтобы переключение было мгновенным.
   useEffect(() => {
     if (!exerciseIds) return;
-    const urls = exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
-    Image.prefetch(urls, 'memory-disk').catch(() => {});
-  }, [exerciseIds]);
+    const urls = session?.planSnapshot
+      ? session.planSnapshot.exercises.flatMap((e) => variantsOf(e).flatMap((v) => (v.mediaUrl ? [v.mediaUrl] : v.gifId ? demoUrls(v.gifId) : [])))
+      : exerciseIds.split(',').flatMap((id) => getExercise(id).variants.flatMap((v) => demoUrls(v.gifId)));
+    if (urls.length) Image.prefetch(urls, 'memory-disk').catch(() => {});
+  }, [exerciseIds, session?.planSnapshot]);
 
   // Системная кнопка «назад» на Android заблокирована.
   useEffect(() => {
@@ -73,12 +80,19 @@ export default function WorkoutScreen() {
   const stopRestTimer = useCallback(() => updateSession(stopRest), [updateSession]);
 
   if (!session) return null;
+  const fatigue = legsFatigue(data, dayKey());
 
   const updateLog = (index: number, fn: (log: ExerciseLog) => ExerciseLog) =>
     updateSession((s) => ({ ...s, exercises: s.exercises.map((l, i) => (i === index ? fn(l) : l)) }));
 
+  const importedPlanExercise = (log: ExerciseLog) => snapshotFor(session, log);
   const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
-  const modeOf = (log: ExerciseLog) => variantOf(log).mode;
+  // Imported Plan Pack exercises must not depend on the built-in catalog (handoff §46).
+  const modeOf = (log: ExerciseLog): Mode => {
+    const imported = importedPlanExercise(log);
+    if (imported) return imported.mode ?? (imported.seconds != null ? 'time' : 'weight');
+    return variantOf(log).mode;
+  };
 
   const switchVariant = (index: number, kind: Kind) => {
     const apply = () =>
@@ -138,7 +152,7 @@ export default function WorkoutScreen() {
                 log={log}
                 number={i + 1}
                 onVariant={(k) => switchVariant(i, k)}
-                onSet={(si, patch) => updateLog(i, (l) => updateSet(l, modeOf(l), si, patch))}
+                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && (patch.rir != null || 'stopReason' in patch) ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
@@ -146,9 +160,23 @@ export default function WorkoutScreen() {
                 onToday={(w) => updateLog(i, (l) => setTodayWeight(l, variantOf(l), w, sessionUnits(session)))}
                 onNote={(comment) => updateLog(i, (l) => ({ ...l, comment }))}
                 onRate={(rating) => updateLog(i, (l) => ({ ...l, rating }))}
-                prevRating={lastRating(data.sessions, variantOf(log).name)}
-                prevNote={lastNote(data.sessions, variantOf(log).name)}
-                onRest={() => updateSession((s) => startRest(s, getExercise(log.exerciseId).restSec))}
+                prevRating={session.planSnapshot ? undefined : lastRating(data.sessions, variantOf(log).name)}
+                prevNote={session.planSnapshot ? undefined : lastNote(data.sessions, variantOf(log).name)}
+                v4={!!session.planSnapshot}
+                units={sessionUnits(session)}
+                restMinSec={importedPlanExercise(log)?.restMinSec}
+                planExercise={importedPlanExercise(log)}
+                planVariants={(() => { const b = snapshotBase(session, log); return b ? variantsOf(b) : undefined; })()}
+                onPlanVariant={(variantId) => update((d) => switchImportedVariant(d, i, variantId))}
+                hint={fatigue && LEG_EXERCISES.has(log.exerciseId) ? `Ноги нагружены: ${activityLabel(fatigue)} (${formatDay(fatigue.date)}). Держи RIR 3, вес не повышай; боль — стоп.` : undefined}
+                onRest={() => {
+                  const imported = importedPlanExercise(log);
+                  const rest = imported?.restMinSec ?? (session.planSnapshot ? 120 : getExercise(log.exerciseId).restSec);
+                  // Rest belongs to the NEXT work set: that set's performance must be
+                  // evaluated against the rest that happened immediately before it.
+                  const setIndex = log.sets.findIndex((x) => x.type === 'work' && !x.done);
+                  updateSession((s) => startRest(s, rest, Date.now(), setIndex < 0 ? undefined : { exerciseIndex: i, setIndex }));
+                }}
               />
             ))}
           </ScrollView>

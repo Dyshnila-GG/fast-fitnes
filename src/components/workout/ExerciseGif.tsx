@@ -13,16 +13,52 @@ const RETRY_MS = 1500;
 // Два кадра из free-exercise-db (SPEC §6).
 export const demoUrls = (gifId: string) => [`${BASE}/${gifId}/0.jpg`, `${BASE}/${gifId}/1.jpg`];
 
-type Props = { gifId: string; playing?: boolean; style?: StyleProp<ViewStyle> };
+type Props = { gifId: string; mediaUrl?: string; playing?: boolean; square?: boolean; style?: StyleProp<ViewStyle> };
 
 // Имитация GIF: чередование кадров. Оба кадра наложены друг на друга — смена без мерцания.
 // При смене gifId вызывающий передаёт key={gifId}, чтобы состояние сбрасывалось.
-export function ExerciseGif({ gifId, playing = true, style }: Props) {
+export function ExerciseGif({ gifId, mediaUrl, playing = true, square, style }: Props) {
+  if (mediaUrl) return <AnimatedDemo url={mediaUrl} fallbackGifId={gifId} playing={playing} square={square} style={style} />;
+  return <FrameDemo gifId={gifId} playing={playing} style={style} />;
+}
+
+// Настоящая анимация (ExerciseDB, анатомия с подсветкой мышц). При сбое — два кадра free-exercise-db.
+function AnimatedDemo({ url, fallbackGifId, playing, square, style }: { url: string; fallbackGifId: string; playing: boolean; square?: boolean; style?: StyleProp<ViewStyle> }) {
+  const [attempt, setAttempt] = useState(0);
+  const [errored, setErrored] = useState(false);
+  useEffect(() => {
+    if (!errored || attempt >= RETRIES) return;
+    const t = setTimeout(() => {
+      setAttempt((a) => a + 1);
+      setErrored(false);
+    }, RETRY_MS);
+    return () => clearTimeout(t);
+  }, [errored, attempt]);
+  if (errored && attempt >= RETRIES) {
+    return fallbackGifId ? <FrameDemo gifId={fallbackGifId} playing={playing} style={style} /> : <FrameDemo gifId="" playing={false} style={style} />;
+  }
+  return (
+    <View style={[styles.box, square ? styles.square : styles.wide, style]}>
+      <Image
+        key={`${url}#${attempt}`}
+        source={{ uri: url }}
+        cachePolicy="disk"
+        contentFit="contain"
+        autoplay={playing}
+        transition={null}
+        onError={() => setErrored(true)}
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
+  );
+}
+
+function FrameDemo({ gifId, playing = true, style }: { gifId: string; playing?: boolean; style?: StyleProp<ViewStyle> }) {
   const t = useT();
   const [frame, setFrame] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [errored, setErrored] = useState(false);
-  const failed = errored && attempt >= RETRIES;
+  const failed = !gifId || (errored && attempt >= RETRIES);
 
   useEffect(() => {
     if (!errored || attempt >= RETRIES) return;
@@ -70,4 +106,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stub: { color: colors.muted, fontSize: 15 },
+  wide: { aspectRatio: 4 / 3 },
+  square: { aspectRatio: 1 },
 });

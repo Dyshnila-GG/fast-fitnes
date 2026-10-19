@@ -1,3 +1,4 @@
+import { snapshotFor } from './planVariant';
 import { getExercise, getTemplate, getVariant, isLegacyTemplate } from '../data/program';
 import type { AppData, Best, Exercise, ExerciseLog, Kind, Length, Rating, Session, SessionWarmup, SetLog, Stopwatch, TemplateId, TrashItem, Units, Variant } from '../types';
 import { t } from '../i18n';
@@ -26,7 +27,14 @@ export function buildSets(variant: Variant, best: Best, length: Length, units: U
 export function buildExerciseLog(data: AppData, exercise: Exercise, kind: Kind, length: Length): ExerciseLog {
   const variant = getVariant(exercise, kind);
   const record = getBest(data, variant);
-  return { exerciseId: exercise.id, variant: kind, record, sets: buildSets(variant, record, length, data.settings.units) };
+  return {
+    exerciseId: exercise.id,
+    variant: kind,
+    variantId: variant.id ?? variant.name,
+    targetRir: variant.targetRir,
+    record,
+    sets: buildSets(variant, record, length, data.settings.units),
+  };
 }
 
 export function sessionExercises(templateId: TemplateId, length: Length): Exercise[] {
@@ -174,8 +182,8 @@ export function togglePause(s: Session, now = new Date()): Session {
   return { ...s, pausedMs: pausedTotalMs(s, now.getTime()), pausedAt: undefined };
 }
 
-export function startRest(s: Session, sec: number, now = Date.now()): Session {
-  return { ...s, restSec: sec, restEndsAt: new Date(now + sec * 1000).toISOString() };
+export function startRest(s: Session, sec: number, now = Date.now(), restFor?: Session['restFor']): Session {
+  return { ...s, restSec: sec, restStartedAt: new Date(now).toISOString(), restEndsAt: new Date(now + sec * 1000).toISOString(), restFor };
 }
 
 export function shiftRest(s: Session, deltaSec: number, now = Date.now()): Session {
@@ -184,8 +192,14 @@ export function shiftRest(s: Session, deltaSec: number, now = Date.now()): Sessi
   return { ...s, restSec: Math.max(0, (s.restSec ?? 0) + deltaSec), restEndsAt: new Date(end).toISOString() };
 }
 
-export function stopRest(s: Session): Session {
-  return { ...s, restEndsAt: undefined, restSec: undefined };
+export function stopRest(s: Session, now = Date.now()): Session {
+  let exercises = s.exercises;
+  if (s.restStartedAt && s.restFor) {
+    const actualRestSec = Math.max(0, Math.round((now - ms(s.restStartedAt)) / 1000));
+    const owner = s.restFor;
+    exercises = s.exercises.map((log, ei) => ei !== owner.exerciseIndex ? log : ({ ...log, sets: log.sets.map((set, si) => si !== owner.setIndex ? set : ({ ...set, actualRestSec })) }));
+  }
+  return { ...s, exercises, restEndsAt: undefined, restSec: undefined, restStartedAt: undefined, restFor: undefined };
 }
 
 // Подход заполнен, когда введены обязательные поля факта.
@@ -199,7 +213,12 @@ export function updateSet(log: ExerciseLog, mode: Variant['mode'], index: number
   const sets = log.sets.map((s, i) => {
     if (i !== index) return s;
     const next = { ...s, ...patch };
-    return { ...next, done: isSetFilled(next, mode) };
+    const filled = isSetFilled(next, mode);
+    return {
+      ...next,
+      done: filled,
+      completedAt: filled ? next.completedAt ?? new Date().toISOString() : undefined,
+    };
   });
   return { ...log, sets };
 }
@@ -241,14 +260,21 @@ export function hasFacts(log: ExerciseLog): boolean {
 const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
 
 // Заполнено: есть ответ после разминки (кроме планки), факты всех рабочих подходов и оценка.
-export function isExerciseComplete(log: ExerciseLog): boolean {
+export function isExerciseComplete(log: ExerciseLog, imported = false): boolean {
+  const work = log.sets.filter((s) => s.type === 'work');
+  // Portable Plan Pack exercises must not depend on the built-in exercise catalog.
+  // Timed sets are self-describing through planSeconds; rep-based sets require RIR.
+  if (imported) return work.every((s) => s.done && (s.planSeconds != null || s.rir != null));
   const variant = variantOf(log);
-  return (!needsFeel(variant) || log.feel != null) && log.rating != null && log.sets.every((s) => s.type !== 'work' || s.done);
+  const v4Complete = work.every((s) => s.done && (variant.mode === 'time' || s.rir != null));
+  if (variant.targetRir != null) return v4Complete;
+  return (!needsFeel(variant) || log.feel != null) && log.rating != null && work.every((s) => s.done);
 }
 
 // Номер текущего упражнения: первое незавершённое (иначе последнее).
 export function currentExerciseIndex(s: Session): number {
-  const i = s.exercises.findIndex((e) => !isExerciseComplete(e));
+  const imported=!!s.planSnapshot;
+  const i = s.exercises.findIndex((e) => !isExerciseComplete(e, imported));
   return i === -1 ? s.exercises.length - 1 : i;
 }
 
@@ -259,11 +285,18 @@ export function skippedItems(s: Session): string[] {
     if (!isWarmupItemDone(warmup[item.id])) out.push(t('skip.warmup', { item: item.label }));
   }
   for (const log of s.exercises) {
-    const variant = variantOf(log);
-    if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name: variantName(variant) }));
+    const snap = s.planSnapshot ? snapshotFor(s, log) : undefined;
+    const name = s.planSnapshot ? (snap?.variantName ?? snap?.title ?? log.exerciseId) : variantName(variantOf(log));
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
-    if (empty > 0) out.push(t('skip.emptySets', { name: variantName(variant), n: empty }));
-    if (!log.rating) out.push(t('skip.noRating', { name: variantName(variant) }));
+    if (empty > 0) out.push(t('skip.emptySets', { name, n: empty }));
+    if (s.planSnapshot) {
+      const noRir = log.sets.filter((x) => x.type === 'work' && x.done && x.planSeconds == null && x.rir == null).length;
+      if (noRir > 0) out.push(`${name}: RIR не указан — ${noRir}`);
+      continue;
+    }
+    const variant = variantOf(log);
+    if (needsFeel(variant) && !log.feel) out.push(t('skip.noFeel', { name }));
+    if (!log.rating) out.push(t('skip.noRating', { name }));
   }
   return out;
 }
@@ -277,7 +310,8 @@ export function finishActive(d: AppData, now = new Date()): AppData {
     pausedAt: undefined,
     finishedAt: now.toISOString(),
   };
-  return applyRecords({ ...d, activeSession: null, sessions: [...d.sessions, done], summaryId: done.id }, done);
+  const saved={ ...d, activeSession: null, sessions: [...d.sessions, done], summaryId: done.id };
+  return done.planSnapshot ? saved : applyRecords(saved, done);
 }
 
 // Рост рекордов (SPEC_v2 §2.4). Тренировки v1 рекорды не меняют.
