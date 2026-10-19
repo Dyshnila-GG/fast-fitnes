@@ -37,7 +37,7 @@ import { applyFeel, setTodayWeight } from '../logic/records';
 import { coachImportedSet } from '../logic/importedSession';
 import { useStore } from '../store/AppStore';
 import { gap } from '../theme';
-import type { ExerciseLog, Kind, Session } from '../types';
+import type { ExerciseLog, Kind, Mode, Session } from '../types';
 import { sessionUnits } from '../logic/session';
 import { useT } from '../i18n/useT';
 
@@ -82,7 +82,12 @@ export default function WorkoutScreen() {
 
   const importedPlanExercise = (log: ExerciseLog) => session.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
   const variantOf = (log: ExerciseLog) => getVariant(getExercise(log.exerciseId), log.variant);
-  const modeOf = (log: ExerciseLog) => importedPlanExercise(log)?.mode ?? (importedPlanExercise(log)?.seconds != null ? 'time' : variantOf(log).mode);
+  // Imported Plan Pack exercises must not depend on the built-in catalog (handoff §46).
+  const modeOf = (log: ExerciseLog): Mode => {
+    const imported = importedPlanExercise(log);
+    if (imported) return imported.mode ?? (imported.seconds != null ? 'time' : 'weight');
+    return variantOf(log).mode;
+  };
 
   const switchVariant = (index: number, kind: Kind) => {
     const apply = () =>

@@ -284,7 +284,8 @@ export function skippedItems(s: Session): string[] {
     if (!isWarmupItemDone(warmup[item.id])) out.push(t('skip.warmup', { item: item.label }));
   }
   for (const log of s.exercises) {
-    const name = s.planSnapshot ? log.exerciseId : variantName(variantOf(log));
+    const snap = s.planSnapshot?.exercises.find((e) => e.exerciseId === log.exerciseId && e.variantId === log.variantId);
+    const name = s.planSnapshot ? (snap?.variantName ?? snap?.title ?? log.exerciseId) : variantName(variantOf(log));
     const empty = log.sets.filter((x) => x.type === 'work' && !x.done).length;
     if (empty > 0) out.push(t('skip.emptySets', { name, n: empty }));
     if (s.planSnapshot) {

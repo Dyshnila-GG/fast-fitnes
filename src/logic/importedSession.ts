@@ -4,27 +4,57 @@ import { newId } from './id';
 import { emptyWarmup } from './session';
 import { decideAfterSet, applyDecisionToNextSet, type TrainingDecision } from './trainingEngine';
 
-function workSets(e: PlanExercise): SetLog[] {
+function workSets(e: PlanExercise, startWeight?: number): SetLog[] {
   return Array.from({ length: e.sets }, () => ({
     type: 'work' as const,
     planReps: e.repsMin,
     planRepsMax: e.repsMax,
     planSeconds: e.seconds,
-    // Seed the first prescription with the pack's load when present.
-    planWeight: e.weight,
+    // Last real working load wins; the pack's load is only the first-time default.
+    planWeight: startWeight ?? e.weight,
     done: false,
   }));
 }
 
-export function buildImportedExerciseLog(e: PlanExercise): ExerciseLog {
+export function buildImportedExerciseLog(e: PlanExercise, startWeight?: number): ExerciseLog {
   return {
     exerciseId: e.exerciseId,
     // Compatibility field until ExerciseLog v4 removes the old machine/free switch.
     variant: e.kind ?? 'machine',
     variantId: e.variantId,
     targetRir: e.targetRir,
-    sets: workSets(e),
+    sets: workSets(e, startWeight),
   };
+}
+
+/**
+ * Cross-session progression (handoff §44): the next session of an exercise starts from the
+ * prescription the engine would give after its last completed working set in the latest
+ * finished session with the same exerciseId + variantId. No history → undefined (pack weight).
+ */
+export function carriedWeight(data: AppData, e: PlanExercise): number | undefined {
+  if (e.mode === 'time' || e.mode === 'bodyweight' || e.seconds != null) return undefined;
+  const finished = data.sessions
+    .filter((s) => s.finishedAt)
+    .sort((a, b) => (a.finishedAt! < b.finishedAt! ? 1 : -1));
+  for (const s of finished) {
+    const log = s.exercises.find((l) => l.exerciseId === e.exerciseId && l.variantId === e.variantId);
+    if (!log) continue;
+    const last = [...log.sets].reverse().find((x) => x.type === 'work' && x.done && x.factWeight != null && x.factWeight > 0);
+    if (!last) continue;
+    const decision = decideAfterSet({
+      set: last,
+      repsMin: e.repsMin,
+      repsMax: e.repsMax,
+      targetRir: e.targetRir,
+      kind: e.kind ?? log.variant,
+      units: s.units,
+      previousWeight: last.factWeight,
+    });
+    if (decision.type === 'INCREASE' || decision.type === 'DECREASE') return decision.suggestedWeight ?? last.factWeight;
+    return last.factWeight;
+  }
+  return undefined;
 }
 
 export function buildImportedSession(data: AppData, workout: PlanWorkout, now = new Date()): Session {
@@ -40,7 +70,7 @@ export function buildImportedSession(data: AppData, workout: PlanWorkout, now = 
     startedAt: now.toISOString(),
     pausedMs: 0,
     warmup: emptyWarmup(),
-    exercises: workout.exercises.map(buildImportedExerciseLog),
+    exercises: workout.exercises.map((e) => buildImportedExerciseLog(e, carriedWeight(data, e))),
   };
 }
 
