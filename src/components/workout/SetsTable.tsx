@@ -71,9 +71,9 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
           </View>
           {type === 'work' && (s.factReps != null || s.factSeconds != null) ? <RirPicker value={s.rir} onChange={(rir)=>onChange(i,{rir})} /> : null}
           {type === 'work' && engine && s.factReps != null && s.rir != null && needsLimiter(s) ? (
-            <LimiterPicker value={s.stopReason} onChange={(stopReason) => onChange(i, { stopReason })} />
+            <LimiterPicker value={s.stopReasons ?? (s.stopReason ? [s.stopReason] : [])} onChange={(stopReasons) => onChange(i, { stopReasons, stopReason: stopReasons[0] })} />
           ) : null}
-          {type === 'work' && engine && s.stopReason === 'other_muscle' && engine.wrongFeel?.length ? (
+          {type === 'work' && engine && (s.stopReasons?.includes('other_muscle') || s.stopReason === 'other_muscle') && engine.wrongFeel?.length ? (
             <View style={styles.hintBox}>{engine.wrongFeel.map((x, k) => <Text key={k} style={styles.hintText}>• {x}</Text>)}</View>
           ) : null}
           {type === 'work' && engine && s.factReps != null && s.rir != null ? <SetDecision units={engine.units} decision={decideAfterSet({
@@ -96,7 +96,7 @@ export function SetsTable({ type, sets, variant, onChange, onCopy, onRemove, onA
 // «Что ограничило?» (handoff §23): спрашиваем только после тяжёлого подхода — недобор или RIR 0.
 function needsLimiter(s: SetLog): boolean {
   if (s.factReps == null || s.rir == null) return false;
-  return s.rir === 0 || (s.planReps != null && s.factReps < s.planReps) || s.stopReason != null;
+  return s.rir === 0 || (s.planReps != null && s.factReps < s.planReps) || (s.stopReasons?.length ?? 0) > 0 || s.stopReason != null;
 }
 
 const LIMITERS: { value: NonNullable<SetLog['stopReason']>; label: string }[] = [
@@ -106,15 +106,15 @@ const LIMITERS: { value: NonNullable<SetLog['stopReason']>; label: string }[] = 
   { value: 'pain', label: 'Боль' },
 ];
 
-function LimiterPicker({ value, onChange }: { value?: SetLog['stopReason']; onChange: (v: SetLog['stopReason']) => void }) {
+function LimiterPicker({ value, onChange }: { value: NonNullable<SetLog['stopReasons']>; onChange: (v: NonNullable<SetLog['stopReasons']>) => void }) {
   return (
     <View style={styles.limiter}>
       <Text style={styles.limiterTitle}>Что ограничило?</Text>
       <View style={styles.limiterRow}>
         {LIMITERS.map((o) => {
-          const on = value === o.value;
+          const on = value.includes(o.value);
           return (
-            <Pressable key={o.value} onPress={() => onChange(on ? undefined : o.value)} style={[styles.chip, on && styles.chipOn, o.value === 'pain' && on && styles.chipPain]}>
+            <Pressable key={o.value} onPress={() => onChange(on ? value.filter((v) => v !== o.value) : [...value, o.value])} style={[styles.chip, on && styles.chipOn, o.value === 'pain' && on && styles.chipPain]}>
               <Text style={[styles.chipText, on && styles.chipTextOn]}>{o.label}</Text>
             </Pressable>
           );
