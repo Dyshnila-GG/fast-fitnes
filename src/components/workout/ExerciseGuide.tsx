@@ -90,7 +90,7 @@ export function PlanDemoModal({ e, visible, onClose }: { e: PlanExercise; visibl
               <Icon name="close" size={20} />
             </Pressable>
           </View>
-          <ExerciseGif key={e.mediaUrl ?? e.gifId} gifId={e.gifId ?? ''} mediaUrl={e.mediaUrl} playing={visible} square />
+          <ExerciseGif key={e.gifId} gifId={e.gifId ?? ''} playing={visible} square />
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
             {e.equipment ? <Text style={styles.muted}>{e.equipment}</Text> : null}
             <GuideBody e={e} />
