@@ -16,7 +16,25 @@ type Dose = Pick<PlanExercise, 'sets' | 'repsMin' | 'repsMax' | 'targetRir' | 'r
 const dose = (sets: number, repsMin: number, repsMax: number, targetRir: number, restMinSec: number, restMaxSec = restMinSec): Dose => ({
   sets, repsMin, repsMax, targetRir, restMinSec, restMaxSec,
 });
-const ex = (m: Movement, d: Dose): PlanExercise => ({ ...m, ...d, tempo: '2-0-1' });
+const TEMPO: Record<string, string> = {
+  'incline-chest-press': '3-0-1',
+  'chest-press': '3-0-1',
+  'pec-deck': '3-0-1',
+  'lateral-raise': '2-0-2',
+  'shoulder-press': '2-0-1',
+  'triceps-pushdown': '2-0-1',
+  'ab-crunch': '2-0-1',
+  'lat-pulldown': '3-0-1',
+  'seated-row': '2-0-1',
+  'reverse-pec-deck': '2-0-2',
+  'biceps-curl': '3-0-1',
+  'incline-db-curl': '3-0-1',
+  'hammer-curl': '2-0-1',
+  'leg-press': '3-0-1',
+  'seated-leg-curl': '3-0-1',
+  'calf-raise': '3-1-1',
+};
+const ex = (m: Movement, d: Dose): PlanExercise => ({ ...m, ...d, tempo: TEMPO[m.exerciseId] ?? '2-0-1' });
 
 // ---------- Грудь ----------
 
