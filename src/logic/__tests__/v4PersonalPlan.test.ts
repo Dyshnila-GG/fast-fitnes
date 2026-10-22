@@ -35,7 +35,7 @@ describe('built-in TOCHKA v4 plan', () => {
     expect(d.installedPlan?.pack.id).toBe('tochka-v4-personal');
     const started = startImportedWorkout(d, 'v4-tue');
     expect(started.activeSession?.planSnapshot?.exercises).toHaveLength(7);
-    expect(started.activeSession?.exercises[1].sets[0].planWeight).toBe(100);
+    expect(started.activeSession?.exercises[1].sets.find((x) => x.type === 'work')?.planWeight).toBe(100);
   });
 
   test('next session starts from the last real working weight (§44)', () => {
@@ -51,7 +51,7 @@ describe('built-in TOCHKA v4 plan', () => {
     const chest = V4_WORKOUTS[0].exercises[1];
     expect(carriedWeight(d, chest)).toBe(105);
     const next = buildImportedSession(d, V4_WORKOUTS[2]);
-    expect(next.exercises[0].sets[0].planWeight).toBe(105);
+    expect(next.exercises[0].sets.find((x) => x.type === 'work')?.planWeight).toBe(105);
   });
 
   test('a too-easy last set carries an increased weight', () => {
@@ -98,13 +98,13 @@ describe('machine / free-weight variants', () => {
   test('switching keeps done sets, reloads the rest and is remembered', () => {
     let d = startImportedWorkout(install(), 'v4-tue');
     const s0 = d.activeSession!;
-    d = { ...d, activeSession: { ...s0, exercises: s0.exercises.map((l, i) => (i !== 1 ? l : { ...l, sets: l.sets.map((x, k) => (k === 0 ? { ...x, factWeight: 100, factReps: 10, rir: 2 as const, done: true } : x)) })) } };
+    d = { ...d, activeSession: { ...s0, exercises: s0.exercises.map((l, i) => (i !== 1 ? l : { ...l, sets: l.sets.map((x) => (x.type === 'work' && !x.done ? { ...x, factWeight: 100, factReps: 10, rir: 2 as const, done: true } : x)) })) } };
     d = switchImportedVariant(d, 1, 'dumbbell');
     const log = d.activeSession!.exercises[1];
     expect(log.variantId).toBe('dumbbell');
     expect(log.variant).toBe('free');
-    expect(log.sets[0].factWeight).toBe(100);
-    expect(log.sets[1].planWeight).toBe(30);
+    expect(log.sets.find((x) => x.type === 'work' && x.done)?.factWeight).toBe(100);
+    expect(log.sets.filter((x) => x.type === 'work').every((x) => x.planWeight === 30 || x.done)).toBe(true);
     expect(snapshotFor(d.activeSession!, log)?.variantName).toBe('Жим гантелей лёжа');
     expect(d.variantChoice['chest-press']).toBe('free');
     const next = startImportedWorkout({ ...d, activeSession: null }, 'v4-sat');
