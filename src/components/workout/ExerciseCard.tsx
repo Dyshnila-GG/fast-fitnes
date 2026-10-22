@@ -109,14 +109,24 @@ export function ExerciseCard(props: Props) {
         />
       ) : null}
       {variant.gifId || planExercise?.mediaUrl ? <Pressable onPress={() => setDemo(true)}>
-        <ExerciseGif key={planExercise?.mediaUrl ?? variant.gifId} gifId={variant.gifId} mediaUrl={v4 ? planExercise?.mediaUrl : undefined} playing={!demo} />
+        <ExerciseGif key={variant.gifId} gifId={variant.gifId} mediaUrl={v4 ? undefined : planExercise?.mediaUrl} playing={!demo} />
       </Pressable> : null}
+      {v4 && planExercise ? (
+        <>
+          <View style={styles.rx}>
+            <Text style={styles.rxStrong}>{planExercise.repsMin ?? '—'}{planExercise.repsMax && planExercise.repsMax !== planExercise.repsMin ? `–${planExercise.repsMax}` : ''} reps</Text>
+            <Text style={styles.rxStrong}>RIR {planExercise.targetRir != null && planExercise.targetRir >= 4 ? '4+' : planExercise.targetRir ?? '—'}</Text>
+            <Text style={styles.rxStrong}>TEMPO {planExercise.tempo ?? '2-0-1'}</Text>
+          </View>
+          <Text style={styles.meta}>↓ опускание · пауза · ↑ подъём</Text>
+        </>
+      ) : null}
       <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.primaryMuscles?.join(', ') ?? planExercise?.muscles ?? '—') })}</Text>
       {v4 && planExercise ? <ExerciseGuide e={planExercise} /> : null}
       <View style={styles.cue}>
         <Text style={styles.cueText}>{ex ? variantCue(ex, variant) : (variant.cue || '—')}</Text>
         <Text style={styles.meta}>
-          {ex ? t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) }) : t('exercise.rest', { rest: formatRest(restMinSec ?? 120) })}
+          {ex ? t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) }) : `TEMPO ${planExercise?.tempo ?? '2-0-1'} · ${t('exercise.rest', { rest: formatRest(restMinSec ?? 120) })}`}
         </Text>
       </View>
 
@@ -140,6 +150,8 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, color: colors.muted },
   prevNote: { fontSize: 14, color: colors.muted, fontStyle: 'italic' },
   hint: { fontSize: 14, color: '#FF9F0A', lineHeight: 20 },
+  rx: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  rxStrong: { fontSize: 15, fontWeight: '800', color: colors.text },
   cue: { gap: 4, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   cueText: { fontSize: 15, color: colors.text, lineHeight: 21 },
 });
