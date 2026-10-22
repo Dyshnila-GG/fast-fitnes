@@ -455,7 +455,7 @@ export const V4_PERSONAL_PLAN: TochkaPlanPack = {
   format: 'tochka-plan',
   schemaVersion: 1,
   id: V4_PLAN_ID,
-  version: '1.1.0',
+  version: '1.2.0',
   title: 'TOCHKA v4',
   author: 'TOCHKA',
   description: 'Вт / Чт / Сб. RIR после каждого подхода, вес подбирается автоматически. Тренажёр или свободный вес — на выбор.',
