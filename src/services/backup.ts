@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Directory, File } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import { Platform, Share } from 'react-native';
 import { backupFileName, backupsToDelete, withBackup } from '../logic/backup';
 import { exportData } from '../logic/metrics';
@@ -39,9 +39,9 @@ export function writeBackup(dirUri: string, data: AppData, now = new Date()): vo
  // где его можно сохранить в Downloads / Files / Drive и т.п.
 export async function exportDataFile(data: AppData, now = new Date()): Promise<void> {
   const stamp = now.toISOString().replace(/[:.]/g, '-');
-  const file = new File(Directory.cache, `TOCHKA-export-${stamp}.json`);
+  const file = new File(Paths.cache, `TOCHKA-export-${stamp}.json`);
   if (file.exists) file.delete();
-  file.create({ mimeType: 'application/json' });
+  file.create();
   file.write(exportData(data));
   await Share.share({ url: file.uri, title: 'TOCHKA Fitness — экспорт данных' });
 }
