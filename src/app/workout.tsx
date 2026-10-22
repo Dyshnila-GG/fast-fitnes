@@ -152,7 +152,7 @@ export default function WorkoutScreen() {
                 log={log}
                 number={i + 1}
                 onVariant={(k) => switchVariant(i, k)}
-                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && (patch.rir != null || 'stopReason' in patch) ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
+                onSet={(si, patch) => updateSession((s) => { const exercises=s.exercises.map((l,ei)=>ei===i?updateSet(l,modeOf(l),si,patch):l); const next={...s,exercises}; return next.planSnapshot && (patch.rir != null || 'stopReason' in patch || 'stopReasons' in patch) ? coachImportedSet(next,i,si,importedPlanExercise(exercises[i])?.kind ?? exercises[i].variant).session : next; })}
                 onCopy={(si) => updateLog(i, (l) => copyPlanToFact(l, modeOf(l), si))}
                 onRemove={(si) => updateLog(i, (l) => removeSet(l, si))}
                 onAdd={(type) => updateLog(i, (l) => addSet(l, type))}
