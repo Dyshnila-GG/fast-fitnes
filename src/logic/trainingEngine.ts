@@ -31,6 +31,7 @@ export type SetDecisionInput = {
 
 export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
   const { set, repsMin, repsMax, kind, previousWeight, restMinSec } = input;
+  const targetRir = input.targetRir ?? 2;
   const units = input.units ?? 'imperial';
 
   if (set.stopReason === 'pain') return { type: 'STOP', reason: 'pain' };
@@ -45,7 +46,9 @@ export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
     return { type: 'HOLD', reason: 'insufficient_data' };
   }
 
-  if (reps < repsMin && rir <= 1) {
+  // Hypertrophy autoregulation: the prescribed RIR is the target, not a decoration.
+  // Too few reps at/under target RIR means the load is too heavy; preserve load when short rest explains it.
+  if (reps < repsMin && rir <= targetRir) {
     if (restMinSec && set.actualRestSec != null && set.actualRestSec < restMinSec) {
       return { type: 'REST_LONGER', reason: 'short_rest', suggestedRestSec: restMinSec };
     }
@@ -56,7 +59,9 @@ export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
     };
   }
 
-  if (reps >= repsMax && rir >= 4) {
+  // Double progression: once the top of the rep range is reached with the planned reserve,
+  // add the smallest available load step. No need to wait until the set feels 4+ RIR easy.
+  if (reps >= repsMax && rir >= targetRir) {
     return {
       type: 'INCREASE',
       reason: 'too_easy',
