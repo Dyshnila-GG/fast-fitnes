@@ -33,7 +33,6 @@ export function GuideBody({ e }: { e: PlanExercise }) {
         {rir ? <Text style={styles.prescriptionStrong}>RIR {rir}</Text> : null}
         <Text style={styles.prescriptionStrong}>TEMPO {tempo}</Text>
       </View>
-      <Text style={styles.tempoHelp}>опускание · пауза · подъём</Text>
 
       {e.primaryMuscles?.length ? (
         <View style={styles.section}>
@@ -108,7 +107,6 @@ const styles = StyleSheet.create({
   body: { gap: 10, paddingBottom: 12 },
   prescription: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   prescriptionStrong: { fontSize: 15, fontWeight: '800', color: colors.text },
-  tempoHelp: { marginTop: -6, fontSize: 12, color: colors.muted },
   section: { gap: 4 },
   label: { fontSize: 12, fontWeight: '700', color: colors.muted, letterSpacing: 0.5 },
   text: { fontSize: 15, color: colors.text, lineHeight: 21 },
