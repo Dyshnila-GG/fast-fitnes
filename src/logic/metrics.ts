@@ -116,6 +116,67 @@ export function exportData(d: AppData): string {
 
 export type ImportResult = { ok: true; data: AppData } | { ok: false; error: string };
 
+const newerIso = (a?: string, b?: string) => (!a ? b : !b ? a : a >= b ? a : b);
+const uniqBy = <T>(items: T[], key: (x: T) => string): T[] => {
+  const m = new Map<string, T>();
+  for (const x of items) m.set(key(x), x);
+  return [...m.values()];
+};
+
+/** Add an old backup to current data without deleting newer history. Current-day values win conflicts. */
+export function mergeImportedData(current: AppData, old: AppData): AppData {
+  const sessions = uniqBy([...old.sessions, ...current.sessions], (x) => x.id || `${x.startedAt}:${x.templateId}`);
+  const bodyWeight = uniqBy([...old.bodyWeight, ...current.bodyWeight], (x) => x.date).sort(byDay);
+  const measurements = uniqBy([...old.measurements, ...current.measurements], (x) => x.date).sort(byDay);
+  const sleep = { ...old.sleep, ...current.sleep };
+  const runs = { ...old.runs, ...current.runs };
+  const food = {
+    ...old.food,
+    ...current.food,
+    eaten: { ...old.food.eaten, ...current.food.eaten },
+    swaps: { ...old.food.swaps, ...current.food.swaps },
+    photos: { ...old.food.photos, ...current.food.photos },
+    recipes: { ...old.food.recipes, ...current.food.recipes },
+    dishes: { ...old.food.dishes, ...current.food.dishes },
+    products: { ...old.food.products, ...current.food.products },
+    schedule: current.food.schedule?.length ? current.food.schedule : old.food.schedule,
+  };
+  const trash = uniqBy([...old.trash, ...current.trash], (x) => x.session.id);
+  const v4 = {
+    ...old.v4,
+    ...current.v4,
+    facts: uniqBy([...old.v4.facts, ...current.v4.facts], (x) => x.id),
+    batches: uniqBy([...old.v4.batches, ...current.v4.batches], (x) => x.id),
+    activities: uniqBy([...old.v4.activities, ...current.v4.activities], (x) => x.id),
+    bodyFlags: uniqBy([...old.v4.bodyFlags, ...current.v4.bodyFlags], (x) => x.id),
+  };
+  return {
+    ...old,
+    ...current,
+    profile: { ...old.profile, ...current.profile },
+    sessions,
+    bodyWeight,
+    measurements,
+    sleep,
+    runs,
+    food,
+    trash,
+    v4,
+    records: { ...old.records, ...current.records },
+    plans: { ...old.plans, ...current.plans },
+    lengthChoice: { ...old.lengthChoice, ...current.lengthChoice },
+    variantChoice: { ...old.variantChoice, ...current.variantChoice },
+    installedPlan: current.installedPlan ?? old.installedPlan,
+    activeSession: current.activeSession,
+    activeRun: current.activeRun,
+    summaryId: current.summaryId,
+    backup: current.backup,
+    reminders: current.reminders,
+    settings: current.settings,
+  };
+}
+
+
 export function parseImport(text: string): ImportResult {
   let raw: unknown;
   try {
