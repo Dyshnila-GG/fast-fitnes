@@ -7,8 +7,8 @@ describe('trainingEngine', () => {
     expect(decideAfterSet({ ...base, set: { type:'work', factWeight:100, factReps:10, rir:2, done:true } }).type).toBe('HOLD');
   });
 
-  test('increases only when top reps are clearly too easy', () => {
-    const d=decideAfterSet({ ...base, set:{type:'work',factWeight:100,factReps:12,rir:4,done:true} });
+  test('increases at top reps when prescribed RIR is achieved', () => {
+    const d=decideAfterSet({ ...base, set:{type:'work',factWeight:100,factReps:12,rir:2,done:true} });
     expect(d.type).toBe('INCREASE');
     expect(d.suggestedWeight).toBe(105);
   });
@@ -30,7 +30,7 @@ describe('trainingEngine', () => {
     expect(d.type).toBe('STOP');
   });
   test('writes an increase into the next set plan', () => {
-    const current={type:'work' as const,factWeight:100,factReps:12,rir:4 as const,done:true};
+    const current={type:'work' as const,factWeight:100,factReps:12,rir:2 as const,done:true};
     const next={type:'work' as const,planReps:8,planRepsMax:12,done:false};
     const d=decideAfterSet({...base,set:current});
     expect(applyDecisionToNextSet(current,next,d).planWeight).toBe(105);

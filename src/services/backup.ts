@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Directory, File } from 'expo-file-system';
-import { Platform } from 'react-native';
+import { Directory, File, Paths } from 'expo-file-system';
+import { Platform, Share } from 'react-native';
 import { backupFileName, backupsToDelete, withBackup } from '../logic/backup';
 import { exportData } from '../logic/metrics';
 import type { AppData } from '../types';
@@ -35,7 +35,18 @@ export function writeBackup(dirUri: string, data: AppData, now = new Date()): vo
   for (const f of filesIn(dir)) if (old.has(nameOf(f))) f.delete();
 }
 
-// Выбор файла бэкапа → его текст (null — отмена).
+// Создаёт обычный JSON-файл экспорта и открывает системное меню Android,
+ // где его можно сохранить в Downloads / Files / Drive и т.п.
+export async function exportDataFile(data: AppData, now = new Date()): Promise<void> {
+  const stamp = now.toISOString().replace(/[:.]/g, '-');
+  const file = new File(Paths.cache, `TOCHKA-export-${stamp}.json`);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(exportData(data));
+  await Share.share({ url: file.uri, title: 'TOCHKA Fitness — экспорт данных' });
+}
+
+
 export async function readBackupFile(): Promise<string | null> {
   const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
   if (res.canceled || !res.assets[0]) return null;

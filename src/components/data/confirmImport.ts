@@ -1,6 +1,6 @@
 import { t } from '../../i18n';
 import { Alert } from 'react-native';
-import { finishedSessions, parseImport } from '../../logic/metrics';
+import { finishedSessions, mergeImportedData, parseImport } from '../../logic/metrics';
 import type { AppData } from '../../types';
 
 export const describeData = (d: AppData) =>
@@ -14,20 +14,33 @@ export const describeData = (d: AppData) =>
     trash: d.trash.length,
   });
 
-// Импорт JSON с подтверждением «Заменить все данные?». Папка бэкапа этого телефона сохраняется.
+// Импорт старого приложения по умолчанию ДОБАВЛЯЕТ историю к текущей.
+// Тренировки/вес/замеры из нового приложения не удаляются; при конфликте даты текущие данные побеждают.
 export function confirmImport(text: string, current: AppData, apply: (fn: (d: AppData) => AppData) => void, onDone?: () => void) {
   const res = parseImport(text);
   if (!res.ok) return Alert.alert(t('data.importFailed'), res.error);
-  Alert.alert(t('data.replaceTitle'), t('data.replaceText', { now: describeData(current), copy: describeData(res.data) }), [
-    { text: t('common.cancel'), style: 'cancel' },
-    {
-      text: t('common.replace'),
-      style: 'destructive',
-      onPress: () => {
-        apply((d) => ({ ...res.data, backup: d.backup }));
-        onDone?.();
-        Alert.alert(t('data.imported'));
+  Alert.alert(
+    'Добавить старые данные?',
+    `Сейчас: ${describeData(current)}.\nВ файле: ${describeData(res.data)}.\n\nТекущие тренировки, вес и замеры сохранятся. Старые данные будут добавлены в историю.`,
+    [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: 'Добавить',
+        onPress: () => {
+          apply((d) => mergeImportedData(d, res.data));
+          onDone?.();
+          Alert.alert('Данные добавлены', 'Новые данные сохранены, история из старого приложения добавлена.');
+        },
       },
-    },
-  ]);
+      {
+        text: t('common.replace'),
+        style: 'destructive',
+        onPress: () => {
+          apply((d) => ({ ...res.data, backup: d.backup, installedPlan: d.installedPlan ?? res.data.installedPlan }));
+          onDone?.();
+          Alert.alert(t('data.imported'));
+        },
+      },
+    ],
+  );
 }

@@ -31,11 +31,14 @@ export type SetDecisionInput = {
 
 export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
   const { set, repsMin, repsMax, kind, previousWeight, restMinSec } = input;
+  const targetRir = input.targetRir ?? 2;
   const units = input.units ?? 'imperial';
 
-  if (set.stopReason === 'pain') return { type: 'STOP', reason: 'pain' };
-  if (set.stopReason === 'technique') return { type: 'HOLD', reason: 'technique', suggestedWeight: set.factWeight ?? input.previousWeight };
-  if (set.stopReason === 'other_muscle') return { type: 'HOLD', reason: 'other_muscle', suggestedWeight: set.factWeight ?? input.previousWeight };
+  const limiters = set.stopReasons?.length ? set.stopReasons : set.stopReason ? [set.stopReason] : [];
+  // Multiple causes can be true at once. Safety/technique wins over load progression.
+  if (limiters.includes('pain')) return { type: 'STOP', reason: 'pain' };
+  if (limiters.includes('technique')) return { type: 'HOLD', reason: 'technique', suggestedWeight: set.factWeight ?? input.previousWeight };
+  if (limiters.includes('other_muscle')) return { type: 'HOLD', reason: 'other_muscle', suggestedWeight: set.factWeight ?? input.previousWeight };
 
   const reps = set.factReps;
   const rir = set.rir;
@@ -45,7 +48,9 @@ export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
     return { type: 'HOLD', reason: 'insufficient_data' };
   }
 
-  if (reps < repsMin && rir <= 1) {
+  // Hypertrophy autoregulation: the prescribed RIR is the target, not a decoration.
+  // Too few reps at/under target RIR means the load is too heavy; preserve load when short rest explains it.
+  if (reps < repsMin && rir <= targetRir) {
     if (restMinSec && set.actualRestSec != null && set.actualRestSec < restMinSec) {
       return { type: 'REST_LONGER', reason: 'short_rest', suggestedRestSec: restMinSec };
     }
@@ -56,7 +61,9 @@ export function decideAfterSet(input: SetDecisionInput): TrainingDecision {
     };
   }
 
-  if (reps >= repsMax && rir >= 4) {
+  // Double progression: once the top of the rep range is reached with the planned reserve,
+  // add the smallest available load step. No need to wait until the set feels 4+ RIR easy.
+  if (reps >= repsMax && rir >= targetRir) {
     return {
       type: 'INCREASE',
       reason: 'too_easy',

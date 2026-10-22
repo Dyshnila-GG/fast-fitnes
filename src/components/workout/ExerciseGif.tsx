@@ -6,7 +6,8 @@ import { colors } from '../../theme';
 import { useT } from '../../i18n/useT';
 
 const BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises';
-const FRAME_MS = 700;
+// 25% slower than the previous demo cadence so technique is readable between sets.
+const FRAME_MS = 875;
 const RETRIES = 2; // повторы при сбое сети, потом заглушка
 const RETRY_MS = 1500;
 

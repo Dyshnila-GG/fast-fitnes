@@ -138,13 +138,19 @@ export function formatBest(variant: Variant, plan: Best): string {
 
 // Факт подхода: «80 × 8», «свой × 10», «свой +10 × 8», «45 сек».
 export function formatFact(set: SetLog, variant: Variant): string {
-  if (set.factSeconds != null) return secText(set.factSeconds);
-  if (set.factReps == null) return '—';
-  if (variant.mode === 'bodyweight') {
+  let base: string;
+  if (set.factSeconds != null) base = secText(set.factSeconds);
+  else if (set.factReps == null) base = '—';
+  else if (variant.mode === 'bodyweight') {
     const own = set.factWeight ? `${t('set.own')} +${formatWeightNum(set.factWeight)}` : t('set.own');
-    return `${own} × ${set.factReps}`;
-  }
-  return `${set.factWeight != null ? formatWeightNum(set.factWeight) : '—'} × ${set.factReps}`;
+    base = `${own} × ${set.factReps}`;
+  } else base = `${set.factWeight != null ? formatWeightNum(set.factWeight) : '—'} × ${set.factReps}`;
+
+  if (base === '—' || set.type !== 'work') return base;
+  const limiterNames = { target: 'мышца', technique: 'техника', other_muscle: 'другая мышца', pain: 'боль' } as const;
+  const limiters = set.stopReasons?.length ? set.stopReasons : set.stopReason ? [set.stopReason] : [];
+  const meta = [set.rir != null ? `RIR ${set.rir === 4 ? '4+' : set.rir}` : null, limiters.length ? `ограничило: ${limiters.map((x) => limiterNames[x]).join(' + ')}` : null].filter(Boolean);
+  return meta.length ? `${base} · ${meta.join(' · ')}` : base;
 }
 
 // План подхода без номера: «40 × 12», «свой × 5».

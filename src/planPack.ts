@@ -33,6 +33,8 @@ export type PlanVariantInfo = {
   cue?: string;
   setup?: string[];
   execution?: string[];
+  /** Hypertrophy cadence: eccentric-pause-concentric, e.g. 2-0-1. */
+  tempo?: string;
   kind?: 'machine' | 'free';
   mode?: 'weight' | 'bodyweight' | 'time';
   /** Prescribed starting load in canonical lb storage units. */
@@ -58,6 +60,8 @@ export type PlanExercise = {
   feel?: string;
   wrongFeel?: string[];
   mistakes?: string[];
+  /** Hypertrophy cadence: eccentric-pause-concentric, e.g. 2-0-1. */
+  tempo?: string;
   /** Other ways to do the movement when the main equipment is busy or missing. */
   alternatives?: PlanVariantInfo[];
   kind?: 'machine' | 'free';
