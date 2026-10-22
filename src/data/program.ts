@@ -168,6 +168,17 @@ export const PROGRAM: WorkoutTemplate[] = [
 
 // Упражнения встроенного Plan Pack v4 регистрируются в каталоге, чтобы история, итог, отчёт,
 // метрики и бэкап находили их так же, как упражнения v3.
+const V4_TWO_RAMP = new Set(['incline-chest-press','chest-press','shoulder-press','lat-pulldown','seated-row','leg-press']);
+const V4_NO_RAMP = new Set(['ab-crunch']);
+function v4Warmup(e: PlanExercise, mode: Mode): Warmup[] {
+  if (V4_NO_RAMP.has(e.exerciseId)) return [];
+  if (mode === 'time') return [{ pct: 0, seconds: 20 }];
+  if (mode === 'bodyweight') return [{ pct: 0, reps: 5 }];
+  return V4_TWO_RAMP.has(e.exerciseId)
+    ? [{ pct: 0.5, reps: 8 }, { pct: 0.75, reps: 4 }]
+    : [{ pct: 0.5, reps: 8 }];
+}
+
 function catalogVariant(e: PlanExercise): Variant {
   const mode = e.mode ?? (e.seconds != null ? 'time' : 'weight');
   return {
@@ -186,7 +197,7 @@ function catalogVariant(e: PlanExercise): Variant {
     execution: e.execution,
     mistakes: e.mistakes,
     plan: { sets: e.sets, weight: e.weight, reps: e.repsMin, repsMax: e.repsMax, seconds: e.seconds },
-    warmup: [],
+    warmup: v4Warmup(e, mode),
   };
 }
 
@@ -196,7 +207,7 @@ function catalogExercise(e: PlanExercise, restSec: number): Exercise {
     title: e.title ?? e.exerciseId,
     muscles: e.muscles ?? '',
     restSec,
-    tempo: '2-0-1',
+    tempo: e.tempo ?? '2-0-1',
     defaultVariant: e.kind ?? 'machine',
     variants: variantsOf(e).map(catalogVariant),
   };
