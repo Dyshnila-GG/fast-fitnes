@@ -77,7 +77,10 @@ export type SetLog = {
   rir?: 0 | 1 | 2 | 3 | 4;
   completedAt?: string;
   actualRestSec?: number;
+  /** Legacy single limiter; kept for old workout history. */
   stopReason?: 'target' | 'technique' | 'other_muscle' | 'pain';
+  /** v4: all limiters that applied to the set; multiple may be selected. */
+  stopReasons?: Array<'target' | 'technique' | 'other_muscle' | 'pain'>;
   limitingMuscle?: string;
   done: boolean;
 };
