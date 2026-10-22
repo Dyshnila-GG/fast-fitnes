@@ -1,16 +1,17 @@
 export const colors = {
-  bg: '#000000',
-  card: '#1C1C1E',
-  border: '#2C2C2E',
-  button: '#2C2C2E',
-  text: '#FFFFFF',
-  muted: '#8E8E93',
-  dim: '#3A3A3C', // неактивная точка календаря
-  highlight: '#8E8E93', // тонкая светлая рамка — незаполненное
-  danger: '#FF453A', // только цвет текста
-  primary: '#FFFFFF', // главная кнопка — белая
-  onPrimary: '#000000',
+  // TOCHKA Fitness — MAHORAGA-inspired palette, without changing TOCHKA branding/logo.
+  bg: '#0B0B0D',
+  card: '#151518',
+  border: '#2B2B31',
+  button: '#242429',
+  text: '#F7F7F8',
+  muted: '#929299',
+  dim: '#3A3A40',
+  highlight: '#F05A78',
+  danger: '#FF4D5E',
+  primary: '#F05A78',
+  onPrimary: '#FFFFFF',
 };
 
-export const radius = 24;
+export const radius = 20;
 export const gap = 12;
