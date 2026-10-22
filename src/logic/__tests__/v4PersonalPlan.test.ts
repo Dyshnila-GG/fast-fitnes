@@ -98,7 +98,7 @@ describe('machine / free-weight variants', () => {
   test('switching keeps done sets, reloads the rest and is remembered', () => {
     let d = startImportedWorkout(install(), 'v4-tue');
     const s0 = d.activeSession!;
-    d = { ...d, activeSession: { ...s0, exercises: s0.exercises.map((l, i) => (i !== 1 ? l : { ...l, sets: l.sets.map((x) => (x.type === 'work' && !x.done ? { ...x, factWeight: 100, factReps: 10, rir: 2 as const, done: true } : x)) })) } };
+    d = { ...d, activeSession: { ...s0, exercises: s0.exercises.map((l, i) => (i !== 1 ? l : { ...l, sets: l.sets.map((x, k) => (x.type === 'work' && k === l.sets.findIndex((y) => y.type === 'work') ? { ...x, factWeight: 100, factReps: 10, rir: 2 as const, done: true } : x)) })) } };
     d = switchImportedVariant(d, 1, 'dumbbell');
     const log = d.activeSession!.exercises[1];
     expect(log.variantId).toBe('dumbbell');
