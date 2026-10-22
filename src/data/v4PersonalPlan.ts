@@ -16,7 +16,7 @@ type Dose = Pick<PlanExercise, 'sets' | 'repsMin' | 'repsMax' | 'targetRir' | 'r
 const dose = (sets: number, repsMin: number, repsMax: number, targetRir: number, restMinSec: number, restMaxSec = restMinSec): Dose => ({
   sets, repsMin, repsMax, targetRir, restMinSec, restMaxSec,
 });
-const ex = (m: Movement, d: Dose): PlanExercise => ({ ...m, ...d });
+const ex = (m: Movement, d: Dose): PlanExercise => ({ ...m, ...d, tempo: '2-0-1' });
 
 // ---------- Грудь ----------
 
