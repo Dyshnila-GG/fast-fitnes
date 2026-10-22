@@ -15,52 +15,51 @@ function restRange(e: PlanExercise): string | undefined {
   return max > e.restMinSec ? `${formatRest(e.restMinSec)}–${formatRest(max)}` : formatRest(e.restMinSec);
 }
 
-function List({ title, items }: { title: string; items?: string[] }) {
-  if (!items?.length) return null;
-  return (
-    <View style={styles.section}>
-      <Text style={styles.label}>{title}</Text>
-      {items.map((x, i) => (
-        <Text key={i} style={styles.item}>
-          • {x}
-        </Text>
-      ))}
-    </View>
-  );
-}
 
 /** Exercise guidance (handoff §14): muscles, setup, execution, mistakes, what to feel. */
 export function GuideBody({ e }: { e: PlanExercise }) {
   const rest = restRange(e);
   const rir = rirLabel(e.targetRir);
+  const tempo = e.tempo ?? '2-0-1';
+  const reps = e.repsMin != null
+    ? (e.repsMax != null && e.repsMax !== e.repsMin ? `${e.repsMin}–${e.repsMax}` : String(e.repsMin))
+    : undefined;
+  const technique = e.cue ?? e.execution?.[0];
+
   return (
     <View style={styles.body}>
+      <View style={styles.prescription}>
+        {reps ? <Text style={styles.prescriptionStrong}>{reps} повторов</Text> : null}
+        {rir ? <Text style={styles.prescriptionStrong}>RIR {rir}</Text> : null}
+        <Text style={styles.prescriptionStrong}>TEMPO {tempo}</Text>
+      </View>
+      <Text style={styles.tempoHelp}>опускание · пауза · подъём</Text>
+
       {e.primaryMuscles?.length ? (
         <View style={styles.section}>
-          <Text style={styles.label}>РАБОТАЮТ</Text>
+          <Text style={styles.label}>ЧУВСТВУЙ</Text>
           <Text style={styles.text}>
-            <Text style={styles.strong}>{e.primaryMuscles.join(', ')}</Text>
+            <Text style={styles.strong}>{e.primaryMuscles.join(' · ')}</Text>
             {e.secondaryMuscles?.length ? <Text style={styles.muted}>{`  · помогают: ${e.secondaryMuscles.join(', ')}`}</Text> : null}
           </Text>
         </View>
       ) : null}
+
+      {technique ? (
+        <View style={styles.section}>
+          <Text style={styles.label}>ТЕХНИКА</Text>
+          <Text style={styles.text}>{technique}</Text>
+        </View>
+      ) : null}
+
       {e.feel ? (
         <View style={styles.section}>
-          <Text style={styles.label}>ЧТО ДОЛЖЕН ЧУВСТВОВАТЬ</Text>
+          <Text style={styles.label}>ОРИЕНТИР</Text>
           <Text style={styles.text}>{e.feel}</Text>
         </View>
       ) : null}
-      <List title="НАСТРОЙКА" items={e.setup} />
-      <List title="ВЫПОЛНЕНИЕ" items={e.execution ?? (e.cue ? [e.cue] : undefined)} />
-      <List title="ОШИБКИ" items={e.mistakes} />
-      <List title="ЧУВСТВУЕШЬ ДРУГУЮ МЫШЦУ?" items={e.wrongFeel} />
-      {rir || rest ? (
-        <Text style={styles.muted}>
-          {[rir ? `Цель: RIR ${rir} — столько чистых повторов в запасе` : undefined, rest ? `отдых ${rest}` : undefined]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-      ) : null}
+
+      {rest ? <Text style={styles.muted}>Отдых {rest}</Text> : null}
     </View>
   );
 }
@@ -106,7 +105,10 @@ const styles = StyleSheet.create({
   box: { borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 },
   toggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   toggleText: { fontSize: 15, fontWeight: '700', color: colors.text },
-  body: { gap: 12, paddingBottom: 12 },
+  body: { gap: 10, paddingBottom: 12 },
+  prescription: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  prescriptionStrong: { fontSize: 15, fontWeight: '800', color: colors.text },
+  tempoHelp: { marginTop: -6, fontSize: 12, color: colors.muted },
   section: { gap: 4 },
   label: { fontSize: 12, fontWeight: '700', color: colors.muted, letterSpacing: 0.5 },
   text: { fontSize: 15, color: colors.text, lineHeight: 21 },
