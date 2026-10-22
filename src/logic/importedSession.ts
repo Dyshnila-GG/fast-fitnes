@@ -5,6 +5,25 @@ import { emptyWarmup } from './session';
 import { decideAfterSet, applyDecisionToNextSet, type TrainingDecision } from './trainingEngine';
 import { effectiveExercise, preferredVariant, snapshotBase, snapshotFor } from './planVariant';
 
+const TWO_RAMP = new Set(['incline-chest-press','chest-press','shoulder-press','lat-pulldown','seated-row','leg-press']);
+const NO_RAMP = new Set(['ab-crunch']);
+const roundWarmup = (lb: number) => Math.max(5, Math.round(lb / 5) * 5);
+
+function rampSets(e: PlanExercise, startWeight?: number): SetLog[] {
+  if (NO_RAMP.has(e.exerciseId)) return [];
+  if (e.mode === 'time') return [{ type: 'warmup', planSeconds: 20, done: false }];
+  if (e.mode === 'bodyweight') return [{ type: 'warmup', planReps: 5, done: false }];
+  const weight = startWeight ?? e.weight;
+  if (!weight) return [];
+  const specs = TWO_RAMP.has(e.exerciseId) ? [[0.5, 8], [0.75, 4]] : [[0.5, 8]];
+  return specs.map(([pct, reps]) => ({
+    type: 'warmup' as const,
+    planWeight: roundWarmup(weight * pct),
+    planReps: reps,
+    done: false,
+  }));
+}
+
 function workSets(e: PlanExercise, startWeight?: number): SetLog[] {
   return Array.from({ length: e.sets }, () => ({
     type: 'work' as const,
@@ -24,7 +43,7 @@ export function buildImportedExerciseLog(e: PlanExercise, startWeight?: number):
     variant: e.kind ?? 'machine',
     variantId: e.variantId,
     targetRir: e.targetRir,
-    sets: workSets(e, startWeight),
+    sets: [...rampSets(e, startWeight), ...workSets(e, startWeight)],
   };
 }
 
