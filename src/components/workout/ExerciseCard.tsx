@@ -114,20 +114,18 @@ export function ExerciseCard(props: Props) {
       {v4 && planExercise ? (
         <>
           <View style={styles.rx}>
-            <Text style={styles.rxStrong}>{planExercise.repsMin ?? '—'}{planExercise.repsMax && planExercise.repsMax !== planExercise.repsMin ? `–${planExercise.repsMax}` : ''} reps</Text>
-            <Text style={styles.rxStrong}>RIR {planExercise.targetRir != null && planExercise.targetRir >= 4 ? '4+' : planExercise.targetRir ?? '—'}</Text>
-            <Text style={styles.rxStrong}>TEMPO {planExercise.tempo ?? '2-0-1'}</Text>
+            <View style={styles.rxChip}><Text style={styles.rxLabel}>REPS</Text><Text style={styles.rxStrong}>{planExercise.repsMin ?? '—'}{planExercise.repsMax && planExercise.repsMax !== planExercise.repsMin ? `–${planExercise.repsMax}` : ''}</Text></View>
+            <View style={styles.rxChip}><Text style={styles.rxLabel}>RIR</Text><Text style={styles.rxStrong}>{planExercise.targetRir != null && planExercise.targetRir >= 4 ? '4+' : planExercise.targetRir ?? '—'}</Text></View>
+            <View style={styles.rxChip}><Text style={styles.rxLabel}>TEMPO</Text><Text style={styles.rxStrong}>{planExercise.tempo ?? '2-0-1'}</Text></View>
           </View>
         </>
       ) : null}
       <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.primaryMuscles?.join(', ') ?? planExercise?.muscles ?? '—') })}</Text>
       {v4 && planExercise ? <ExerciseGuide e={planExercise} /> : null}
-      <View style={styles.cue}>
+      {!v4 ? <View style={styles.cue}>
         <Text style={styles.cueText}>{ex ? variantCue(ex, variant) : (variant.cue || '—')}</Text>
-        <Text style={styles.meta}>
-          {ex ? t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) }) : `TEMPO ${planExercise?.tempo ?? '2-0-1'} · ${t('exercise.rest', { rest: formatRest(restMinSec ?? 120) })}`}
-        </Text>
-      </View>
+        <Text style={styles.meta}>{ex ? t('exercise.tempoRest', { tempo: ex.tempo, rest: formatRest(ex.restSec) }) : ''}</Text>
+      </View> : null}
 
       <SetsTable type="warmup" sets={log.sets} variant={variant} onChange={onSet} onCopy={onCopy} onRemove={onRemove} onAdd={() => onAdd('warmup')} />
       {!v4 && needsFeel(variant) && <FeelBlock log={log} variant={variant} onFeel={onFeel} onToday={onToday} />}
@@ -149,8 +147,10 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, color: colors.muted },
   prevNote: { fontSize: 14, color: colors.muted, fontStyle: 'italic' },
   hint: { fontSize: 14, color: '#FF9F0A', lineHeight: 20 },
-  rx: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  rxStrong: { fontSize: 15, fontWeight: '800', color: colors.text },
+  rx: { flexDirection: 'row', gap: 8 },
+  rxChip: { flex: 1, minHeight: 62, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, justifyContent: 'space-between' },
+  rxLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: colors.muted },
+  rxStrong: { fontSize: 18, fontWeight: '800', color: colors.text },
   cue: { gap: 4, padding: 12, borderRadius: 16, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   cueText: { fontSize: 15, color: colors.text, lineHeight: 21 },
 });
