@@ -118,7 +118,6 @@ export function ExerciseCard(props: Props) {
             <Text style={styles.rxStrong}>RIR {planExercise.targetRir != null && planExercise.targetRir >= 4 ? '4+' : planExercise.targetRir ?? '—'}</Text>
             <Text style={styles.rxStrong}>TEMPO {planExercise.tempo ?? '2-0-1'}</Text>
           </View>
-          <Text style={styles.meta}>↓ опускание · пауза · ↑ подъём</Text>
         </>
       ) : null}
       <Text style={styles.meta}>{t('exercise.muscles', { muscles: ex ? exerciseMuscles(ex) : (planExercise?.primaryMuscles?.join(', ') ?? planExercise?.muscles ?? '—') })}</Text>
