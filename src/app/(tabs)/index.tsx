@@ -13,18 +13,15 @@ import { dayTotals, dishTitle, formatMealTime, formatNum, nextMeal, toggleEaten 
 import {
   dayLabel,
   daysAgo,
-  homeDayType,
   monthGrid,
   monthOf,
   nextPlanWorkout,
   nextWorkout,
-  RUNS_PER_WEEK,
   shiftMonth,
   weekCounts,
   WORKOUTS_PER_WEEK,
 } from '../../logic/home';
 import { dayKey, latestFirst } from '../../logic/metrics';
-import { formatRunTime } from '../../logic/run';
 import { startWorkout } from '../../logic/session';
 import { startImportedWorkout } from '../../logic/importedSession';
 import { eatenTotals, nutritionTarget } from '../../logic/v4';
@@ -63,10 +60,7 @@ export default function HomeScreen() {
         <MealTile data={data} today={today} nowMin={nowMin} />
         <CaloriesTile data={data} today={today} />
       </TileRow>
-      <TileRow>
-        <SleepTile data={data} today={today} />
-        <RunTile data={data} today={today} />
-      </TileRow>
+      <SleepTile data={data} today={today} />
     </ScrollView>
   );
 }
@@ -144,7 +138,7 @@ function ActivityTile({ data, today }: TileProps) {
       <Text style={styles.muted}>{t('home.activity')}</Text>
       <MonthCalendar grid={grid} canNext={month < current} onPrev={prev} onNext={next} />
       <Text style={styles.muted}>
-        {t('home.week', { w: counts.workouts, wt: WORKOUTS_PER_WEEK, r: counts.runs, rt: RUNS_PER_WEEK })}
+        {`Силовые за неделю: ${counts.workouts}/${WORKOUTS_PER_WEEK}`}
       </Text>
     </Tile>
   );
@@ -215,23 +209,6 @@ function SleepTile({ data, today }: TileProps) {
       </Text>
       <Text style={styles.name}>{t('reminder.sleep.title')}</Text>
       <Text style={styles.muted}>{e ? sleepScore(e) || t('meta.noRating') : t('home.record')}</Text>
-    </Tile>
-  );
-}
-
-function RunTile({ data, today }: TileProps) {
-  const t = useT();
-  const { runs } = weekCounts(data, today);
-  const runDay = homeDayType(today) === 'run';
-  const run = data.runs[today];
-  return (
-    <Tile onPress={() => router.push(runDay ? '/run-edit' : '/runs')}>
-      <View style={styles.grow} />
-      <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
-        {runs}/{RUNS_PER_WEEK}
-      </Text>
-      <Text style={styles.name}>{t('home.runsWeek')}</Text>
-      {runDay && <Text style={styles.muted}>{run ? t('home.runToday', { time: formatRunTime(run.minutes) }) : t('home.runDay')}</Text>}
     </Tile>
   );
 }
